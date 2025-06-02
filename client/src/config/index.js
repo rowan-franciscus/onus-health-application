@@ -4,8 +4,8 @@
  */
 
 const config = {
-  // API endpoints - use relative path to leverage React dev server proxy
-  apiUrl: '/api',
+  // API endpoints - use environment variable in production, relative path in development
+  apiUrl: process.env.REACT_APP_API_URL || '/api',
   
   // Authentication
   sessionTimeout: parseInt(process.env.REACT_APP_SESSION_TIMEOUT || '1800000', 10), // 30 minutes in milliseconds
