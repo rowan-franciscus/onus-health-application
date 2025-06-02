@@ -1,0 +1,28 @@
+{
+  "name": "onus-health-application",
+  "version": "1.0.0",
+  "description": "Secure, role-based web platform for managing electronic health records (EHRs)",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "npm start --prefix server",
+    "client": "npm start --prefix client",
+    "install-all": "npm install && npm install --prefix client && npm install --prefix server",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "keywords": [
+    "health",
+    "medical",
+    "records",
+    "EHR",
+    "MERN"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "axios": "^1.9.0"
+  }
+}

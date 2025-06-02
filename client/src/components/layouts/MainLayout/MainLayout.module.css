@@ -1,0 +1,39 @@
+.layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  /* Sidebar has its own styles with fixed width */
+}
+
+.mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--sidebar-width);
+  overflow: hidden;
+}
+
+.header {
+  /* Header has its own styles */
+}
+
+.content {
+  padding: var(--spacing-lg);
+  padding-top: calc(var(--header-height) + var(--spacing-lg));
+  flex: 1;
+  overflow-y: auto;
+  background-color: #f5f7f9;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Responsive for mobile */
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 60px; /* Match collapsed sidebar width */
+  }
+} 

@@ -1,0 +1,19 @@
+<svg id="Google_Icon" data-name="Google Icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="20" height="20" viewBox="0 0 20 20">
+  <defs>
+    <linearGradient id="linear-gradient" y1="0.5" x2="1" y2="0.5" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path id="Path_173" data-name="Path 173" d="M10.231,4.167A5.8,5.8,0,0,1,13.8,5.4L16.834,2.5A9.981,9.981,0,0,0,1.386,5.342L4.756,8A5.83,5.83,0,0,1,10.231,4.167Z" transform="translate(-0.231)" fill="#f44336"/>
+  <path id="Path_174" data-name="Path 174" d="M21.913,12.835A9.919,9.919,0,0,0,22,11.583,10.03,10.03,0,0,0,21.779,9.5H12v4.167h5.405A5.893,5.893,0,0,1,15.2,16.433L18.581,19.1A9.989,9.989,0,0,0,21.913,12.835Z" transform="translate(-2 -1.583)" fill="#2196f3"/>
+  <path id="Path_175" data-name="Path 175" d="M4.167,11.068a5.809,5.809,0,0,1,.359-2L1.155,6.41a9.965,9.965,0,0,0-.023,9.269l3.375-2.664A5.81,5.81,0,0,1,4.167,11.068Z" transform="translate(0 -1.068)" fill="#ffc107"/>
+  <path id="Path_176" data-name="Path 176" d="M10.226,18.223a5.83,5.83,0,0,1-5.494-3.887L1.358,17A9.984,9.984,0,0,0,16.808,19.91l-3.383-2.671A5.693,5.693,0,0,1,10.226,18.223Z" transform="translate(-0.226 -2.389)" fill="#00b060"/>
+  <path id="Path_177" data-name="Path 177" d="M10.508,23.12a10.347,10.347,0,0,1-7.46-3.149,9.966,9.966,0,0,0,14.867.058A10.338,10.338,0,0,1,10.508,23.12Z" transform="translate(-0.508 -3.329)" opacity="0.1"/>
+  <path id="Path_178" data-name="Path 178" d="M12,14.25v.208h5.405l.084-.208Z" transform="translate(-2 -2.375)" opacity="0.1"/>
+  <path id="Path_179" data-name="Path 179" d="M23.994,12.116c0-.041,0-.081,0-.123,0-.012,0-.023,0-.035C24,12.011,23.994,12.063,23.994,12.116Z" transform="translate(-3.999 -1.993)" fill="#e6e6e6"/>
+  <path id="Path_180" data-name="Path 180" d="M12,9.5v.208h9.821c-.013-.069-.027-.14-.042-.208Z" transform="translate(-2 -1.583)" fill="#fff" opacity="0.2"/>
+  <path id="Path_181" data-name="Path 181" d="M19.779,7.917H10v4.167h5.405a5.826,5.826,0,1,1-2.248-6.966c.14.091.284.176.415.278L16.6,2.5l-.068-.053a9.958,9.958,0,1,0,3.245,5.466Z" fill="url(#linear-gradient)"/>
+  <path id="Path_182" data-name="Path 182" d="M13.99,5.41A5.807,5.807,0,0,0,5,10.292c0,.035,0,.063,0,.1A5.806,5.806,0,0,1,13.99,5.618c.14.091.284.176.415.278L17.436,3,14.405,5.687C14.274,5.586,14.13,5.5,13.99,5.41Z" transform="translate(-0.833 -0.501)" opacity="0.1"/>
+  <path id="Path_183" data-name="Path 183" d="M10,.208a9.937,9.937,0,0,1,6.483,2.41L16.6,2.5l-.092-.08A9.857,9.857,0,0,0,10,0,10,10,0,0,0,0,10c0,.035,0,.069.005.1A10,10,0,0,1,10,.208Z" fill="#fff" opacity="0.2"/>
+</svg>

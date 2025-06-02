@@ -1,0 +1,118 @@
+.container {
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+}
+
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: #fafafa;
+  padding: var(--spacing-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropzone:hover {
+  background-color: #f5f5f5;
+  border-color: var(--primary-light);
+}
+
+.dragActive {
+  border-color: var(--primary-color);
+  background-color: rgba(25, 118, 210, 0.05);
+}
+
+.input {
+  display: none;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: var(--spacing-sm);
+  color: var(--primary-color);
+}
+
+.label {
+  font-size: var(--font-size-medium);
+  font-weight: 500;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-color);
+}
+
+.helpText {
+  font-size: var(--font-size-normal);
+  color: var(--text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.maxSize {
+  font-size: var(--font-size-small);
+  color: var(--text-light);
+}
+
+.fileList {
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  background-color: #fff;
+}
+
+.fileItem:last-child {
+  border-bottom: none;
+}
+
+.fileName {
+  font-size: var(--font-size-normal);
+  font-weight: 500;
+  color: var(--text-color);
+  word-break: break-all;
+}
+
+.fileSize {
+  font-size: var(--font-size-small);
+  color: var(--text-light);
+  margin-left: var(--spacing-md);
+  white-space: nowrap;
+}
+
+.error {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-small);
+  color: var(--error-color);
+}
+
+.hasError .dropzone {
+  border-color: var(--error-color);
+}
+
+.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.disabled .dropzone {
+  cursor: not-allowed;
+  background-color: #f5f5f5;
+}
+
+.disabled .dropzone:hover {
+  border-color: var(--border-color);
+} 

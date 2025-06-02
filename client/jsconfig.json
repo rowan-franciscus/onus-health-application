@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "jsx": "react",
+    "paths": {
+      "assets/*": ["assets/*"],
+      "components/*": ["components/*"],
+      "containers/*": ["containers/*"],
+      "contexts/*": ["contexts/*"],
+      "hooks/*": ["hooks/*"],
+      "pages/*": ["pages/*"],
+      "services/*": ["services/*"],
+      "store/*": ["store/*"],
+      "styles/*": ["styles/*"],
+      "utils/*": ["utils/*"]
+    }
+  },
+  "include": ["src"]
+} 

@@ -1,0 +1,383 @@
+/* ViewPatient.module.css */
+
+.viewPatientContainer {
+  width: 100%;
+  height: 100%;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header styles */
+.header {
+  margin-bottom: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.breadcrumbLink {
+  color: #6946FF;
+  text-decoration: none;
+}
+
+.breadcrumbLink:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbSeparator {
+  margin: 0 8px;
+  color: #999;
+}
+
+.currentPage {
+  color: #333;
+  font-weight: 500;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.patientMeta {
+  display: flex;
+  flex-direction: column;
+}
+
+.patientName {
+  font-size: 24px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.accessBadge, .pendingBadge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-left: 12px;
+}
+
+.accessBadge {
+  background-color: #FFF3E0;
+  color: #FF9800;
+}
+
+.pendingBadge {
+  background-color: #E8EAF6;
+  color: #3F51B5;
+}
+
+.patientBasicInfo {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.infoSeparator {
+  margin: 0 8px;
+  color: #ccc;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.newConsultationBtn {
+  background-color: #6946FF;
+  color: white;
+}
+
+.requestAccessBtn {
+  border: 1px solid #6946FF;
+  color: #6946FF;
+  background-color: white;
+}
+
+.pendingRequestBadge {
+  background-color: #E8EAF6;
+  color: #3F51B5;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Tabs styles */
+.tabsContainer {
+  margin-bottom: 24px;
+}
+
+/* Content container */
+.contentContainer {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Overview tab styles */
+.overviewTab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.infoCard, .medicalHistoryCard, .emergencyContactCard, .consultationsCard, .medicalRecordCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  height: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.infoCard {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.medicalHistoryCard {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.emergencyContactCard {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.consultationsCard {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* Patient info section */
+.patientInfoSection h3, 
+.medicalHistorySection h3, 
+.emergencyContactSection h3, 
+.consultationsSection h3,
+.vitalsSection h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.patientDetailsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailLabel {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Medical history section */
+.medicalHistoryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.historyItem h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.historyList {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.historyList li {
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+/* Emergency contact section */
+.emergencyContactDetails {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.contactItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.contactLabel {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.contactValue {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Consultations section */
+.consultationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.consultationItem {
+  padding: 12px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.consultationHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.consultationDate {
+  font-weight: 600;
+  color: #333;
+}
+
+.consultationProvider {
+  color: #666;
+}
+
+.consultationReason, .consultationNotes {
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.reasonLabel, .notesLabel {
+  font-weight: 500;
+  color: #555;
+}
+
+.noConsultations {
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  padding: 24px;
+}
+
+/* Vitals section */
+.vitalsSection {
+  padding: 16px;
+}
+
+.vitalsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.vitalsDate {
+  font-size: 14px;
+  color: #666;
+}
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.vitalItem {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.vitalLabel {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.vitalValue {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.viewHistoryLink {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.viewHistoryLink a {
+  color: #6946FF;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.viewHistoryLink a:hover {
+  text-decoration: underline;
+}
+
+/* Loading and error states */
+.loading, .notFound, .noRecords, .accessLimited {
+  text-align: center;
+  padding: 48px;
+  color: #666;
+}
+
+.notFound {
+  color: #f44336;
+}
+
+.limitedAccess {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px;
+  color: #666;
+}
+
+.limitedAccess p {
+  margin-bottom: 16px;
+}
+
+.pendingRequest {
+  color: #3F51B5;
+  font-style: italic;
+  margin-top: 8px;
+} 

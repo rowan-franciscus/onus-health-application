@@ -1,0 +1,219 @@
+.addPatientContainer {
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.header p {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.addPatientCard {
+  padding: 2rem;
+}
+
+.instructionsSection {
+  margin-bottom: 2rem;
+}
+
+.instructionsSection h2 {
+  color: #6039cc;
+  font-size: 1.3rem;
+  margin: 0 0 1rem 0;
+}
+
+.instructionsSection p {
+  color: #555;
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+}
+
+.accessLevelInfo {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.accessLevelInfo h3 {
+  color: #333;
+  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+}
+
+.infoList {
+  padding-left: 1.5rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.infoList li {
+  margin-bottom: 0.5rem;
+}
+
+.addPatientForm {
+  max-width: 600px;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border 0.2s ease;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #6039cc;
+  box-shadow: 0 0 0 2px rgba(96, 57, 204, 0.2);
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border 0.2s ease;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #6039cc;
+  box-shadow: 0 0 0 2px rgba(96, 57, 204, 0.2);
+}
+
+.inputError {
+  border-color: #dc3545;
+}
+
+.inputError:focus {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.errorMessage {
+  color: #dc3545;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.checkboxContainer {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkboxContainer input {
+  margin-right: 0.75rem;
+  cursor: pointer;
+}
+
+.checkboxLabel {
+  color: #333;
+}
+
+.checkboxHelp {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+  padding-left: 1.5rem;
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cancelButton,
+.submitButton {
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.submitButton {
+  min-width: 150px;
+}
+
+.verificationRequired {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.warningIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #856404;
+}
+
+.verificationRequired h2 {
+  color: #6039cc;
+  margin-bottom: 1rem;
+}
+
+.verificationRequired p {
+  color: #555;
+  margin-bottom: 2rem;
+  max-width: 500px;
+  line-height: 1.5;
+}
+
+.backButton {
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .addPatientContainer {
+    padding: 1.5rem;
+  }
+  
+  .addPatientCard {
+    padding: 1.5rem;
+  }
+  
+  .formActions {
+    flex-direction: column;
+  }
+  
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+  }
+} 

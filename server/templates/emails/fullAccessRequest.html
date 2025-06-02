@@ -1,0 +1,34 @@
+<h1>Healthcare Provider Requesting Full Access</h1>
+
+<p>Hello {{patientName}},</p>
+
+<p>
+  <strong>{{providerName}}</strong> ({{providerSpecialty}}) has requested full access to your medical data on Onus Health.
+</p>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+  <h3 style="margin: 0 0 10px 0; color: #495057;">Access Levels:</h3>
+  <p style="margin: 5px 0;"><strong>Current:</strong> Limited Access - Provider can only see consultations and records they create for you</p>
+  <p style="margin: 5px 0;"><strong>Requested:</strong> Full Access - Provider can see all your medical data, including records from other providers</p>
+</div>
+
+{{#if notes}}
+<p><strong>Provider Notes:</strong> {{notes}}</p>
+{{/if}}
+
+<p>
+  You can approve or deny this request from your Onus Health account. The provider will continue to have limited access until you make a decision.
+</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{frontendUrl}}/patient/connections" class="btn" style="background-color: #6039cc;">
+    Review Request
+  </a>
+</div>
+
+<p>
+  If you approve this request, {{providerName}} will be able to view all your medical records, consultations, and health data from other providers. If you deny it, they will continue with limited access only.
+</p>
+
+<p>
+  You can revoke access at any time from your Connections page. 

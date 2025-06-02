@@ -1,0 +1,157 @@
+.container {
+  padding: 30px;
+  background-color: #f9f9f9;
+  min-height: calc(100vh - 120px);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.backLink {
+  color: #333;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+  display: inline-block;
+}
+
+.backLink:hover {
+  color: #5e17eb;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+}
+
+.viewButton {
+  color: #5e17eb;
+  border: 1px solid #5e17eb;
+  background-color: transparent;
+}
+
+.viewButton:hover {
+  background-color: rgba(94, 23, 235, 0.05);
+}
+
+.editButton {
+  color: #2196f3;
+  border: 1px solid #2196f3;
+  background-color: transparent;
+}
+
+.editButton:hover {
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.deleteButton {
+  color: #d32f2f;
+  border: 1px solid #d32f2f;
+  background-color: transparent;
+}
+
+.deleteButton:hover {
+  background-color: rgba(211, 47, 47, 0.05);
+}
+
+.content {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 32px;
+}
+
+.section {
+  margin-bottom: 36px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 24px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px 40px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.value {
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 200px);
+  font-size: 16px;
+}
+
+.errorContainer {
+  color: #d32f2f;
+}
+
+.modalContent {
+  padding: 16px 0;
+}
+
+.warningText {
+  color: #d32f2f;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+} 

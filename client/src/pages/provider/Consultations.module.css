@@ -1,0 +1,86 @@
+.consultationsContainer {
+  padding: 20px;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.titleSection h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.titleSection p {
+  color: #666;
+  margin: 0;
+}
+
+.filterCard {
+  margin-bottom: 20px;
+  padding: 15px;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.tableCard {
+  padding: 0;
+  overflow: hidden;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 50px 0;
+  color: #666;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+}
+
+/* Status colors */
+.status-completed {
+  color: #388e3c;
+  background-color: rgba(76, 175, 80, 0.1);
+  border-radius: 15px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-pending {
+  color: #f57c00;
+  background-color: rgba(255, 152, 0, 0.1);
+  border-radius: 15px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-cancelled {
+  color: #d32f2f;
+  background-color: rgba(244, 67, 54, 0.1);
+  border-radius: 15px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+} 

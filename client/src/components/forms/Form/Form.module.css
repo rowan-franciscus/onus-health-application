@@ -1,0 +1,86 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Horizontal layout styles */
+.horizontal .formItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.horizontal .label {
+  flex: 0 0 var(--label-width, 180px);
+  max-width: var(--label-width, 180px);
+  padding-top: 8px;
+  padding-right: var(--spacing-md);
+}
+
+.horizontal .control {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Form item styles */
+.formItem {
+  margin-bottom: var(--spacing-md);
+  width: 100%;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.required {
+  color: var(--error-color);
+  margin-left: var(--spacing-xs);
+}
+
+.control {
+  position: relative;
+  width: 100%;
+}
+
+.error {
+  color: var(--error-color);
+  font-size: var(--font-size-small);
+  margin-top: var(--spacing-xs);
+}
+
+.hint {
+  color: var(--text-light);
+  font-size: var(--font-size-small);
+  margin-top: var(--spacing-xs);
+}
+
+/* Form Group styles */
+.formGroup {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: #fafafa;
+}
+
+.groupTitle {
+  font-size: var(--font-size-medium);
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.groupDescription {
+  color: var(--text-light);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-normal);
+}
+
+.groupContent {
+  display: flex;
+  flex-direction: column;
+} 

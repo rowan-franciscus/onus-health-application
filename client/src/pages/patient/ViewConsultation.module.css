@@ -1,0 +1,365 @@
+.consultationContainer {
+  padding: 1.5rem;
+  max-width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.titleSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.backLink {
+  color: #6039cc;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  display: inline-block;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.header h1 {
+  color: #333;
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.downloadButton {
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.downloadButton:hover {
+  background-color: #4c2da3;
+}
+
+.downloadButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.consultationSummary {
+  margin-bottom: 1.5rem;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.5rem;
+}
+
+.summaryItem h3 {
+  color: #6039cc;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.summaryItem p {
+  color: #333;
+  font-size: 1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.consultationDetails {
+  margin-bottom: 2rem;
+}
+
+.tabsContainer {
+  margin-bottom: 1.5rem;
+}
+
+.tabContent {
+  padding: 1rem 0;
+}
+
+/* General Info Styles */
+.generalInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.infoItem h3 {
+  color: #6039cc;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.infoItem p {
+  color: #333;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.observationsSection {
+  margin-top: 1rem;
+}
+
+.observationsSection h3 {
+  color: #6039cc;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.observationsSection p {
+  color: #333;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Vitals Info Styles */
+.vitalsInfo {
+  margin-bottom: 1.5rem;
+}
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.vitalItem {
+  background-color: #f9f7fe;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.vitalItem h3 {
+  color: #6039cc;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.vitalItem p {
+  color: #333;
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Medications, Immunizations, Lab Results Styles */
+.medicationsInfo,
+.immunizationsInfo,
+.labResultsInfo,
+.radiologyInfo,
+.hospitalInfo,
+.surgeryInfo,
+.filesInfo {
+  margin-bottom: 1.5rem;
+}
+
+.medicationsList,
+.immunizationsList,
+.labResultsList,
+.radiologyList,
+.hospitalList,
+.surgeryList,
+.filesList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.medicationItem,
+.immunizationItem,
+.labResultItem,
+.radiologyItem,
+.hospitalItem,
+.surgeryItem,
+.fileItem {
+  background-color: #f9f7fe;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.medicationItem h3,
+.immunizationItem h3,
+.labResultItem h3,
+.radiologyItem h3,
+.hospitalItem h3,
+.surgeryItem h3,
+.fileItem h3 {
+  color: #333;
+  font-size: 1.1rem;
+  margin: 0 0 1rem 0;
+}
+
+.medicationDetails,
+.immunizationDetails,
+.labResultDetails,
+.radiologyDetails,
+.hospitalDetails,
+.surgeryDetails {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.medicationDetail,
+.immunizationDetail,
+.labResultDetail,
+.radiologyDetail,
+.hospitalDetail,
+.surgeryDetail {
+  font-size: 0.95rem;
+  color: #444;
+}
+
+.medicationDetail span,
+.immunizationDetail span,
+.labResultDetail span,
+.radiologyDetail span,
+.hospitalDetail span,
+.surgeryDetail span {
+  color: #6039cc;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+/* Files Styles */
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.fileIcon {
+  background-color: #e6e1f9;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileIcon img {
+  width: 30px;
+  height: 30px;
+}
+
+.fileDetails {
+  flex: 1;
+}
+
+.fileDetails h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.fileInfo {
+  display: flex;
+  gap: 1.5rem;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* No Data State */
+.noData {
+  text-align: center;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
+}
+
+/* Error State */
+.error {
+  background-color: #fff0f0;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: #e53e3e;
+}
+
+.backToListLink {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #6039cc;
+  text-decoration: none;
+}
+
+.backToListLink:hover {
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .summaryGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .infoGrid,
+  .vitalsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .medicationDetails,
+  .immunizationDetails,
+  .labResultDetails {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .summaryGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .fileItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .fileInfo {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .summaryGrid,
+  .infoGrid,
+  .vitalsGrid {
+    grid-template-columns: 1fr;
+  }
+} 

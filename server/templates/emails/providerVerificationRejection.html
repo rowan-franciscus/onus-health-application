@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Provider Verification Status</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo {
+      max-width: 150px;
+    }
+    h1 {
+      color: #6434e0;
+      margin-top: 0;
+    }
+    .content {
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+    .reason-box {
+      background-color: #f0f0f0;
+      border-left: 4px solid #6434e0;
+      padding: 15px;
+      margin: 20px 0;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #6434e0;
+      color: white;
+      padding: 12px 25px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #777;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://onushealth.com/logo.png" alt="Onus Health Logo" class="logo">
+      <h1>Provider Verification Update</h1>
+    </div>
+    
+    <div class="content">
+      <p>Hello {{providerName}},</p>
+      
+      <p>Thank you for your interest in joining Onus Health as a verified healthcare provider.</p>
+      
+      <p>After reviewing your application, we regret to inform you that your provider verification request has not been approved at this time.</p>
+      
+      <div class="reason-box">
+        <p><strong>Reason:</strong> {{rejectionReason}}</p>
+      </div>
+      
+      <p>You may address the issues mentioned above and resubmit your profile for verification, or contact our support team for more information and assistance.</p>
+      
+      <a href="{{contactLink}}" class="btn">Contact Support</a>
+      
+      <p>We appreciate your understanding and hope to welcome you as a verified provider in the future.</p>
+    </div>
+    
+    <div class="footer">
+      <p>This is an automated message from {{appName}}.</p>
+      <p>If you have any questions, please contact us at {{supportEmail}}.</p>
+    </div>
+  </div>
+</body>
+</html> 

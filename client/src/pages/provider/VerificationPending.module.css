@@ -1,0 +1,187 @@
+.container {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #f7f9fc;
+  overflow-y: auto;
+  background-image: url('../../assets/patterns/medical-pattern-light.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo img {
+  height: 2.5rem;
+}
+
+.logo h1 {
+  font-size: 1.75rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.card {
+  max-width: 750px;
+  width: 90%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem;
+  text-align: center;
+  margin: 2rem auto;
+  overflow-y: visible;
+}
+
+.iconContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f0ecfe;
+  color: #6c5ce7;
+}
+
+.title {
+  font-size: 1.75rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.message {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.details {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.alert {
+  background-color: #fff4eb;
+  border-left: 4px solid #ff9800;
+  color: #663c00;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  text-align: left;
+  border-radius: 4px;
+  line-height: 1.5;
+}
+
+.nextSteps {
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.nextStepsTitle {
+  font-size: 1.25rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.nextStepsList {
+  padding-left: 1.25rem;
+  color: #555;
+}
+
+.nextStepsList li {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.buttonContainer {
+  margin-top: 1.5rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #6c5ce7;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #5a4fcf;
+}
+
+@media (max-width: 768px) {
+  .card {
+    padding: 1.5rem;
+    width: 95%;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .message {
+    font-size: 1rem;
+  }
+  
+  .nextSteps {
+    padding: 1rem;
+  }
+  
+  .logo h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: 100%;
+    padding: 1rem;
+    margin: 1rem auto;
+    border-radius: 0;
+  }
+  
+  .header {
+    padding: 1rem 0;
+  }
+  
+  .logo img {
+    height: 2rem;
+  }
+  
+  .logo h1 {
+    font-size: 1.25rem;
+  }
+} 

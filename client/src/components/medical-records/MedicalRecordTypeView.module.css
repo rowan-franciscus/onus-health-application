@@ -1,0 +1,104 @@
+.container {
+  padding: 2rem;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.backLink {
+  color: #6A26F1;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  color: #5718D1;
+  text-decoration: underline;
+}
+
+.searchCard {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+}
+
+.searchBox {
+  width: 100%;
+}
+
+.recordsCard {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.recordsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.recordsTable th {
+  background-color: #f8f8f8;
+  color: #444;
+  font-weight: 600;
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #eee;
+}
+
+.recordsTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.recordsTable tr:hover td {
+  background-color: #f5f3ff;
+}
+
+.noRecords, .error {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  font-size: 1rem;
+}
+
+.error {
+  color: #e53935;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header h1 {
+    margin-bottom: 0.5rem;
+  }
+
+  .recordsTable th, 
+  .recordsTable td {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+} 

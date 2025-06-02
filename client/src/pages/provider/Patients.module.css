@@ -1,0 +1,303 @@
+.patientsContainer {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.titleSection h1 {
+  color: #333;
+  font-size: 1.8rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.titleSection p {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.actionSection {
+  display: flex;
+  align-items: center;
+}
+
+.addPatientBtn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.patientsCard {
+  padding: 1.5rem;
+}
+
+.filterSection {
+  margin-bottom: 1.5rem;
+}
+
+.searchContainer {
+  margin-bottom: 1rem;
+}
+
+.categoriesContainer {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.categoryButton {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.categoryButton:hover {
+  background-color: #f0ebfd;
+  color: #6039cc;
+}
+
+.categoryButton.active {
+  background-color: #6039cc;
+  color: white;
+  font-weight: 500;
+}
+
+.patientsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr 2fr 2fr 3fr 2fr;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #f9f7fe;
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  color: #333;
+}
+
+.tableBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr 2fr 2fr 3fr 2fr;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  align-items: center;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background-color: #f9f7fe;
+}
+
+.colName,
+.colId,
+.colAge,
+.colAccess,
+.colPhone,
+.colEmail,
+.colActions {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.colId,
+.colAge {
+  color: #666;
+}
+
+.patientNameContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.patientName {
+  font-weight: 500;
+  color: #333;
+}
+
+.fullBadge {
+  background: #28a745;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.limitedBadge {
+  background: #ffc107;
+  color: #856404;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.pendingBadge {
+  background: #17a2b8;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.viewDetailsButton,
+.newConsultationButton,
+.requestAccessButton {
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.viewDetailsButton {
+  background-color: #6039cc;
+  color: white;
+}
+
+.viewDetailsButton:hover {
+  background-color: #4c2da3;
+  color: white;
+}
+
+.newConsultationButton {
+  background-color: #28a745;
+  color: white;
+}
+
+.newConsultationButton:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.requestAccessButton {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.requestAccessButton:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.newConsultationButton:disabled,
+.requestAccessButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading,
+.noResults {
+  text-align: center;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 3fr 1fr 1fr 2fr 3fr 2fr;
+  }
+  
+  .colPhone {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 3fr 1fr 2fr 2fr;
+  }
+  
+  .colAge,
+  .colEmail {
+    display: none;
+  }
+  
+  .categoriesContainer {
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    flex-wrap: nowrap;
+  }
+  
+  .categoryButton {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 3fr 2fr 2fr;
+  }
+  
+  .colId {
+    display: none;
+  }
+  
+  .actionButtons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .viewDetailsButton,
+  .newConsultationButton,
+  .requestAccessButton {
+    width: 100%;
+  }
+} 

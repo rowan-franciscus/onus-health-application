@@ -1,0 +1,141 @@
+.medicalRecordsContainer {
+  padding: 20px;
+  width: 100%;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.titleSection h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.titleSection p {
+  color: #666;
+  margin: 0;
+}
+
+.contentCard {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tabsContainer {
+  padding: 0 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.filtersContainer {
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.tableContainer {
+  padding: 0;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 50px 0;
+  color: #666;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+}
+
+/* Styles for categories view */
+.container {
+  padding: 20px;
+  max-width: 1200px;
+}
+
+.container h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.container p {
+  color: #666;
+  margin: 0 0 20px 0;
+}
+
+.recordsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.recordCard {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recordCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.iconContainer {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f0f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+}
+
+.recordName {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+  color: #333;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .recordsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .recordsGrid {
+    grid-template-columns: 1fr;
+  }
+} 

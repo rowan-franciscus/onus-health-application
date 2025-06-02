@@ -1,0 +1,48 @@
+services:
+  # Backend service
+  - type: web
+    name: onus-health-backend
+    runtime: node
+    region: fra # Frankfurt region (closest to Namibia for lowest latency)
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        sync: false # Will be set after frontend is deployed
+      - key: MONGODB_ATLAS_URI
+        sync: false # Set from dashboard
+      - key: JWT_SECRET
+        sync: false # Set from dashboard
+      - key: JWT_REFRESH_SECRET
+        sync: false # Set from dashboard
+      - key: SENDGRID_API_KEY
+        sync: false # Set from dashboard
+      - key: EMAIL_FROM
+        value: no-reply@onus.health
+      - key: SESSION_TIMEOUT
+        value: "30"
+
+  # Frontend service
+  - type: web
+    name: onus-health-frontend
+    runtime: static
+    region: fra # Frankfurt region
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        sync: false # Will be set after backend is deployed
+      - key: REACT_APP_SESSION_TIMEOUT
+        value: "1800000"

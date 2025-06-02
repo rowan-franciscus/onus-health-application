@@ -1,0 +1,347 @@
+.dashboardContainer {
+  padding: 1.5rem;
+  max-width: 100%;
+}
+
+.welcomeSection {
+  margin-bottom: 2rem;
+}
+
+.welcomeSection h1 {
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
+}
+
+.welcomeSection p {
+  color: #666;
+  font-size: 1rem;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+/* Card stylings */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.cardHeader h2 {
+  color: #6039cc;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.viewAllLink {
+  color: #6039cc;
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.viewAllLink:hover {
+  text-decoration: underline;
+}
+
+/* Vitals Card */
+.vitalsCard {
+  grid-column: 1 / 2;
+}
+
+.vitalsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.vitalItem {
+  background-color: #f9f7fe;
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.vitalItem h3 {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+}
+
+.vitalItem p {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+  margin: 0;
+}
+
+.lastUpdated {
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: #999;
+  text-align: right;
+}
+
+/* Consultations Card */
+.consultationsCard {
+  grid-column: 2 / 3;
+  grid-row: 1 / 3;
+}
+
+.consultationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.consultationItem {
+  display: flex;
+  background-color: #f9f7fe;
+  border-radius: 8px;
+  padding: 1rem;
+  align-items: center;
+  gap: 1rem;
+}
+
+.consultationDate {
+  background-color: #6039cc;
+  color: white;
+  border-radius: 6px;
+  padding: 0.5rem;
+  text-align: center;
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+
+.consultationDetails {
+  flex: 1;
+}
+
+.consultationDetails h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.consultationDetails p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.viewButton {
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.viewButton:hover {
+  background-color: #4c2da3;
+}
+
+/* Providers Card */
+.providersCard {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+}
+
+.providersList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.providerItem {
+  background-color: #f9f7fe;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.providerInfo h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.providerInfo p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.providerActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.acceptButton,
+.rejectButton {
+  flex: 1;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: none;
+}
+
+.acceptButton {
+  background-color: #6039cc;
+  color: white;
+}
+
+.acceptButton:hover {
+  background-color: #4c2da3;
+}
+
+.rejectButton {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.rejectButton:hover {
+  background-color: #e0e0e0;
+}
+
+.noRequests {
+  text-align: center;
+  padding: 2rem 0;
+  color: #999;
+  font-style: italic;
+}
+
+/* Medical Records Card */
+.medicalRecordsCard {
+  grid-column: 1 / 3;
+  grid-row: 3 / 4;
+}
+
+.recordsGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1rem;
+}
+
+.recordType {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  color: #333;
+  gap: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.recordType:hover {
+  transform: translateY(-3px);
+}
+
+.recordIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  background-color: #f0ebff;
+  border-radius: 50%;
+}
+
+.recordIcon img {
+  width: 40px;
+  height: 40px;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 0;
+  color: #999;
+  font-style: italic;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .vitalsCard,
+  .consultationsCard,
+  .providersCard,
+  .medicalRecordsCard {
+    grid-column: 1;
+  }
+  
+  .consultationsCard {
+    grid-row: auto;
+  }
+  
+  .recordsGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .vitalsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .recordsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.noData {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.noData p {
+  margin: 0.5rem 0;
+}
+
+.hint {
+  font-size: 0.9rem;
+  color: #888;
+  max-width: 80%;
+}
+
+.errorMessage {
+  background-color: #fff5f5;
+  border: 1px solid #ffcccc;
+  color: #e53e3e;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.retryButton {
+  margin-left: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+} 

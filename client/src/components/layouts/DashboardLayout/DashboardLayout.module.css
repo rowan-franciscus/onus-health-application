@@ -1,0 +1,153 @@
+/* Dashboard Layout Styles */
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../../../assets/fonts/DMSans-VariableFont_opsz\,wght.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('../../../assets/fonts/DMSans-Italic-VariableFont_opsz\,wght.ttf') format('truetype');
+  font-weight: normal;
+  font-style: italic;
+}
+
+.dashboardLayout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  font-family: 'DM Sans', sans-serif;
+  overflow: hidden;
+  background-color: #f9f9fb;
+}
+
+.sidebar {
+  width: 250px;
+  min-width: 250px;
+  height: 100%;
+  background-color: #5930e5;
+  color: white;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.mainContent {
+  flex: 1;
+  padding-left: 250px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.header {
+  height: 80px;
+  padding: 0 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  background-color: white;
+  z-index: 5;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Logo styles */
+.logoContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  padding: 0 20px;
+}
+
+.logoImage {
+  height: 35px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logoText {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-250px);
+  }
+  
+  .mainContent {
+    padding-left: 0;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
+/* Transition for page changes */
+.content {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.nav {
+  padding: var(--spacing-md) 0;
+}
+
+.navItem {
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.8);
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.navItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  text-decoration: none;
+}
+
+.navItemActive {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.navIcon {
+  margin-right: var(--spacing-md);
+}
+
+.pageTitle {
+  font-size: var(--font-size-large);
+  font-weight: 500;
+}
+
+.userMenu {
+  display: flex;
+  align-items: center;
+}
+
+.userName {
+  margin-right: var(--spacing-md);
+} 

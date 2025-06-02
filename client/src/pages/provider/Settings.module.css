@@ -1,0 +1,97 @@
+.settingsContainer {
+  padding: 20px;
+  width: 100%;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.titleSection h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.titleSection p {
+  color: #666;
+  margin: 0;
+}
+
+.cardHeader {
+  margin-bottom: 20px;
+}
+
+.cardHeader h2 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.cardHeader p {
+  color: #666;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.formItem {
+  margin-bottom: 15px;
+}
+
+.formActions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.changePasswordCard,
+.notificationsCard,
+.dangerZoneCard {
+  margin-bottom: 20px;
+  padding: 20px;
+}
+
+.dangerZoneCard {
+  border-color: #ffebee;
+}
+
+.deleteWarning {
+  margin-bottom: 20px;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkboxLabel input {
+  margin-right: 10px;
+}
+
+.checkboxLabel span {
+  font-size: 0.95rem;
+}
+
+.deleteModalContent {
+  padding: 15px;
+}
+
+.deleteModalContent p {
+  margin-bottom: 15px;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+} 

@@ -1,0 +1,134 @@
+.multiStepForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.steps {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  position: relative;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.steps::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  margin: 0 10px;
+}
+
+.stepIndicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #fff;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.active .stepIndicator {
+  background-color: #6c5ce7;
+  color: white;
+}
+
+.completed .stepIndicator {
+  background-color: #6c5ce7;
+  color: white;
+}
+
+.stepNumber {
+  font-size: 0.75rem;
+}
+
+.stepCheckmark {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.stepContent {
+  display: none;
+}
+
+.currentStep {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.currentStep h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.stepTitle {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepDescription {
+  font-size: var(--font-size-small);
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepConnector {
+  position: absolute;
+  top: 14px;
+  height: 2px;
+  background-color: #e0e0e0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}
+
+.completed .stepConnector,
+.active .stepConnector {
+  background-color: #6c5ce7;
+}
+
+.stepBody {
+  padding: 0;
+  flex: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .steps {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    justify-content: flex-start; /* For proper mobile display of steps */
+    padding-left: 1rem;
+    padding-right: 1rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    width: calc(100% + 2rem);
+  }
+  
+  .stepIndicator {
+    margin: 0 0.5rem;
+  }
+} 

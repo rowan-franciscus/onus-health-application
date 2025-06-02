@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="13.475" height="20" viewBox="0 0 13.475 20">
+  <g id="surgical_sterilization" transform="translate(-11.05 -4)">
+    <path id="Path_242" data-name="Path 242" d="M23.093,20.324A2,2,0,1,0,24,22.015l.112-2.009h.777L25,22.015a2,2,0,1,0,.907-1.691L25,4l-.5.028L24,4Zm1.74-1.318L24.5,13.028l-.333,5.978ZM25,11.018a.5.5,0,1,1-.5-.5A.5.5,0,0,1,25,11.018ZM21,22a1,1,0,1,1,1,1A1,1,0,0,1,21,22Zm6-1a1,1,0,1,0,1,1A1,1,0,0,0,27,21Z" transform="translate(-4.475)" fill="#9c8eeb" fill-rule="evenodd"/>
+    <path id="Path_243" data-name="Path 243" d="M13.025,9.5V4s-1.739,1.13-1.974,5.5a.961.961,0,0,0,.974,1A1,1,0,0,0,13.025,9.5Z" fill="#9c8eeb"/>
+    <path id="Path_244" data-name="Path 244" d="M12,19.75a.75.75,0,0,1,1.5,0v.043l-1.5,1.5Z" transform="translate(-0.475 -7.5)" fill="#9c8eeb"/>
+    <path id="Path_245" data-name="Path 245" d="M12,24.914v.836l1.5-1.5v-.836Z" transform="translate(-0.475 -9.707)" fill="#9c8eeb"/>
+    <path id="Path_246" data-name="Path 246" d="M12,30.25v-.836l1.5-1.5v.836Z" transform="translate(-0.475 -11.957)" fill="#9c8eeb"/>
+    <path id="Path_247" data-name="Path 247" d="M12,33.914v3.543a.75.75,0,0,0,1.5,0V32.414Z" transform="translate(-0.475 -14.207)" fill="#9c8eeb"/>
+  </g>
+</svg>

@@ -1,0 +1,32 @@
+<h1>New Healthcare Provider Connection</h1>
+
+<p>Hello {{patientName}},</p>
+
+<p>
+  <strong>{{providerName}}</strong> ({{providerSpecialty}}) has connected with you on Onus Health and created a new consultation.
+</p>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+  <h3 style="margin: 0 0 10px 0; color: #495057;">Connection Details:</h3>
+  <p style="margin: 5px 0;"><strong>Provider:</strong> {{providerName}}</p>
+  <p style="margin: 5px 0;"><strong>Specialty:</strong> {{providerSpecialty}}</p>
+  <p style="margin: 5px 0;"><strong>Access Level:</strong> Limited Access</p>
+</div>
+
+<p>
+  This provider currently has <strong>limited access</strong> to your medical records. This means they can only view consultations and medical records that they create for you. They cannot see your other medical data or records from other providers.
+</p>
+
+<p>
+  If you would like this provider to have full access to all your medical data, you can approve their request from your Connections page.
+</p>
+
+<div style="text-align: center; margin: 30px 0;">
+  <a href="{{frontendUrl}}/patient/connections" class="btn" style="background-color: #6039cc;">
+    Manage Connections
+  </a>
+</div>
+
+<p>
+  You can manage all your healthcare provider connections and change access levels at any time from your account.
+</p> 

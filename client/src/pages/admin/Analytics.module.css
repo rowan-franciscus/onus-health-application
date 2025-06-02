@@ -1,0 +1,199 @@
+.analyticsContainer {
+  padding: 24px;
+  width: 100%;
+}
+
+.analyticsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.analyticsHeader h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.dateRangeText {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.metricSelector {
+  min-width: 180px;
+}
+
+.selectControl {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  color: #333;
+  background-color: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.dateRangeContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.datePickerWrapper {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 4px 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.datePicker {
+  border: none;
+  outline: none;
+  padding: 8px 0;
+  font-family: 'DM Sans', sans-serif;
+  color: #333;
+}
+
+.dateRangeSeparator {
+  margin: 0 8px;
+  color: #666;
+}
+
+.refreshButton {
+  background-color: #6236ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.refreshButton:hover {
+  background-color: #5020e0;
+}
+
+.metricsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.metricSection {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.metricSection h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 24px 0;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.metricCard {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metricValue {
+  font-size: 28px;
+  font-weight: 600;
+  color: #6236ff;
+  margin: 0 0 8px 0;
+}
+
+.metricTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin: 0 0 4px 0;
+}
+
+.metricSubtext {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  color: #666;
+}
+
+.errorContainer {
+  color: #e53935;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 1200px) {
+  .metricsGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .analyticsHeader {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .controls {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .metricSelector,
+  .dateRangeContainer,
+  .datePickerWrapper,
+  .refreshButton {
+    width: 100%;
+  }
+  
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+} 

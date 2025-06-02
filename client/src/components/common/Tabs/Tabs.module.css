@@ -1,0 +1,44 @@
+.tabsContainer {
+  margin-bottom: 1.5rem;
+}
+
+.tabsList {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.tabsList::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.tabButton {
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #666;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tabButton:hover {
+  color: #6039cc;
+}
+
+.active {
+  color: #6039cc;
+  border-bottom-color: #6039cc;
+}
+
+@media (max-width: 768px) {
+  .tabButton {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+} 

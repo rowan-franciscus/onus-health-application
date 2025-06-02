@@ -1,0 +1,72 @@
+.profileContainer {
+  padding: 20px;
+  width: 100%;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.titleSection h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.titleSection p {
+  color: #666;
+  margin: 0;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 992px) {
+  .contentGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.cardHeader {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.cardHeader h2 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+@media (min-width: 768px) {
+  .formRow {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.formActions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  padding: 20px;
+} 

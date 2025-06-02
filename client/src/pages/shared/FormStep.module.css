@@ -1,0 +1,291 @@
+.stepContainer {
+  width: 100%;
+}
+
+.stepHeading {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #333;
+  text-align: center;
+}
+
+.subHeading {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 1.5rem 0 1rem 0;
+  color: #444;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.required::after {
+  content: '*';
+  color: #6c5ce7;
+  margin-left: 0.25rem;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  background-color: #fff;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  border-color: #6c5ce7;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.error {
+  color: #e74c3c;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.buttonPrimary {
+  background-color: #6c5ce7;
+  color: white;
+}
+
+.buttonPrimary:hover {
+  background-color: #5a4fcf;
+}
+
+.buttonSecondary {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.buttonSecondary:hover {
+  background-color: #e5e5e5;
+}
+
+.buttonDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.formRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.formCol {
+  flex: 1;
+  min-width: 0; /* Prevent flex items from growing beyond their container */
+}
+
+.fieldDescription {
+  color: #666;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.uploadButton {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #f1f1f1;
+  color: #333;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.uploadButton:hover {
+  background-color: #e5e5e5;
+}
+
+.fileInput {
+  display: none;
+}
+
+.filePreview {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.removeFileButton {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.checkboxGroup {
+  margin-bottom: 1rem;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.checkbox input {
+  margin-right: 0.5rem;
+}
+
+.radioGroup {
+  margin-bottom: 1rem;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.radio input {
+  margin-right: 0.5rem;
+}
+
+/* Review Step Styles */
+.reviewIntro {
+  margin-bottom: 2rem;
+  color: #555;
+  text-align: center;
+}
+
+.reviewSection {
+  margin-bottom: 1.5rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.reviewSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background-color: #f8f8f8;
+  border-bottom: 1px solid #eee;
+}
+
+.reviewSectionTitle {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 0;
+  color: #333;
+}
+
+.editButton {
+  background: none;
+  border: none;
+  color: #6c5ce7;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.editButton:hover {
+  text-decoration: underline;
+}
+
+.reviewSectionContent {
+  padding: 1rem;
+}
+
+.reviewItem {
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.reviewItemLabel {
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.reviewItemValue {
+  color: #333;
+  word-break: break-word;
+}
+
+.privacyConsent {
+  margin: 2rem 0;
+  padding: 1rem;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  border-left: 4px solid #6c5ce7;
+}
+
+.privacyConsent p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .formRow {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .buttonGroup {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+    width: 100%;
+  }
+  
+  .button {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .reviewItem {
+    margin-bottom: 1rem;
+  }
+} 

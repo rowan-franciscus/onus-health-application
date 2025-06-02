@@ -1,0 +1,28 @@
+.status {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.completed {
+  background-color: rgba(142, 142, 147, 0.15);
+  color: #6c757d;
+}
+
+.uptodate {
+  background-color: rgba(46, 204, 113, 0.15);
+  color: #27ae60;
+}
+
+.upcoming {
+  background-color: rgba(241, 196, 15, 0.15);
+  color: #f39c12;
+}
+
+.overdue {
+  background-color: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+} 

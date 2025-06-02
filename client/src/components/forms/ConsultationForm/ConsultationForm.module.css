@@ -1,0 +1,82 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tabContent {
+  padding: 1.5rem;
+  min-height: 300px;
+}
+
+.fileUploadSection {
+  padding: 1.5rem;
+  border-top: 1px solid #eee;
+}
+
+.fileUploadSection h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.fileUploadSection p {
+  margin: 0 0 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.attachmentsList {
+  margin-top: 1.5rem;
+}
+
+.attachmentsList h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.fileList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  background-color: #f9f7fe;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+.fileName {
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.fileSize {
+  color: #666;
+  margin: 0 1rem;
+  font-size: 0.85rem;
+}
+
+.removeButton {
+  color: #f44336;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.5rem;
+  gap: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.saveDraftButton,
+.submitButton {
+  min-width: 120px;
+} 

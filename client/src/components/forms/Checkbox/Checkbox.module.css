@@ -1,0 +1,86 @@
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  margin-bottom: var(--spacing-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.input {
+  position: absolute;
+  opacity: 0;
+  height: 0;
+  width: 0;
+  cursor: pointer;
+}
+
+.control {
+  position: relative;
+  flex: 0 0 20px;
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.control:after {
+  content: '';
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.input:checked ~ .control {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.input:checked ~ .control:after {
+  display: block;
+}
+
+.input:focus ~ .control {
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+}
+
+.label {
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-normal);
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.disabled .control {
+  background-color: #f5f5f5;
+  border-color: var(--border-color);
+}
+
+.disabled .label {
+  color: var(--text-light);
+}
+
+.input:disabled:checked ~ .control {
+  background-color: #ccc;
+  border-color: #ccc;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+} 

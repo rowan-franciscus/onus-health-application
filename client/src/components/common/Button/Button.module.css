@@ -1,0 +1,104 @@
+.button {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+/* Variants */
+.primary {
+  background-color: #6039cc;
+  color: white;
+}
+
+.primary:hover:not(.disabled) {
+  background-color: #4c2da3;
+}
+
+.secondary {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.secondary:hover:not(.disabled) {
+  background-color: #e0e0e0;
+}
+
+.tertiary {
+  background-color: transparent;
+  color: #6039cc;
+  border: 1px solid #6039cc;
+}
+
+.tertiary:hover:not(.disabled) {
+  background-color: rgba(96, 57, 204, 0.05);
+}
+
+.danger {
+  background-color: #e53e3e;
+  color: white;
+}
+
+.danger:hover:not(.disabled) {
+  background-color: #c53030;
+}
+
+/* Sizes */
+.small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.75rem;
+}
+
+.medium {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.9rem;
+}
+
+.large {
+  padding: 0.85rem 1.75rem;
+  font-size: 1rem;
+}
+
+/* Disabled state */
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.outline {
+  background-color: transparent;
+}
+
+.outline.primary {
+  color: var(--primary-color);
+}
+
+.outline.secondary {
+  color: var(--secondary-color);
+}
+
+.outline.success {
+  color: var(--success-color);
+}
+
+.outline.danger {
+  color: var(--error-color);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.icon {
+  margin-right: 0.5rem;
+}
+
+.iconOnly {
+  padding: 0.5rem;
+} 

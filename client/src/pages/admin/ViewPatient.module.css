@@ -1,0 +1,116 @@
+.container {
+  width: 100%;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.backLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #5e35b1;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 28px 0 16px;
+}
+
+.card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.twoColumnGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.field span {
+  font-size: 16px;
+  color: #333;
+}
+
+.fullWidthField {
+  margin-bottom: 16px;
+}
+
+.fullWidthField:last-child {
+  margin-bottom: 0;
+}
+
+.fullWidthField label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.fullWidthField span {
+  display: block;
+  font-size: 16px;
+  color: #333;
+}
+
+.error {
+  background-color: #fee;
+  color: #c00;
+  padding: 16px;
+  border-radius: 8px;
+  margin: 24px;
+  text-align: center;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .twoColumnGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+} 
