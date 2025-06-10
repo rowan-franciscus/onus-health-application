@@ -129,29 +129,54 @@ exports.createConsultation = async (req, res) => {
   session.startTransaction();
   
   try {
+    console.log('=== CONSULTATION CREATION DEBUG START ===');
+    console.log('Request body keys:', Object.keys(req.body));
+    console.log('Request user:', { id: req.user.id, role: req.user.role, email: req.user.email });
+    
     const providerId = req.user.id;
     const { patient, patientEmail, vitals, medication, immunization, labResults, radiology, hospital, surgery, ...consultationData } = req.body;
+    
+    console.log('Extracted data:', {
+      patient,
+      patientEmail,
+      consultationDataKeys: Object.keys(consultationData),
+      vitalsExists: !!vitals,
+      medicationLength: medication?.length,
+      immunizationLength: immunization?.length,
+      labResultsLength: labResults?.length,
+      radiologyLength: radiology?.length,
+      hospitalLength: hospital?.length,
+      surgeryLength: surgery?.length
+    });
     
     let patientId = patient;
     let patientUser;
     
+    console.log('=== PATIENT LOOKUP ===');
     // If patientEmail is provided instead of patient ID, find the patient by email
     if (!patientId && patientEmail) {
+      console.log('Looking up patient by email:', patientEmail);
       patientUser = await User.findOne({ email: patientEmail, role: 'patient' });
       if (!patientUser) {
+        console.log('Patient not found by email');
         await session.abortTransaction();
         return res.status(404).json({ message: 'Patient not found' });
       }
       patientId = patientUser._id;
+      console.log('Patient found by email:', patientUser._id);
     } else {
-    // Check if patient exists
+      console.log('Looking up patient by ID:', patientId);
+      // Check if patient exists
       patientUser = await User.findOne({ _id: patientId, role: 'patient' });
-    if (!patientUser) {
-      await session.abortTransaction();
-      return res.status(404).json({ message: 'Patient not found' });
+      if (!patientUser) {
+        console.log('Patient not found by ID');
+        await session.abortTransaction();
+        return res.status(404).json({ message: 'Patient not found' });
       }
+      console.log('Patient found by ID:', patientUser._id);
     }
     
+    console.log('=== CONNECTION CHECK ===');
     // Check if connection exists, if not create one with limited access
     let connection = await Connection.findOne({
       patient: patientId,
@@ -159,6 +184,7 @@ exports.createConsultation = async (req, res) => {
     }).session(session);
     
     if (!connection) {
+      console.log('Creating new connection');
       // Create new connection with limited access
       connection = new Connection({
         patient: patientId,
@@ -170,29 +196,42 @@ exports.createConsultation = async (req, res) => {
       });
       
       await connection.save({ session });
+      console.log('Connection created successfully');
       
       // Queue email notification to patient about new connection
       const provider = await User.findById(providerId);
-      await EmailQueue.create([{
-        to: patientUser.email,
-        from: config.emailFrom || 'noreply@onushealth.com',
-        subject: 'New Healthcare Provider Connection',
-        html: `<p>Dear ${patientUser.firstName},</p><p>Your healthcare provider ${provider.firstName} ${provider.lastName} has connected with you on Onus Health and created a new consultation.</p><p>This provider currently has limited access to your medical records (they can only see consultations and records they create for you).</p><p>Please log in to your account to view the consultation and manage provider access.</p>`,
-        template: 'newConnection',
-        templateData: {
-          patientName: `${patientUser.firstName} ${patientUser.lastName}`,
-          providerName: `${provider.firstName} ${provider.lastName}`,
-          providerSpecialty: provider.providerProfile?.specialty || 'Healthcare Provider',
-          accessLevel: 'limited'
-        },
-        userId: patientUser._id
-      }], { session });
+      try {
+        await EmailQueue.create([{
+          to: patientUser.email,
+          from: config.emailFrom || 'noreply@onushealth.com',
+          subject: 'New Healthcare Provider Connection',
+          html: `<p>Dear ${patientUser.firstName},</p><p>Your healthcare provider ${provider.firstName} ${provider.lastName} has connected with you on Onus Health and created a new consultation.</p><p>This provider currently has limited access to your medical records (they can only see consultations and records they create for you).</p><p>Please log in to your account to view the consultation and manage provider access.</p>`,
+          template: 'newConnection',
+          templateData: {
+            patientName: `${patientUser.firstName} ${patientUser.lastName}`,
+            providerName: `${provider.firstName} ${provider.lastName}`,
+            providerSpecialty: provider.providerProfile?.specialty || 'Healthcare Provider',
+            accessLevel: 'limited'
+          },
+          userId: patientUser._id
+        }], { session });
+        console.log('Email queue created successfully');
+      } catch (emailError) {
+        console.error('Error creating email queue:', emailError);
+        // Don't fail for email errors
+      }
       
       // Mark as notified
       connection.patientNotified = true;
       connection.patientNotifiedAt = Date.now();
       await connection.save({ session });
+      console.log('Connection updated with notification status');
+    } else {
+      console.log('Existing connection found:', connection._id);
     }
+    
+    console.log('=== CONSULTATION CREATION ===');
+    console.log('Consultation data before creation:', consultationData);
     
     // Create new consultation
     const consultation = new Consultation({
@@ -202,152 +241,229 @@ exports.createConsultation = async (req, res) => {
       status: consultationData.status || 'draft'
     });
     
+    console.log('Consultation object created, about to save...');
     await consultation.save({ session });
+    console.log('Consultation saved successfully:', consultation._id);
     
+    console.log('=== MEDICAL RECORDS CREATION ===');
     // Now create the individual medical records if data is provided
     // Save Vitals if provided and has data
     if (vitals && Object.values(vitals).some(val => val && (typeof val === 'object' ? val.value : val))) {
-      const vitalsRecord = new VitalsRecord({
-        patient: patientId,
-        provider: providerId,
-        consultation: consultation._id,
-        date: consultation.date,
-        ...vitals
-      });
-      await vitalsRecord.save({ session });
-      
-      // Update consultation with vitals reference
-      consultation.vitals = vitalsRecord._id;
+      console.log('Creating vitals record:', vitals);
+      try {
+        const vitalsRecord = new VitalsRecord({
+          patient: patientId,
+          provider: providerId,
+          consultation: consultation._id,
+          date: consultation.date,
+          ...vitals
+        });
+        await vitalsRecord.save({ session });
+        console.log('Vitals record created:', vitalsRecord._id);
+        
+        // Update consultation with vitals reference
+        consultation.vitals = vitalsRecord._id;
+      } catch (vitalsError) {
+        console.error('Error creating vitals record:', vitalsError);
+        throw vitalsError;
+      }
+    } else {
+      console.log('No vitals data to save');
     }
     
     // Save Medications if provided
     if (medication && Array.isArray(medication) && medication.length > 0) {
-      const medicationRecords = await Promise.all(
-        medication.map(async (med) => {
-          const medicationRecord = new MedicationRecord({
-            patient: patientId,
-            provider: providerId,
-            consultation: consultation._id,
-            date: consultation.date,
-            ...med
-          });
-          await medicationRecord.save({ session });
-          return medicationRecord._id;
-        })
-      );
-      
-      // Update consultation with medication references
-      consultation.medications = medicationRecords;
+      console.log('Creating medication records:', medication.length);
+      try {
+        const medicationRecords = await Promise.all(
+          medication.map(async (med, index) => {
+            console.log(`Creating medication ${index + 1}:`, med);
+            const medicationRecord = new MedicationRecord({
+              patient: patientId,
+              provider: providerId,
+              consultation: consultation._id,
+              date: consultation.date,
+              ...med
+            });
+            await medicationRecord.save({ session });
+            return medicationRecord._id;
+          })
+        );
+        
+        // Update consultation with medication references
+        consultation.medications = medicationRecords;
+        console.log('All medication records created successfully');
+      } catch (medicationError) {
+        console.error('Error creating medication records:', medicationError);
+        throw medicationError;
+      }
+    } else {
+      console.log('No medication data to save');
     }
     
     // Save Immunizations if provided
     if (immunization && Array.isArray(immunization) && immunization.length > 0) {
-      const immunizationRecords = await Promise.all(
-        immunization.map(async (imm) => {
-          const immunizationRecord = new ImmunizationRecord({
-            patient: patientId,
-            provider: providerId,
-            consultation: consultation._id,
-            date: consultation.date,
-            ...imm
-          });
-          await immunizationRecord.save({ session });
-          return immunizationRecord._id;
-        })
-      );
-      
-      // Update consultation with immunization references
-      consultation.immunizations = immunizationRecords;
+      console.log('Creating immunization records:', immunization.length);
+      try {
+        const immunizationRecords = await Promise.all(
+          immunization.map(async (imm, index) => {
+            console.log(`Creating immunization ${index + 1}:`, imm);
+            const immunizationRecord = new ImmunizationRecord({
+              patient: patientId,
+              provider: providerId,
+              consultation: consultation._id,
+              date: consultation.date,
+              ...imm
+            });
+            await immunizationRecord.save({ session });
+            return immunizationRecord._id;
+          })
+        );
+        
+        // Update consultation with immunization references
+        consultation.immunizations = immunizationRecords;
+        console.log('All immunization records created successfully');
+      } catch (immunizationError) {
+        console.error('Error creating immunization records:', immunizationError);
+        throw immunizationError;
+      }
+    } else {
+      console.log('No immunization data to save');
     }
     
     // Save Lab Results if provided
     if (labResults && Array.isArray(labResults) && labResults.length > 0) {
-      const labResultRecords = await Promise.all(
-        labResults.map(async (lab) => {
-          const labResultRecord = new LabResultRecord({
-            patient: patientId,
-            provider: providerId,
-            consultation: consultation._id,
-            date: consultation.date,
-            ...lab
-          });
-          await labResultRecord.save({ session });
-          return labResultRecord._id;
-        })
-      );
-      
-      // Update consultation with lab result references
-      consultation.labResults = labResultRecords;
+      console.log('Creating lab result records:', labResults.length);
+      try {
+        const labResultRecords = await Promise.all(
+          labResults.map(async (lab, index) => {
+            console.log(`Creating lab result ${index + 1}:`, lab);
+            const labResultRecord = new LabResultRecord({
+              patient: patientId,
+              provider: providerId,
+              consultation: consultation._id,
+              date: consultation.date,
+              ...lab
+            });
+            await labResultRecord.save({ session });
+            return labResultRecord._id;
+          })
+        );
+        
+        // Update consultation with lab result references
+        consultation.labResults = labResultRecords;
+        console.log('All lab result records created successfully');
+      } catch (labError) {
+        console.error('Error creating lab result records:', labError);
+        throw labError;
+      }
+    } else {
+      console.log('No lab results data to save');
     }
     
     // Save Radiology Reports if provided
     if (radiology && Array.isArray(radiology) && radiology.length > 0) {
-      const radiologyRecords = await Promise.all(
-        radiology.map(async (rad) => {
-          const radiologyRecord = new RadiologyReport({
-            patient: patientId,
-            provider: providerId,
-            consultation: consultation._id,
-            date: consultation.date,
-            ...rad
-          });
-          await radiologyRecord.save({ session });
-          return radiologyRecord._id;
-        })
-      );
-      
-      // Update consultation with radiology references
-      consultation.radiologyReports = radiologyRecords;
+      console.log('Creating radiology records:', radiology.length);
+      try {
+        const radiologyRecords = await Promise.all(
+          radiology.map(async (rad, index) => {
+            console.log(`Creating radiology ${index + 1}:`, rad);
+            const radiologyRecord = new RadiologyReport({
+              patient: patientId,
+              provider: providerId,
+              consultation: consultation._id,
+              date: consultation.date,
+              ...rad
+            });
+            await radiologyRecord.save({ session });
+            return radiologyRecord._id;
+          })
+        );
+        
+        // Update consultation with radiology references
+        consultation.radiologyReports = radiologyRecords;
+        console.log('All radiology records created successfully');
+      } catch (radiologyError) {
+        console.error('Error creating radiology records:', radiologyError);
+        throw radiologyError;
+      }
+    } else {
+      console.log('No radiology data to save');
     }
     
     // Save Hospital Records if provided
     if (hospital && Array.isArray(hospital) && hospital.length > 0) {
-      const hospitalRecords = await Promise.all(
-        hospital.map(async (hosp) => {
-          const hospitalRecord = new HospitalRecord({
-            patient: patientId,
-            provider: providerId,
-            consultation: consultation._id,
-            date: consultation.date,
-            ...hosp
-          });
-          await hospitalRecord.save({ session });
-          return hospitalRecord._id;
-        })
-      );
-      
-      // Update consultation with hospital references
-      consultation.hospitalRecords = hospitalRecords;
+      console.log('Creating hospital records:', hospital.length);
+      try {
+        const hospitalRecords = await Promise.all(
+          hospital.map(async (hosp, index) => {
+            console.log(`Creating hospital record ${index + 1}:`, hosp);
+            const hospitalRecord = new HospitalRecord({
+              patient: patientId,
+              provider: providerId,
+              consultation: consultation._id,
+              date: consultation.date,
+              ...hosp
+            });
+            await hospitalRecord.save({ session });
+            return hospitalRecord._id;
+          })
+        );
+        
+        // Update consultation with hospital references
+        consultation.hospitalRecords = hospitalRecords;
+        console.log('All hospital records created successfully');
+      } catch (hospitalError) {
+        console.error('Error creating hospital records:', hospitalError);
+        throw hospitalError;
+      }
+    } else {
+      console.log('No hospital data to save');
     }
     
     // Save Surgery Records if provided
     if (surgery && Array.isArray(surgery) && surgery.length > 0) {
-      const surgeryRecords = await Promise.all(
-        surgery.map(async (surg) => {
-          const surgeryRecord = new SurgeryRecord({
-            patient: patientId,
-            provider: providerId,
-            consultation: consultation._id,
-            date: consultation.date,
-            ...surg
-          });
-          await surgeryRecord.save({ session });
-          return surgeryRecord._id;
-        })
-      );
-      
-      // Update consultation with surgery references
-      consultation.surgeryRecords = surgeryRecords;
+      console.log('Creating surgery records:', surgery.length);
+      try {
+        const surgeryRecords = await Promise.all(
+          surgery.map(async (surg, index) => {
+            console.log(`Creating surgery record ${index + 1}:`, surg);
+            const surgeryRecord = new SurgeryRecord({
+              patient: patientId,
+              provider: providerId,
+              consultation: consultation._id,
+              date: consultation.date,
+              ...surg
+            });
+            await surgeryRecord.save({ session });
+            return surgeryRecord._id;
+          })
+        );
+        
+        // Update consultation with surgery references
+        consultation.surgeryRecords = surgeryRecords;
+        console.log('All surgery records created successfully');
+      } catch (surgeryError) {
+        console.error('Error creating surgery records:', surgeryError);
+        throw surgeryError;
+      }
+    } else {
+      console.log('No surgery data to save');
     }
     
+    console.log('=== FINAL CONSULTATION SAVE ===');
     // Save the updated consultation with all the references
     await consultation.save({ session });
+    console.log('Final consultation save successful');
     
+    console.log('=== TRANSACTION COMMIT ===');
     // Commit the transaction
     await session.commitTransaction();
+    console.log('Transaction committed successfully');
     
     // Handle post-transaction operations
     try {
+      console.log('=== POST-TRANSACTION EMAIL QUEUE ===');
       // Queue email notification to patient about new consultation
       const emailQueue = new EmailQueue({
         to: patientUser.email,
@@ -361,11 +477,13 @@ exports.createConsultation = async (req, res) => {
         }
       });
       await emailQueue.save();
+      console.log('Post-transaction email queue created');
     } catch (emailError) {
       console.error('Error queuing email notification:', emailError);
       // Don't fail the whole operation if email fails
     }
     
+    console.log('=== CONSULTATION POPULATION ===');
     // Populate the consultation before sending response
     const populatedConsultation = await Consultation.findById(consultation._id)
       .populate('patient', 'firstName lastName email')
@@ -378,13 +496,20 @@ exports.createConsultation = async (req, res) => {
       .populate('hospitalRecords')
       .populate('surgeryRecords');
     
+    console.log('Consultation populated successfully');
+    console.log('=== CONSULTATION CREATION DEBUG END - SUCCESS ===');
+    
     return res.status(201).json(populatedConsultation);
   } catch (error) {
     // Only abort if transaction hasn't been committed
     if (session.inTransaction()) {
       await session.abortTransaction();
+      console.log('Transaction aborted due to error');
     }
+    console.error('=== CONSULTATION CREATION ERROR ===');
     console.error('Error creating consultation:', error);
+    console.error('Error stack:', error.stack);
+    console.error('=== CONSULTATION CREATION DEBUG END - ERROR ===');
     return res.status(500).json({ message: 'Server error', error: error.message });
   } finally {
     session.endSession();
