@@ -64,7 +64,7 @@ const getConnectionOptions = () => {
         j: true,
         wtimeout: 10000
       },
-      readPreference: 'secondaryPreferred', // Read from secondaries when possible
+      // readPreference is set in connection string to 'primary' for transactions
     };
   }
 

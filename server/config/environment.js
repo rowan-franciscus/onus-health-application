@@ -28,6 +28,13 @@ const getMongoUri = () => {
         }
       }
     }
+    
+    // Ensure readPreference=primary for transactions to work properly
+    if (!uri.includes('readPreference=')) {
+      const separator = uri.includes('?') ? '&' : '?';
+      uri = uri + separator + 'readPreference=primary';
+    }
+    
     return uri;
   }
 
@@ -37,7 +44,7 @@ const getMongoUri = () => {
   const cluster = process.env.MONGODB_ATLAS_CLUSTER;
 
   if (username && password && cluster) {
-    return `mongodb+srv://${username}:${password}@${cluster}.mongodb.net/onus-health?retryWrites=true&w=majority`;
+    return `mongodb+srv://${username}:${password}@${cluster}.mongodb.net/onus-health?retryWrites=true&w=majority&readPreference=primary`;
   }
 
   // Fall back to local MongoDB URI
