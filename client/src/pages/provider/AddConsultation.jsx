@@ -232,6 +232,13 @@ const AddConsultation = () => {
         type: undefined
       }));
       
+      // Filter out empty or invalid attachments
+      const validAttachments = (formData.attachments || []).filter(attachment => 
+        attachment && 
+        typeof attachment === 'object' && 
+        (attachment.filename || attachment.name || attachment.originalName)
+      );
+      
       // Restructure the form data to match backend expectations
       const consultationData = {
         ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
@@ -247,7 +254,7 @@ const AddConsultation = () => {
         radiology: transformedRadiology,
         hospital: transformedHospital,
         surgery: transformedSurgery,
-        attachments: formData.attachments,
+        attachments: validAttachments,
         status: 'draft'
       };
       
@@ -351,6 +358,13 @@ const AddConsultation = () => {
         type: undefined
       }));
       
+      // Filter out empty or invalid attachments
+      const validAttachments = (formData.attachments || []).filter(attachment => 
+        attachment && 
+        typeof attachment === 'object' && 
+        (attachment.filename || attachment.name || attachment.originalName)
+      );
+      
       // Restructure the form data to match backend expectations
       const consultationData = {
         ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
@@ -366,7 +380,7 @@ const AddConsultation = () => {
         radiology: transformedRadiology,
         hospital: transformedHospital,
         surgery: transformedSurgery,
-        attachments: formData.attachments,
+        attachments: validAttachments,
         status: 'completed'
       };
       
