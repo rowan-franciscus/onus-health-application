@@ -15,6 +15,18 @@ dotenv.config();
 
 // Import custom configuration
 const config = require('./config/environment');
+
+// Basic environment validation for production
+if (config.env === 'production') {
+  const requiredEnvVars = ['MONGODB_ATLAS_URI', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  
+  if (missingVars.length > 0) {
+    console.error('Missing required environment variables:', missingVars.join(', '));
+    console.error('Please set these variables in your Render dashboard');
+    // Don't exit in production, just log the warning
+  }
+}
 const logger = require('./utils/logger');
 const database = require('./utils/database');
 const connectionMonitor = require('./utils/connectionMonitor');
@@ -37,41 +49,35 @@ app.disable('etag');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS configuration with better error handling
-const corsOptions = {
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: false,
-  optionsSuccessStatus: 200,
-  preflightContinue: false
-};
+// CORS configuration - simplified and robust
+let corsOptions;
 
 if (config.env === 'development') {
   // More permissive CORS settings in development for debugging
-  corsOptions.origin = '*';
+  corsOptions = {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: false,
+    optionsSuccessStatus: 200
+  };
   logger.info('Development mode: CORS configured to allow all origins');
 } else {
-  // Production CORS with proper origin validation
-  corsOptions.origin = (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Check if origin matches frontend URL
-    const allowedOrigin = config.frontendUrl;
-    if (origin === allowedOrigin) {
-      return callback(null, true);
-    }
-    
-    // Also allow localhost variations for testing
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      logger.warn(`Allowing localhost origin in production: ${origin}`);
-      return callback(null, true);
-    }
-    
-    logger.error(`CORS blocked origin: ${origin}. Expected: ${allowedOrigin}`);
-    return callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
+  // Production CORS with specific allowed origins
+  const allowedOrigins = [
+    config.frontendUrl,
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+  ].filter(Boolean); // Remove any undefined values
+
+  corsOptions = {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: false,
+    optionsSuccessStatus: 200
   };
-  logger.info(`CORS configured with origin validation for: ${config.frontendUrl}`);
+  logger.info(`CORS configured for origins: ${allowedOrigins.join(', ')}`);
 }
 
 app.use(cors(corsOptions));
@@ -117,6 +123,16 @@ app.use(sessionTimeout);
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health check endpoint (before auth middleware)
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: config.env,
+    frontendUrl: config.frontendUrl
+  });
+});
 
 // API routes
 const apiRoutes = require('./routes');
