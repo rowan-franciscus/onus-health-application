@@ -408,11 +408,9 @@ exports.completeProviderOnboarding = async (req, res) => {
       
       // Data Access Preferences
       dataPreferences: {
-        criticalInformation: Array.isArray(providerData.dataAccess?.criticalInfo)
-          ? providerData.dataAccess.criticalInfo.map(item => String(item || ''))
-          : [String(providerData.dataAccess?.criticalInfo || '')],
-        requiresHistoricalData: providerData.dataAccess?.historicalData === true || 
-                               providerData.dataAccess?.historicalData === "true"
+        criticalInformation: String(providerData.dataAccess?.criticalInfo || '').split(',').map(item => item.trim()).filter(item => item),
+        requiresHistoricalData: Boolean(providerData.dataAccess?.historicalData && 
+                                       String(providerData.dataAccess?.historicalData).trim().length > 0)
       },
       
       // Data Privacy Practices

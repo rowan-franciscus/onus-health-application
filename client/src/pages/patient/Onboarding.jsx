@@ -66,9 +66,77 @@ const PatientOnboarding = () => {
   const handleSubmit = async (formData) => {
     setIsSubmitting(true);
     try {
+      // Transform form data to match backend expectations
+      const patientProfile = {
+        // Map personalInfo to patientProfile structure
+        dateOfBirth: formData.personalInfo?.dateOfBirth,
+        gender: formData.personalInfo?.gender,
+        address: {
+          street: formData.personalInfo?.address || '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: ''
+        },
+        
+        // Map health insurance
+        insurance: {
+          provider: formData.healthInsurance?.provider || '',
+          plan: formData.healthInsurance?.plan || '',
+          insuranceNumber: formData.healthInsurance?.number || ''
+        },
+        
+        // Map emergency contact
+        emergencyContact: {
+          name: formData.healthInsurance?.emergencyContactName || '',
+          phone: formData.healthInsurance?.emergencyContactPhone || '',
+          relationship: formData.healthInsurance?.emergencyContactRelationship || ''
+        },
+        
+        // Map medical history
+        medicalHistory: {
+          chronicConditions: formData.medicalHistory?.chronicConditions ? [formData.medicalHistory.chronicConditions] : [],
+          significantIllnesses: formData.medicalHistory?.significantHistory ? [formData.medicalHistory.significantHistory] : [],
+          mentalHealthHistory: formData.medicalHistory?.mentalHealth ? [formData.medicalHistory.mentalHealth] : []
+        },
+        
+        // Map family history
+        familyMedicalHistory: [
+          formData.familyHistory?.chronicIllnesses || '',
+          formData.familyHistory?.hereditaryConditions || ''
+        ].filter(item => item),
+        
+        // Map current medications
+        currentMedications: formData.currentMedication?.medications ? [{
+          name: formData.currentMedication.medications,
+          dosage: '',
+          frequency: ''
+        }] : [],
+        
+        // Map allergies
+        allergies: formData.allergies?.list ? [formData.allergies.list] : [],
+        
+        // Map lifestyle
+        lifestyle: {
+          smoking: Boolean(formData.lifestyle?.smoking),
+          alcohol: Boolean(formData.lifestyle?.alcohol),
+          exercise: formData.lifestyle?.exercise || '',
+          dietaryPreferences: ''
+        },
+        
+        // Map immunizations
+        immunisationHistory: formData.immunization?.history ? [formData.immunization.history] : []
+      };
+
       // Submit onboarding data to API
       const response = await api.post('/users/onboarding', {
-        ...formData,
+        patientProfile,
+        // Also include basic user fields
+        title: formData.personalInfo?.title,
+        firstName: formData.personalInfo?.firstName,
+        lastName: formData.personalInfo?.lastName,
+        email: formData.personalInfo?.email,
+        phone: formData.personalInfo?.phone,
         role: 'patient',
         isProfileCompleted: true
       });

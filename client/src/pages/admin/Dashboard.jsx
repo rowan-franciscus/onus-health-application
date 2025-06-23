@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import adminService from '../../services/admin.service';
 import styles from './Dashboard.module.css';
@@ -41,7 +41,7 @@ const Dashboard = () => {
     endDate: ''
   });
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       const data = await adminService.getDashboardAnalytics(
@@ -56,7 +56,7 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange.startDate, dateRange.endDate]);
 
   useEffect(() => {
     // Debug authentication token
@@ -68,7 +68,7 @@ const Dashboard = () => {
     }
     
     fetchAnalytics();
-  }, [dateRange.startDate, dateRange.endDate]);
+  }, [dateRange.startDate, dateRange.endDate, fetchAnalytics]);
 
   const handleDateChange = (e) => {
     const { name, value } = e.target;
@@ -137,7 +137,7 @@ const Dashboard = () => {
                 title="Patient Gender Distribution" 
                 value={`${analytics.genderDistribution.male || 0} Male / ${analytics.genderDistribution.female || 0} Female`} 
               />
-              <StatCard title="Average Patient Age" value={analytics.averagePatientAge || 'N/A'} />
+              <StatCard title="Average Patient Age" value={analytics.averagePatientAge || '-'} />
             </div>
           </section>
 

@@ -87,7 +87,13 @@ router.post('/', authenticateJWT, isProvider,
   body('patient').isMongoId().withMessage('Patient ID is required'),
   body('general.specialistName').notEmpty().withMessage('Specialist name is required'),
   body('general.specialty').notEmpty().withMessage('Specialty is required'),
-  body('general.reasonForVisit').notEmpty().withMessage('Reason for visit is required'),
+  // Only require reasonForVisit for completed consultations
+  body('general.reasonForVisit').custom((value, { req }) => {
+    if (req.body.status === 'completed' && (!value || value.trim() === '')) {
+      throw new Error('Reason for visit is required for completed consultations');
+    }
+    return true;
+  }),
   validateRequest, 
   (req, res) => {
     consultationController.createConsultation(req, res);

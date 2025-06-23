@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator';
 import { FaArrowLeft } from 'react-icons/fa';
+import { getInitials } from '../../utils/initials';
 import adminService from '../../services/admin.service';
 import styles from './PatientProfile.module.css';
 
@@ -90,7 +91,7 @@ const PatientProfile = () => {
             />
             <div className={styles.patientUser}>
               <div className={styles.patientAvatar}>
-                {patient.firstName?.charAt(0)}{patient.lastName?.charAt(0)}
+                {getInitials(patient.firstName, patient.lastName)}
               </div>
               <div className={styles.patientName}>
                 {patient.firstName} {patient.lastName}

@@ -24,7 +24,7 @@ const Consultations = () => {
   useEffect(() => {
     // Fetch consultations
     fetchConsultations();
-  }, [currentPage, sortField, sortDirection]);
+  }, [currentPage, sortField, sortDirection]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchConsultations = async () => {
     setIsLoading(true);
@@ -79,16 +79,6 @@ const Consultations = () => {
     setCurrentPage(page);
   };
 
-  const handleSort = (field) => {
-    // Toggle sort direction if clicking on same field
-    if (field === sortField) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
   // Filter consultations based on search term
   const filteredConsultations = consultations.filter(consultation =>
     consultation.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -137,9 +127,15 @@ const Consultations = () => {
       sortable: false,
       render: (value, item) => (
         <div className={styles.actionButtons}>
-          <Link to={`/provider/consultations/${item.id}`}>
-            <Button variant="tertiary" size="small">View</Button>
-          </Link>
+          {item.status === 'draft' ? (
+            <Link to={`/provider/consultations/${item.id}/edit`}>
+              <Button variant="tertiary" size="small">Edit</Button>
+            </Link>
+          ) : (
+            <Link to={`/provider/consultations/${item.id}`}>
+              <Button variant="tertiary" size="small">View</Button>
+            </Link>
+          )}
         </div>
       )
     }

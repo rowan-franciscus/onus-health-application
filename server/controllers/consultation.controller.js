@@ -861,18 +861,34 @@ exports.addAttachment = async (req, res) => {
     }
     
     // Add file to attachments
-    consultation.attachments.push({
+    const newAttachment = {
       filename: req.file.filename,
       originalName: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
       path: req.file.path
-    });
+    };
     
+    consultation.attachments.push(newAttachment);
     consultation.lastUpdated = Date.now();
     await consultation.save();
     
-    return res.json(consultation);
+    // Return the attachment with secure URLs
+    const addedAttachment = consultation.attachments[consultation.attachments.length - 1];
+    
+    return res.json({
+      success: true,
+      attachment: {
+        id: addedAttachment._id,
+        filename: addedAttachment.filename,
+        originalName: addedAttachment.originalName,
+        size: addedAttachment.size,
+        mimetype: addedAttachment.mimetype,
+        uploadDate: addedAttachment.uploadDate,
+        viewUrl: `/api/files/consultations/${addedAttachment.filename}?inline=true`,
+        downloadUrl: `/api/files/consultations/${addedAttachment.filename}`
+      }
+    });
   } catch (error) {
     console.error('Error adding attachment:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });

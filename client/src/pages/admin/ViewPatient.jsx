@@ -83,35 +83,35 @@ const ViewPatient = () => {
         <div className={styles.twoColumnGrid}>
           <div className={styles.field}>
             <label>Title:</label>
-            <span>{patient.title || '[Data]'}</span>
+            <span>{patient.title || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>First Name:</label>
-            <span>{patient.firstName || '[Data]'}</span>
+            <span>{patient.firstName || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Last Name:</label>
-            <span>{patient.lastName || '[Data]'}</span>
+            <span>{patient.lastName || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Date of Birth:</label>
-            <span>{patient.dateOfBirth ? new Date(patient.dateOfBirth).toLocaleDateString() : '[Data]'}</span>
+            <span>{patient.patientProfile?.dateOfBirth ? new Date(patient.patientProfile.dateOfBirth).toLocaleDateString() : '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Gender:</label>
-            <span>{patient.gender || '[Data]'}</span>
+            <span>{patient.patientProfile?.gender || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Email:</label>
-            <span>{patient.email || '[Data]'}</span>
+            <span>{patient.email || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Phone Number:</label>
-            <span>{patient.phone || '[Data]'}</span>
+            <span>{patient.phone || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Address:</label>
-            <span>{patient.address || '[Data]'}</span>
+            <span>{patient.patientProfile?.address?.street || '-'}</span>
           </div>
         </div>
       </div>
@@ -121,27 +121,27 @@ const ViewPatient = () => {
         <div className={styles.twoColumnGrid}>
           <div className={styles.field}>
             <label>Health Insurance Provider:</label>
-            <span>{patient.insurance?.provider || '[Data]'}</span>
+            <span>{patient.patientProfile?.insurance?.provider || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Health Insurance Plan:</label>
-            <span>{patient.insurance?.plan || '[Data]'}</span>
+            <span>{patient.patientProfile?.insurance?.plan || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Health Insurance Number:</label>
-            <span>{patient.insurance?.number || '[Data]'}</span>
+            <span>{patient.patientProfile?.insurance?.insuranceNumber || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Emergency Contact Name:</label>
-            <span>{patient.emergencyContact?.name || '[Data]'}</span>
+            <span>{patient.patientProfile?.emergencyContact?.name || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Emergency Contact Number:</label>
-            <span>{patient.emergencyContact?.phone || '[Data]'}</span>
+            <span>{patient.patientProfile?.emergencyContact?.phone || '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Emergency Contact Relationship:</label>
-            <span>{patient.emergencyContact?.relationship || '[Data]'}</span>
+            <span>{patient.patientProfile?.emergencyContact?.relationship || '-'}</span>
           </div>
         </div>
       </div>
@@ -150,63 +150,61 @@ const ViewPatient = () => {
       <div className={styles.card}>
         <div className={styles.fullWidthField}>
           <label>Do you have any chronic conditions (e.g., diabetes, asthma)?:</label>
-          <span>{patient.medicalHistory?.chronicConditions || '[Data]'}</span>
+          <span>{Array.isArray(patient.patientProfile?.medicalHistory?.chronicConditions) ? 
+            patient.patientProfile.medicalHistory.chronicConditions.filter(item => item && item.trim()).join(', ') || '-' : '-'}</span>
         </div>
         <div className={styles.fullWidthField}>
           <label>Have you had any significant illnesses, surgeries, or hospitalizations?:</label>
-          <span>{patient.medicalHistory?.significantHistory || '[Data]'}</span>
+          <span>{Array.isArray(patient.patientProfile?.medicalHistory?.significantIllnesses) ? 
+            patient.patientProfile.medicalHistory.significantIllnesses.filter(item => item && item.trim()).join(', ') || '-' : '-'}</span>
         </div>
         <div className={styles.fullWidthField}>
           <label>Any mental health conditions or history?:</label>
-          <span>{patient.medicalHistory?.mentalHealth || '[Data]'}</span>
+          <span>{Array.isArray(patient.patientProfile?.medicalHistory?.mentalHealthHistory) ? 
+            patient.patientProfile.medicalHistory.mentalHealthHistory.filter(item => item && item.trim()).join(', ') || '-' : '-'}</span>
         </div>
       </div>
 
       <h1 className={styles.title}>Family Medical History</h1>
       <div className={styles.card}>
         <div className={styles.fullWidthField}>
-          <label>Does anyone in your family have a history of chronic illnesses (e.g., heart disease, cancer, diabetes)?:</label>
-          <span>{patient.familyHistory?.chronicIllnesses || '[Data]'}</span>
-        </div>
-        <div className={styles.fullWidthField}>
-          <label>Any hereditary conditions to be aware of?:</label>
-          <span>{patient.familyHistory?.hereditaryConditions || '[Data]'}</span>
+          <label>Family medical history:</label>
+          <span>{Array.isArray(patient.patientProfile?.familyMedicalHistory) ? 
+            patient.patientProfile.familyMedicalHistory.filter(item => item && item.trim()).join(', ') || '-' : '-'}</span>
         </div>
       </div>
 
       <h1 className={styles.title}>Current Medication</h1>
       <div className={styles.card}>
         <div className={styles.fullWidthField}>
-          <label>List of current medications (including dosage and frequency):</label>
-          <span>{patient.currentMedication?.medications || '[Data]'}</span>
-        </div>
-        <div className={styles.fullWidthField}>
-          <label>List of current supplements or vitamins:</label>
-          <span>{patient.currentMedication?.supplements || '[Data]'}</span>
+          <label>Current medications:</label>
+          <span>{Array.isArray(patient.patientProfile?.currentMedications) ? 
+            patient.patientProfile.currentMedications.map(med => med.name).filter(name => name && name.trim()).join(', ') || '-' : '-'}</span>
         </div>
       </div>
 
       <h1 className={styles.title}>Allergies</h1>
       <div className={styles.card}>
         <div className={styles.fullWidthField}>
-          <label>Do you have any known allergies (medications, foods, environment, etc.)?:</label>
-          <span>{patient.allergies?.list || '[Data]'}</span>
+          <label>Known allergies:</label>
+          <span>{Array.isArray(patient.patientProfile?.allergies) ? 
+            patient.patientProfile.allergies.filter(item => item && item.trim()).join(', ') || '-' : '-'}</span>
         </div>
       </div>
 
       <h1 className={styles.title}>Lifestyle & Habits</h1>
       <div className={styles.card}>
         <div className={styles.fullWidthField}>
-          <label>Do you smoke? If yes, how frequently?:</label>
-          <span>{patient.lifestyle?.smoking || '[Data]'}</span>
+          <label>Smoking status:</label>
+          <span>{patient.patientProfile?.lifestyle?.smoking !== undefined ? (patient.patientProfile.lifestyle.smoking ? 'Yes' : 'No') : '-'}</span>
         </div>
         <div className={styles.fullWidthField}>
-          <label>Do you consume alcohol? If yes, how frequently?:</label>
-          <span>{patient.lifestyle?.alcohol || '[Data]'}</span>
+          <label>Alcohol consumption:</label>
+          <span>{patient.patientProfile?.lifestyle?.alcohol !== undefined ? (patient.patientProfile.lifestyle.alcohol ? 'Yes' : 'No') : '-'}</span>
         </div>
         <div className={styles.fullWidthField}>
-          <label>Do you exercise? What type and how frequently?:</label>
-          <span>{patient.lifestyle?.exercise || '[Data]'}</span>
+          <label>Exercise habits:</label>
+          <span>{patient.patientProfile?.lifestyle?.exercise || '-'}</span>
         </div>
       </div>
     </div>

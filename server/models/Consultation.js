@@ -33,7 +33,10 @@ const ConsultationSchema = new Schema({
     },
     reasonForVisit: {
       type: String,
-      required: true
+      required: function() {
+        // Only require reasonForVisit for completed consultations
+        return this.status === 'completed';
+      }
     },
     notes: {
       type: String

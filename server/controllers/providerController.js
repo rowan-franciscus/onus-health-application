@@ -362,10 +362,32 @@ exports.updateProfile = async (req, res) => {
     const providerId = req.user.id;
     const updateData = req.body;
     
+    logger.debug('Profile update request for provider:', providerId);
+    logger.debug('Update data:', JSON.stringify(updateData, null, 2));
+    
     // Remove sensitive fields that shouldn't be updated via this endpoint
     delete updateData.password;
     delete updateData.role;
     delete updateData.isEmailVerified;
+    
+    // Get current provider to preserve verification status
+    const currentProvider = await User.findById(providerId);
+    if (!currentProvider) {
+      return res.status(404).json({ success: false, message: 'Provider not found' });
+    }
+    
+    logger.debug('Current provider verification status:', currentProvider.providerProfile?.isVerified);
+    
+    // Preserve the verification status when updating provider profile
+    if (updateData.providerProfile) {
+      // Always preserve the current verification status if it exists
+      const currentVerificationStatus = currentProvider.providerProfile?.isVerified || false;
+      updateData.providerProfile.isVerified = currentVerificationStatus;
+      
+      logger.debug('Preserving verification status as:', currentVerificationStatus);
+    }
+    
+    logger.debug('Final update data with preserved verification:', JSON.stringify(updateData.providerProfile, null, 2));
     
     const provider = await User.findByIdAndUpdate(
       providerId,
@@ -376,6 +398,8 @@ exports.updateProfile = async (req, res) => {
     if (!provider) {
       return res.status(404).json({ success: false, message: 'Provider not found' });
     }
+    
+    logger.debug('Updated provider verification status:', provider.providerProfile?.isVerified);
     
     res.json({
       success: true,

@@ -8,12 +8,24 @@ import styles from './ViewPatient.module.css';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Tabs from '../../components/common/Tabs';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
+import ApiService from '../../services/api.service';
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
+  const [consultations, setConsultations] = useState([]);
+  const [medicalRecords, setMedicalRecords] = useState({
+    vitals: [],
+    medications: [],
+    immunizations: [],
+    labResults: [],
+    radiology: [],
+    hospital: [],
+    surgery: []
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [accessRequestStatus, setAccessRequestStatus] = useState(null);
@@ -23,6 +35,7 @@ const ProviderViewPatient = () => {
   // Tabs for medical record types
   const recordTabs = [
     { id: 'overview', label: 'Overview' },
+    { id: 'consultations', label: 'Consultations' },
     { id: 'vitals', label: 'Vitals' },
     { id: 'medications', label: 'Medications' },
     { id: 'immunizations', label: 'Immunizations' },
@@ -33,19 +46,33 @@ const ProviderViewPatient = () => {
   ];
 
   useEffect(() => {
-    fetchPatientData();
+    fetchAllPatientData();
   }, [id]);
 
-  // Fetch patient data
-  const fetchPatientData = async () => {
+  // Fetch all patient data including consultations and medical records
+  const fetchAllPatientData = async () => {
     try {
       setIsLoading(true);
       
-      // Use the real patient service to fetch patient details
-      const response = await PatientService.getPatientById(id);
+      // Fetch patient basic information
+      const patientResponse = await PatientService.getPatientById(id);
       
-      if (response && response.success && response.patient) {
-        const patientData = response.patient;
+      if (patientResponse && patientResponse.success && patientResponse.patient) {
+        const patientData = patientResponse.patient;
+        
+        // Calculate age helper function
+        const calculateAge = (dateOfBirth) => {
+          if (!dateOfBirth) return 'N/A';
+          const today = new Date();
+          const birthDate = new Date(dateOfBirth);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          return age;
+        };
+        
         // Transform the data to match our component's expected format
         const formattedPatient = {
           id: patientData._id,
@@ -53,16 +80,15 @@ const ProviderViewPatient = () => {
           gender: patientData.patientProfile?.gender || 'N/A',
           dateOfBirth: patientData.patientProfile?.dateOfBirth ? 
             new Date(patientData.patientProfile.dateOfBirth).toLocaleDateString() : 'N/A',
-          age: patientData.patientProfile?.dateOfBirth ? 
-            new Date().getFullYear() - new Date(patientData.patientProfile.dateOfBirth).getFullYear() : 'N/A',
+          age: calculateAge(patientData.patientProfile?.dateOfBirth),
           email: patientData.email,
           phone: patientData.phone || 'N/A',
           address: patientData.patientProfile?.address ? 
-            `${patientData.patientProfile.address.street}, ${patientData.patientProfile.address.city}, ${patientData.patientProfile.address.state}` : 'N/A',
+            `${patientData.patientProfile.address.street || ''}, ${patientData.patientProfile.address.city || ''}, ${patientData.patientProfile.address.state || ''}`.replace(/^,\s*|,\s*$/g, '') : 'N/A',
           insurance: {
-            provider: patientData.patientProfile?.insurance?.provider || 'N/A',
-            planType: patientData.patientProfile?.insurance?.plan || 'N/A',
-            memberId: patientData.patientProfile?.insurance?.insuranceNumber || 'N/A'
+            provider: patientData.patientProfile?.healthInsurance?.provider || 'N/A',
+            planType: patientData.patientProfile?.healthInsurance?.plan || 'N/A',
+            memberId: patientData.patientProfile?.healthInsurance?.insuranceNumber || 'N/A'
           },
           emergencyContact: {
             name: patientData.patientProfile?.emergencyContact?.name || 'N/A',
@@ -70,19 +96,19 @@ const ProviderViewPatient = () => {
             phone: patientData.patientProfile?.emergencyContact?.phone || 'N/A'
           },
           accessLevel: 'full', // Since this is an approved connection
-          lastConsultation: 'N/A',
           medicalHistory: {
             chronicConditions: patientData.patientProfile?.medicalHistory?.chronicConditions || [],
             allergies: patientData.patientProfile?.allergies || [],
             surgeries: patientData.patientProfile?.medicalHistory?.significantIllnesses || [],
             familyHistory: patientData.patientProfile?.familyMedicalHistory || []
-          },
-          consultations: [],
-          vitalsHistory: []
+          }
         };
         
         setPatient(formattedPatient);
-        setAccessRequestStatus(null); // Since we have access
+        setAccessRequestStatus(null);
+        
+        // Fetch consultations for this patient
+        await fetchPatientConsultations(id);
       } else {
         console.log('No patient data received');
         setPatient(null);
@@ -95,6 +121,265 @@ const ProviderViewPatient = () => {
       setPatient(null);
       setIsLoading(false);
     }
+  };
+
+  // Fetch consultations for the patient
+  const fetchPatientConsultations = async (patientId) => {
+    try {
+      const response = await ApiService.get('/consultations', {
+        patient: patientId
+      });
+      
+      if (response && Array.isArray(response)) {
+        const formattedConsultations = response.map(consultation => ({
+          id: consultation._id,
+          date: consultation.date ? new Date(consultation.date).toLocaleDateString() : 'N/A',
+          provider: consultation.general?.specialistName || 'Unknown Provider',
+          specialty: consultation.general?.specialty || 'General',
+          reason: consultation.general?.reasonForVisit || 'N/A',
+          notes: consultation.general?.notes || 'No notes',
+          status: consultation.status || 'draft',
+          practice: consultation.general?.practice || 'N/A'
+        }));
+        
+        setConsultations(formattedConsultations);
+        
+        // Extract medical records from consultations
+        extractMedicalRecords(response);
+      } else {
+        setConsultations([]);
+        setMedicalRecords({
+          vitals: [],
+          medications: [],
+          immunizations: [],
+          labResults: [],
+          radiology: [],
+          hospital: [],
+          surgery: []
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching consultations:', error);
+      setConsultations([]);
+    }
+  };
+
+  // Extract medical records from consultations
+  const extractMedicalRecords = (consultations) => {
+    const records = {
+      vitals: [],
+      medications: [],
+      immunizations: [],
+      labResults: [],
+      radiology: [],
+      hospital: [],
+      surgery: []
+    };
+
+    consultations.forEach(consultation => {
+      const consultationDate = consultation.date ? new Date(consultation.date).toLocaleDateString() : 'N/A';
+      const provider = consultation.general?.specialistName || 'Unknown Provider';
+
+      // Extract vitals
+      if (consultation.vitals) {
+        const vitals = consultation.vitals;
+        
+        // Helper function to format vital values
+        const formatVitalValue = (vital) => {
+          if (!vital) return 'N/A';
+          if (typeof vital === 'object' && vital.value !== undefined) {
+            return vital.unit ? `${vital.value} ${vital.unit}` : vital.value;
+          }
+          return vital;
+        };
+
+        const vitalRecord = {
+          id: `${consultation._id}-vitals`,
+          date: consultationDate,
+          provider: provider,
+          heartRate: formatVitalValue(vitals.heartRate),
+          bloodPressure: vitals.bloodPressure ? 
+            `${vitals.bloodPressure.systolic || 'N/A'}/${vitals.bloodPressure.diastolic || 'N/A'}` : 'N/A',
+          bodyTemperature: formatVitalValue(vitals.bodyTemperature),
+          respiratoryRate: formatVitalValue(vitals.respiratoryRate),
+          bloodOxygenSaturation: formatVitalValue(vitals.bloodOxygenSaturation),
+          weight: formatVitalValue(vitals.weight),
+          height: formatVitalValue(vitals.height),
+          bmi: formatVitalValue(vitals.bmi),
+          bloodGlucose: formatVitalValue(vitals.bloodGlucose),
+          bodyFatPercentage: formatVitalValue(vitals.bodyFatPercentage)
+        };
+        records.vitals.push(vitalRecord);
+      }
+
+      // Extract medications
+      if (consultation.medications && consultation.medications.length > 0) {
+        consultation.medications.forEach(medication => {
+          // Helper function to format field values that might be objects
+          const formatFieldValue = (field) => {
+            if (!field) return 'N/A';
+            if (typeof field === 'object' && field.value !== undefined) {
+              return field.unit ? `${field.value} ${field.unit}` : field.value;
+            }
+            return field;
+          };
+
+          records.medications.push({
+            id: medication._id || `${consultation._id}-med-${Math.random()}`,
+            date: consultationDate,
+            provider: provider,
+            name: formatFieldValue(medication.nameOfMedication) || 'Unknown Medication',
+            dosage: formatFieldValue(medication.dosage),
+            frequency: formatFieldValue(medication.frequency),
+            reason: formatFieldValue(medication.reasonForPrescription),
+            startDate: medication.startDate ? new Date(medication.startDate).toLocaleDateString() : 'N/A',
+            endDate: medication.endDate ? new Date(medication.endDate).toLocaleDateString() : 'N/A'
+          });
+        });
+      }
+
+      // Extract immunizations
+      if (consultation.immunizations && consultation.immunizations.length > 0) {
+        consultation.immunizations.forEach(immunization => {
+          // Helper function to format field values that might be objects
+          const formatFieldValue = (field) => {
+            if (!field) return 'N/A';
+            if (typeof field === 'object' && field.value !== undefined) {
+              return field.unit ? `${field.value} ${field.unit}` : field.value;
+            }
+            return field;
+          };
+
+          records.immunizations.push({
+            id: immunization._id || `${consultation._id}-imm-${Math.random()}`,
+            date: consultationDate,
+            provider: provider,
+            vaccineName: formatFieldValue(immunization.vaccineName) || 'Unknown Vaccine',
+            dateAdministered: immunization.dateAdministered ? 
+              new Date(immunization.dateAdministered).toLocaleDateString() : 'N/A',
+            serialNumber: formatFieldValue(immunization.vaccineSerialNumber),
+            nextDueDate: immunization.nextDueDate ? 
+              new Date(immunization.nextDueDate).toLocaleDateString() : 'N/A'
+          });
+        });
+      }
+
+      // Extract lab results
+      if (consultation.labResults && consultation.labResults.length > 0) {
+        consultation.labResults.forEach(lab => {
+          // Helper function to format field values that might be objects
+          const formatFieldValue = (field) => {
+            if (!field) return 'N/A';
+            if (typeof field === 'object' && field.value !== undefined) {
+              return field.unit ? `${field.value} ${field.unit}` : field.value;
+            }
+            return field;
+          };
+
+          records.labResults.push({
+            id: lab._id || `${consultation._id}-lab-${Math.random()}`,
+            date: consultationDate,
+            provider: provider,
+            testName: formatFieldValue(lab.testName) || 'Unknown Test',
+            labName: formatFieldValue(lab.labName),
+            testDate: lab.dateOfTest ? new Date(lab.dateOfTest).toLocaleDateString() : 'N/A',
+            results: formatFieldValue(lab.results),
+            comments: formatFieldValue(lab.comments)
+          });
+        });
+      }
+
+      // Extract radiology reports
+      if (consultation.radiologyReports && consultation.radiologyReports.length > 0) {
+        consultation.radiologyReports.forEach(radiology => {
+          // Helper function to format field values that might be objects
+          const formatFieldValue = (field) => {
+            if (!field) return 'N/A';
+            if (typeof field === 'object' && field.value !== undefined) {
+              return field.unit ? `${field.value} ${field.unit}` : field.value;
+            }
+            return field;
+          };
+
+          records.radiology.push({
+            id: radiology._id || `${consultation._id}-rad-${Math.random()}`,
+            date: consultationDate,
+            provider: provider,
+            scanType: formatFieldValue(radiology.typeOfScan) || 'Unknown Scan',
+            scanDate: radiology.date ? new Date(radiology.date).toLocaleDateString() : 'N/A',
+            bodyPart: formatFieldValue(radiology.bodyPartExamined),
+            findings: formatFieldValue(radiology.findings),
+            recommendations: formatFieldValue(radiology.recommendations)
+          });
+        });
+      }
+
+      // Extract hospital records
+      if (consultation.hospitalRecords && consultation.hospitalRecords.length > 0) {
+        consultation.hospitalRecords.forEach(hospital => {
+          // Helper function to format field values that might be objects
+          const formatFieldValue = (field) => {
+            if (!field) return 'N/A';
+            if (typeof field === 'object' && field.value !== undefined) {
+              return field.unit ? `${field.value} ${field.unit}` : field.value;
+            }
+            return field;
+          };
+
+          // Helper function to format arrays
+          const formatArrayValue = (arr) => {
+            if (!arr || !Array.isArray(arr)) return 'N/A';
+            return arr.map(item => {
+              if (typeof item === 'object' && item.name) return item.name;
+              return formatFieldValue(item);
+            }).join(', ');
+          };
+
+          records.hospital.push({
+            id: hospital._id || `${consultation._id}-hosp-${Math.random()}`,
+            date: consultationDate,
+            provider: provider,
+            hospitalName: formatFieldValue(hospital.hospitalName) || 'Unknown Hospital',
+            admissionDate: hospital.admissionDate ? 
+              new Date(hospital.admissionDate).toLocaleDateString() : 'N/A',
+            dischargeDate: hospital.dischargeDate ? 
+              new Date(hospital.dischargeDate).toLocaleDateString() : 'N/A',
+            reason: formatFieldValue(hospital.reasonForHospitalization),
+            treatments: formatArrayValue(hospital.treatmentsReceived),
+            attendingDoctors: formatArrayValue(hospital.attendingDoctors),
+            dischargeSummary: formatFieldValue(hospital.dischargeSummary),
+            investigations: formatArrayValue(hospital.investigationsDone)
+          });
+        });
+      }
+
+      // Extract surgery records
+      if (consultation.surgeryRecords && consultation.surgeryRecords.length > 0) {
+        consultation.surgeryRecords.forEach(surgery => {
+          // Helper function to format field values that might be objects
+          const formatFieldValue = (field) => {
+            if (!field) return 'N/A';
+            if (typeof field === 'object' && field.value !== undefined) {
+              return field.unit ? `${field.value} ${field.unit}` : field.value;
+            }
+            return field;
+          };
+
+          records.surgery.push({
+            id: surgery._id || `${consultation._id}-surg-${Math.random()}`,
+            date: consultationDate,
+            provider: provider,
+            surgeryType: formatFieldValue(surgery.typeOfSurgery) || 'Unknown Surgery',
+            surgeryDate: surgery.date ? new Date(surgery.date).toLocaleDateString() : 'N/A',
+            reason: formatFieldValue(surgery.reason),
+            complications: formatFieldValue(surgery.complications) || 'None reported',
+            recoveryNotes: formatFieldValue(surgery.recoveryNotes)
+          });
+        });
+      }
+    });
+
+    setMedicalRecords(records);
   };
 
   // Handle tab change
@@ -244,9 +529,9 @@ const ProviderViewPatient = () => {
     );
   };
 
-  // Render recent consultations
-  const renderConsultations = () => {
-    if (!patient || !patient.consultations || patient.consultations.length === 0) {
+  // Render recent consultations for overview tab
+  const renderRecentConsultations = () => {
+    if (!consultations || consultations.length === 0) {
       return (
         <div className={styles.noConsultations}>
           No consultations available
@@ -254,95 +539,452 @@ const ProviderViewPatient = () => {
       );
     }
     
+    // Show only the 3 most recent consultations in overview
+    const recentConsultations = consultations.slice(0, 3);
+    
     return (
       <div className={styles.consultationsSection}>
         <h3>Recent Consultations</h3>
         <div className={styles.consultationsList}>
-          {patient.consultations.map(consultation => (
+          {recentConsultations.map(consultation => (
             <div key={consultation.id} className={styles.consultationItem}>
               <div className={styles.consultationHeader}>
                 <div className={styles.consultationDate}>{consultation.date}</div>
                 <div className={styles.consultationProvider}>{consultation.provider}</div>
+                <span className={styles[`status-${consultation.status}`]}>{consultation.status}</span>
               </div>
               <div className={styles.consultationReason}>
                 <span className={styles.reasonLabel}>Reason:</span> {consultation.reason}
               </div>
-              <div className={styles.consultationNotes}>
-                <span className={styles.notesLabel}>Notes:</span> {consultation.notes}
+              <div className={styles.consultationSpecialty}>
+                <span className={styles.specialtyLabel}>Specialty:</span> {consultation.specialty}
               </div>
             </div>
+          ))}
+        </div>
+        {consultations.length > 3 && (
+          <div className={styles.viewAllConsultations}>
+            <Button variant="tertiary" onClick={() => handleTabChange('consultations')}>
+              View All Consultations ({consultations.length})
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Render full consultations tab
+  const renderConsultationsTab = () => {
+    if (!consultations || consultations.length === 0) {
+      return (
+        <div className={styles.noRecords}>
+          <h3>No Consultations Found</h3>
+          <p>This patient has no consultation records.</p>
+          <Button variant="primary" onClick={handleCreateConsultation}>
+            Create First Consultation
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <div className={styles.consultationsTab}>
+        <div className={styles.consultationsHeader}>
+          <h3>All Consultations ({consultations.length})</h3>
+          <Button variant="primary" onClick={handleCreateConsultation}>
+            New Consultation
+          </Button>
+        </div>
+        
+        <div className={styles.consultationsGrid}>
+          {consultations.map(consultation => (
+            <Card key={consultation.id} className={styles.consultationCard}>
+              <div className={styles.consultationCardHeader}>
+                <div className={styles.consultationMeta}>
+                  <span className={styles.consultationDate}>{consultation.date}</span>
+                  <span className={styles[`status-${consultation.status}`]}>{consultation.status}</span>
+                </div>
+                <div className={styles.consultationActions}>
+                  <Link to={`/provider/consultations/${consultation.id}`}>
+                    <Button variant="tertiary" size="small">View</Button>
+                  </Link>
+                  {consultation.status === 'draft' && (
+                    <Link to={`/provider/consultations/${consultation.id}/edit`}>
+                      <Button variant="secondary" size="small">Edit</Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
+              
+              <div className={styles.consultationDetails}>
+                <div className={styles.consultationField}>
+                  <span className={styles.fieldLabel}>Provider:</span>
+                  <span className={styles.fieldValue}>{consultation.provider}</span>
+                </div>
+                <div className={styles.consultationField}>
+                  <span className={styles.fieldLabel}>Specialty:</span>
+                  <span className={styles.fieldValue}>{consultation.specialty}</span>
+                </div>
+                <div className={styles.consultationField}>
+                  <span className={styles.fieldLabel}>Practice:</span>
+                  <span className={styles.fieldValue}>{consultation.practice}</span>
+                </div>
+                <div className={styles.consultationField}>
+                  <span className={styles.fieldLabel}>Reason:</span>
+                  <span className={styles.fieldValue}>{consultation.reason}</span>
+                </div>
+                {consultation.notes && consultation.notes !== 'No notes' && (
+                  <div className={styles.consultationField}>
+                    <span className={styles.fieldLabel}>Notes:</span>
+                    <span className={styles.fieldValue}>{consultation.notes}</span>
+                  </div>
+                )}
+              </div>
+            </Card>
           ))}
         </div>
       </div>
     );
   };
 
-  // Render vitals data
-  const renderVitals = () => {
-    if (!patient || !patient.vitalsHistory || patient.vitalsHistory.length === 0) {
+  // Render medical records tabs
+  const renderMedicalRecordsTab = (recordType) => {
+    const records = medicalRecords[recordType] || [];
+    
+    if (records.length === 0) {
       return (
         <div className={styles.noRecords}>
-          No vitals records available
+          <h3>No {recordType.charAt(0).toUpperCase() + recordType.slice(1)} Records</h3>
+          <p>No {recordType} data has been recorded for this patient yet.</p>
+          <Button variant="primary" onClick={handleCreateConsultation}>
+            Create New Consultation
+          </Button>
         </div>
       );
     }
-    
-    const latestVitals = patient.vitalsHistory[0];
-    
-    return (
-      <div className={styles.vitalsSection}>
-        <div className={styles.vitalsHeader}>
-          <h3>Vitals</h3>
-          <div className={styles.vitalsDate}>Last recorded: {latestVitals.date}</div>
-        </div>
-        <div className={styles.vitalsGrid}>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Heart Rate</span>
-            <span className={styles.vitalValue}>{latestVitals.heartRate}</span>
+
+    switch (recordType) {
+      case 'vitals':
+        return (
+          <div className={styles.vitalsTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Vitals Records ({records.length})</h3>
+            </div>
+            <div className={styles.recordsGrid}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <span className={styles.recordDate}>{record.date}</span>
+                    <span className={styles.recordProvider}>{record.provider}</span>
+                  </div>
+                  <div className={styles.vitalsGrid}>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>Heart Rate:</span>
+                      <span className={styles.vitalValue}>{record.heartRate} bpm</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>Blood Pressure:</span>
+                      <span className={styles.vitalValue}>{record.bloodPressure} mmHg</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>Temperature:</span>
+                      <span className={styles.vitalValue}>{record.bodyTemperature}°F</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>Respiratory Rate:</span>
+                      <span className={styles.vitalValue}>{record.respiratoryRate}/min</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>O2 Saturation:</span>
+                      <span className={styles.vitalValue}>{record.bloodOxygenSaturation}%</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>Weight:</span>
+                      <span className={styles.vitalValue}>{record.weight} lbs</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>Height:</span>
+                      <span className={styles.vitalValue}>{record.height} inches</span>
+                    </div>
+                    <div className={styles.vitalItem}>
+                      <span className={styles.vitalLabel}>BMI:</span>
+                      <span className={styles.vitalValue}>{record.bmi}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Blood Pressure</span>
-            <span className={styles.vitalValue}>{latestVitals.bloodPressure}</span>
+        );
+
+      case 'medications':
+        return (
+          <div className={styles.medicationsTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Medications ({records.length})</h3>
+            </div>
+            <div className={styles.recordsList}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <h4>{record.name}</h4>
+                    <span className={styles.recordDate}>{record.date}</span>
+                  </div>
+                  <div className={styles.medicationDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Dosage:</span>
+                      <span className={styles.detailValue}>{record.dosage}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Frequency:</span>
+                      <span className={styles.detailValue}>{record.frequency}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Reason:</span>
+                      <span className={styles.detailValue}>{record.reason}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Start Date:</span>
+                      <span className={styles.detailValue}>{record.startDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>End Date:</span>
+                      <span className={styles.detailValue}>{record.endDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Prescribed by:</span>
+                      <span className={styles.detailValue}>{record.provider}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Body Temperature</span>
-            <span className={styles.vitalValue}>{latestVitals.bodyTemperature}</span>
+        );
+
+      case 'immunizations':
+        return (
+          <div className={styles.immunizationsTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Immunizations ({records.length})</h3>
+            </div>
+            <div className={styles.recordsList}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <h4>{record.vaccineName}</h4>
+                    <span className={styles.recordDate}>{record.date}</span>
+                  </div>
+                  <div className={styles.immunizationDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Date Administered:</span>
+                      <span className={styles.detailValue}>{record.dateAdministered}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Serial Number:</span>
+                      <span className={styles.detailValue}>{record.serialNumber}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Next Due Date:</span>
+                      <span className={styles.detailValue}>{record.nextDueDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Administered by:</span>
+                      <span className={styles.detailValue}>{record.provider}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Respiratory Rate</span>
-            <span className={styles.vitalValue}>{latestVitals.respiratoryRate}</span>
+        );
+
+      case 'labResults':
+        return (
+          <div className={styles.labResultsTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Lab Results ({records.length})</h3>
+            </div>
+            <div className={styles.recordsList}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <h4>{record.testName}</h4>
+                    <span className={styles.recordDate}>{record.date}</span>
+                  </div>
+                  <div className={styles.labDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Lab:</span>
+                      <span className={styles.detailValue}>{record.labName}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Test Date:</span>
+                      <span className={styles.detailValue}>{record.testDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Results:</span>
+                      <span className={styles.detailValue}>{record.results}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Comments:</span>
+                      <span className={styles.detailValue}>{record.comments}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Ordered by:</span>
+                      <span className={styles.detailValue}>{record.provider}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Oxygen Saturation</span>
-            <span className={styles.vitalValue}>{latestVitals.bloodOxygenSaturation}</span>
+        );
+
+      case 'radiology':
+        return (
+          <div className={styles.radiologyTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Radiology Reports ({records.length})</h3>
+            </div>
+            <div className={styles.recordsList}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <h4>{record.scanType}</h4>
+                    <span className={styles.recordDate}>{record.date}</span>
+                  </div>
+                  <div className={styles.radiologyDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Scan Date:</span>
+                      <span className={styles.detailValue}>{record.scanDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Body Part:</span>
+                      <span className={styles.detailValue}>{record.bodyPart}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Findings:</span>
+                      <span className={styles.detailValue}>{record.findings}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Recommendations:</span>
+                      <span className={styles.detailValue}>{record.recommendations}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Provider:</span>
+                      <span className={styles.detailValue}>{record.provider}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Weight</span>
-            <span className={styles.vitalValue}>{latestVitals.weight}</span>
+        );
+
+      case 'hospital':
+        return (
+          <div className={styles.hospitalTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Hospital Records ({records.length})</h3>
+            </div>
+            <div className={styles.recordsList}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <h4>{record.hospitalName}</h4>
+                    <span className={styles.recordDate}>{record.date}</span>
+                  </div>
+                  <div className={styles.hospitalDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Admission Date:</span>
+                      <span className={styles.detailValue}>{record.admissionDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Discharge Date:</span>
+                      <span className={styles.detailValue}>{record.dischargeDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Reason:</span>
+                      <span className={styles.detailValue}>{record.reason}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Treatments:</span>
+                      <span className={styles.detailValue}>{record.treatments}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Attending Doctors:</span>
+                      <span className={styles.detailValue}>{record.attendingDoctors}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Discharge Summary:</span>
+                      <span className={styles.detailValue}>{record.dischargeSummary}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>Height</span>
-            <span className={styles.vitalValue}>{latestVitals.height}</span>
+        );
+
+      case 'surgery':
+        return (
+          <div className={styles.surgeryTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Surgery Records ({records.length})</h3>
+            </div>
+            <div className={styles.recordsList}>
+              {records.map(record => (
+                <Card key={record.id} className={styles.recordCard}>
+                  <div className={styles.recordHeader}>
+                    <h4>{record.surgeryType}</h4>
+                    <span className={styles.recordDate}>{record.date}</span>
+                  </div>
+                  <div className={styles.surgeryDetails}>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Surgery Date:</span>
+                      <span className={styles.detailValue}>{record.surgeryDate}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Reason:</span>
+                      <span className={styles.detailValue}>{record.reason}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Complications:</span>
+                      <span className={styles.detailValue}>{record.complications}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Recovery Notes:</span>
+                      <span className={styles.detailValue}>{record.recoveryNotes}</span>
+                    </div>
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>Surgeon:</span>
+                      <span className={styles.detailValue}>{record.provider}</span>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className={styles.vitalItem}>
-            <span className={styles.vitalLabel}>BMI</span>
-            <span className={styles.vitalValue}>{latestVitals.bmi}</span>
+        );
+
+      default:
+        return (
+          <div className={styles.noRecords}>
+            No {recordType} records available
           </div>
-        </div>
-        
-        <div className={styles.viewHistoryLink}>
-          <Link to={`/provider/medical-records/vitals?patientId=${id}`}>
-            View Complete Vitals History
-          </Link>
-        </div>
-      </div>
-    );
+        );
+    }
   };
 
   // Render content based on active tab
   const renderTabContent = () => {
     if (isLoading) {
-      return <div className={styles.loading}>Loading patient data...</div>;
+      return (
+        <div className={styles.loadingContainer}>
+          <LoadingSpinner />
+          <p>Loading patient data...</p>
+        </div>
+      );
     }
     
     if (!patient) {
@@ -366,20 +1008,33 @@ const ProviderViewPatient = () => {
             </Card>
             
             <Card className={styles.consultationsCard}>
-              {renderConsultations()}
+              {renderRecentConsultations()}
             </Card>
           </div>
         );
-      case 'vitals':
+      case 'consultations':
         return (
           <Card className={styles.medicalRecordCard}>
-            {renderVitals()}
+            {renderConsultationsTab()}
+          </Card>
+        );
+      case 'vitals':
+      case 'medications':
+      case 'immunizations':
+      case 'lab-results':
+      case 'radiology':
+      case 'hospital':
+      case 'surgery':
+        const recordType = activeTab === 'lab-results' ? 'labResults' : activeTab;
+        return (
+          <Card className={styles.medicalRecordCard}>
+            {renderMedicalRecordsTab(recordType)}
           </Card>
         );
       default:
         return (
           <div className={styles.accessLimited}>
-            {patient.accessLevel === 'full' ? (
+            {patient?.accessLevel === 'full' ? (
               <div className={styles.noRecords}>
                 No {activeTab} records available for this patient
               </div>

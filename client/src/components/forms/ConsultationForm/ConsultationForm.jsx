@@ -17,6 +17,7 @@ import SurgeryTab from './tabs/SurgeryTab';
 // Import common components
 import Button from '../../common/Button';
 import FileUpload from '../FileUpload/FileUpload';
+import FileViewer from '../../common/FileViewer';
 
 // Import validation schemas
 import { validationSchema } from './validationSchema';
@@ -183,25 +184,23 @@ const ConsultationForm = ({
             {attachments.length > 0 && (
               <div className={styles.attachmentsList}>
                 <h4>Uploaded Files</h4>
-                <div className={styles.fileList}>
-                  {attachments.map((file, index) => (
-                    <div key={index} className={styles.fileItem}>
-                      <span className={styles.fileName}>{file.name}</span>
-                      <span className={styles.fileSize}>
-                        {(file.size / 1024).toFixed(2)} KB
-                      </span>
-                      <Button
-                        type="button"
-                        variant="tertiary"
-                        size="small"
-                        onClick={() => handleRemoveFile(index)}
-                        className={styles.removeButton}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                <FileViewer
+                  files={attachments.map((file, index) => ({
+                    id: index.toString(),
+                    filename: file.name,
+                    originalName: file.name,
+                    size: file.size,
+                    mimetype: file.type,
+                    uploadDate: new Date().toISOString()
+                  }))}
+                  onDelete={(file) => {
+                    const index = parseInt(file.id);
+                    handleRemoveFile(index);
+                  }}
+                  canDelete={true}
+                  showActions={true}
+                  emptyMessage="No files selected"
+                />
               </div>
             )}
           </div>

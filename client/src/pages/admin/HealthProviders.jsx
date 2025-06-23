@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaSearch } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import adminService from '../../services/admin.service';
 import styles from './HealthProviders.module.css';
 import Button from '../../components/common/Button';
@@ -100,10 +99,9 @@ const HealthProviders = () => {
         </h1>
         <div className={styles.searchContainer}>
           <SearchBox
-            placeholder="Search..."
-            onSearch={handleSearch}
+            placeholder="Search providers..."
+            onChange={handleSearch}
             value={searchQuery}
-            icon={<FaSearch />}
           />
         </div>
       </div>

@@ -248,7 +248,7 @@ const getAnalytics = async (req, res, next) => {
         User.countDocuments({ lastLogin: dateFilter }),
         User.aggregate([
           { $match: { role: 'patient' } },
-          { $group: { _id: '$gender', count: { $sum: 1 } } }
+          { $group: { _id: '$patientProfile.gender', count: { $sum: 1 } } }
         ]),
         User.countDocuments({ ...userQuery, deleted: true })
       ]);
@@ -256,13 +256,13 @@ const getAnalytics = async (req, res, next) => {
       // Calculate average age for patients
       const patientsWithDob = await User.find({ 
         role: 'patient', 
-        dateOfBirth: { $exists: true, $ne: null } 
+        'patientProfile.dateOfBirth': { $exists: true, $ne: null } 
       });
       
       let averageAge = 0;
       if (patientsWithDob.length > 0) {
         const totalAge = patientsWithDob.reduce((sum, patient) => {
-          const birthDate = new Date(patient.dateOfBirth);
+          const birthDate = new Date(patient.patientProfile.dateOfBirth);
           const ageInMs = Date.now() - birthDate.getTime();
           const ageDate = new Date(ageInMs);
           const age = Math.abs(ageDate.getUTCFullYear() - 1970);
@@ -372,7 +372,7 @@ const getDashboardAnalytics = async (req, res, next) => {
       Consultation.countDocuments(),
       User.aggregate([
         { $match: { role: 'patient' } },
-        { $group: { _id: '$gender', count: { $sum: 1 } } }
+        { $group: { _id: '$patientProfile.gender', count: { $sum: 1 } } }
       ]),
       User.countDocuments(startDate || endDate ? { createdAt: dateFilter } : {}),
       User.countDocuments(startDate || endDate ? { role: 'patient', createdAt: dateFilter } : { role: 'patient' }),
@@ -387,13 +387,13 @@ const getDashboardAnalytics = async (req, res, next) => {
     // Calculate average age for patients
     const patientsWithDob = await User.find({ 
       role: 'patient', 
-      dateOfBirth: { $exists: true, $ne: null } 
+      'patientProfile.dateOfBirth': { $exists: true, $ne: null } 
     });
     
     let averageAge = 0;
     if (patientsWithDob.length > 0) {
       const totalAge = patientsWithDob.reduce((sum, patient) => {
-        const birthDate = new Date(patient.dateOfBirth);
+        const birthDate = new Date(patient.patientProfile.dateOfBirth);
         const ageInMs = Date.now() - birthDate.getTime();
         const ageDate = new Date(ageInMs);
         const age = Math.abs(ageDate.getUTCFullYear() - 1970);

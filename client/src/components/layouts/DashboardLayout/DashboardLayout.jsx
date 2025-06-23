@@ -94,28 +94,43 @@ const DashboardLayout = ({ role }) => {
 
     // Try to get name from user profile data
     let fullName = '';
+    let firstName = '';
+    let lastName = '';
     
     // Check for personalInfo in user profile (Patient)
     if (user?.profile?.personalInfo) {
-      const { firstName, lastName } = user.profile.personalInfo;
+      firstName = user.profile.personalInfo.firstName || '';
+      lastName = user.profile.personalInfo.lastName || '';
       if (firstName && lastName) {
         fullName = `${firstName} ${lastName}`;
       }
     } 
     // Check for professionalInfo in user profile (Provider)
     else if (user?.profile?.professionalInfo) {
-      const { firstName, lastName } = user.profile.professionalInfo;
+      firstName = user.profile.professionalInfo.firstName || '';
+      lastName = user.profile.professionalInfo.lastName || '';
       if (firstName && lastName) {
         fullName = `${firstName} ${lastName}`;
       }
     }
     // Fallback to firstName/lastName directly on user object
     else if (user?.firstName && user?.lastName) {
-      fullName = `${user.firstName} ${user.lastName}`;
+      firstName = user.firstName;
+      lastName = user.lastName;
+      fullName = `${firstName} ${lastName}`;
     }
     // Last resort: use name property if available
     else if (user?.name) {
       fullName = user.name;
+      // Try to parse first and last name from full name
+      const nameParts = user.name.trim().split(' ');
+      if (nameParts.length >= 2) {
+        firstName = nameParts[0];
+        lastName = nameParts[nameParts.length - 1];
+      } else {
+        firstName = nameParts[0] || '';
+        lastName = '';
+      }
     }
     
     // Add Dr. prefix for providers if we have a name
@@ -126,6 +141,8 @@ const DashboardLayout = ({ role }) => {
     
     return {
       name: displayName,
+      firstName: firstName,
+      lastName: lastName,
       profileUrl: profileUrlMap[role] || '#'
     };
   };

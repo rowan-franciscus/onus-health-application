@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
+import { getUserInitials } from '../../../utils/initials';
 import styles from './Header.module.css';
 
 /**
@@ -82,7 +83,7 @@ const Header = ({
                 <img src={user.avatarUrl} alt={`${user.name || 'User'}'s avatar`} className={styles.avatarImage} />
               ) : (
                 <div className={styles.avatarPlaceholder}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  {getUserInitials(user.firstName, user.lastName, user.name)}
                 </div>
               )}
             </div>
@@ -99,6 +100,8 @@ Header.propTypes = {
   actions: PropTypes.node,
   user: PropTypes.shape({
     name: PropTypes.string,
+    firstName: PropTypes.string,
+    lastName: PropTypes.string,
     avatarUrl: PropTypes.string,
     profileUrl: PropTypes.string,
   }),

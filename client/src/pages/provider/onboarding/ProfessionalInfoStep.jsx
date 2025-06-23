@@ -3,6 +3,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import classNames from 'classnames';
 import validation from '../../../utils/validation';
+import FileUpload from '../../../components/forms/FileUpload';
 import styles from '../../shared/FormStep.module.css';
 
 const ProfessionalInfoStep = ({ formData, onStepChange, next, isSubmitting }) => {
@@ -52,7 +53,7 @@ const ProfessionalInfoStep = ({ formData, onStepChange, next, isSubmitting }) =>
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
       >
-        {({ isValid, dirty, errors, touched, setFieldValue }) => (
+        {({ isValid, dirty, errors, touched, setFieldValue, values }) => (
           <Form>
             <div className={styles.formRow}>
               <div className={styles.formCol}>
@@ -108,35 +109,29 @@ const ProfessionalInfoStep = ({ formData, onStepChange, next, isSubmitting }) =>
             </div>
 
             <div className={styles.formGroup}>
-              <label htmlFor="professionalInfo.practiceLicense" className={classNames(styles.label, styles.required)}>
+              <label className={classNames(styles.label, styles.required)}>
                 Practice License
               </label>
-              <input
-                type="file"
-                id="fileInput"
-                ref={fileInputRef}
-                className={styles.fileInput}
+              <FileUpload
+                name="practiceLicense"
                 accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => handleFileChange(e, setFieldValue)}
+                multiple={false}
+                label="Upload Practice License"
+                helpText="Upload a copy of your medical practice license or certification"
+                maxSize={5 * 1024 * 1024}
+                onChange={(file) => {
+                  if (file) {
+                    setFileName(file.name);
+                    setFieldValue('professionalInfo.practiceLicense', file);
+                  } else {
+                    setFileName('');
+                    setFieldValue('professionalInfo.practiceLicense', null);
+                  }
+                }}
+                error={touched.professionalInfo?.practiceLicense && errors.professionalInfo?.practiceLicense}
               />
-              <label htmlFor="fileInput" className={styles.uploadButton}>
-                Upload Practice License
-              </label>
-              {fileName && (
-                <div className={styles.filePreview}>
-                  <span>{fileName}</span>
-                  <button
-                    type="button"
-                    className={styles.removeFileButton}
-                    onClick={() => removeFile(setFieldValue)}
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
               <ErrorMessage name="professionalInfo.practiceLicense" component="div" className={styles.error} />
               <p className={styles.fieldDescription}>
-                Please upload a copy of your medical practice license or certification.
                 Accepted formats: PDF, JPG, PNG. Maximum file size: 5MB.
               </p>
             </div>

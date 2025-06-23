@@ -12,9 +12,10 @@ import ConsultationForm from '../../components/forms/ConsultationForm';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
 import ConsultationService from '../../services/consultation.service';
+import ApiService from '../../services/api.service';
 
 const AddConsultation = () => {
-  const { patientId: paramPatientId } = useParams();
+  const { patientId: paramPatientId, id: consultationId } = useParams();
   const [searchParams] = useSearchParams();
   const queryPatientId = searchParams.get('patientId');
   const queryPatientEmail = searchParams.get('patientEmail');
@@ -23,9 +24,14 @@ const AddConsultation = () => {
   const patientId = paramPatientId || queryPatientId;
   const patientEmail = queryPatientEmail;
   
+  // Determine if we're editing an existing consultation
+  const isEditing = !!consultationId;
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [patient, setPatient] = useState(null);
+  const [providerProfile, setProviderProfile] = useState(null);
+  const [consultationData, setConsultationData] = useState(null);
   const [activeTab, setActiveTab] = useState('general');
   
   const navigate = useNavigate();
@@ -43,57 +49,149 @@ const AddConsultation = () => {
     { id: 'surgery', label: 'Surgery' }
   ];
   
-  // Initial form values
-  const initialFormValues = {
-    general: {
-      date: new Date().toISOString().substr(0, 10),
-      specialistName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-      specialty: user?.providerProfile?.specialty || '',
-      practiceName: user?.providerProfile?.practiceInfo?.name || '',
-      reasonForVisit: '',
-      notes: ''
-    },
-    vitals: {
-      heartRate: '',
-      bloodPressure: { systolic: '', diastolic: '' },
-      bodyTemperature: '',
-      respiratoryRate: '',
-      bloodGlucose: '',
-      bloodOxygenSaturation: '',
-      bmi: '',
-      bodyFatPercentage: '',
-      weight: '',
-      height: ''
-    },
-    medication: [],
-    immunization: [],
-    labResults: [],
-    radiology: [],
-    hospital: [],
-    surgery: [],
-    attachments: []
+  // Function to create initial form values with provider profile data
+  const getInitialFormValues = () => {
+    if (isEditing && consultationData) {
+      // When editing, populate with existing consultation data
+      return {
+        general: {
+          date: consultationData.date ? new Date(consultationData.date).toISOString().substr(0, 10) : new Date().toISOString().substr(0, 10),
+          specialistName: consultationData.general?.specialistName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+          specialty: consultationData.general?.specialty || providerProfile?.specialty || '',
+          practiceName: consultationData.general?.practice || providerProfile?.practiceInfo?.name || '',
+          reasonForVisit: consultationData.general?.reasonForVisit || '',
+          notes: consultationData.general?.notes || ''
+        },
+        vitals: {
+          heartRate: '',
+          bloodPressure: { systolic: '', diastolic: '' },
+          bodyTemperature: '',
+          respiratoryRate: '',
+          bloodGlucose: '',
+          bloodOxygenSaturation: '',
+          bmi: '',
+          bodyFatPercentage: '',
+          weight: '',
+          height: ''
+        },
+        medication: consultationData.medications || [],
+        immunization: consultationData.immunizations || [],
+        labResults: consultationData.labResults || [],
+        radiology: consultationData.radiologyReports || [],
+        hospital: consultationData.hospitalRecords || [],
+        surgery: consultationData.surgeryRecords || [],
+        attachments: consultationData.attachments || []
+      };
+    } else {
+      // When creating new, use provider profile defaults
+      return {
+        general: {
+          date: new Date().toISOString().substr(0, 10),
+          specialistName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
+          specialty: providerProfile?.specialty || '',
+          practiceName: providerProfile?.practiceInfo?.name || '',
+          reasonForVisit: '',
+          notes: ''
+        },
+        vitals: {
+          heartRate: '',
+          bloodPressure: { systolic: '', diastolic: '' },
+          bodyTemperature: '',
+          respiratoryRate: '',
+          bloodGlucose: '',
+          bloodOxygenSaturation: '',
+          bmi: '',
+          bodyFatPercentage: '',
+          weight: '',
+          height: ''
+        },
+        medication: [],
+        immunization: [],
+        labResults: [],
+        radiology: [],
+        hospital: [],
+        surgery: [],
+        attachments: []
+      };
+    }
   };
   
   useEffect(() => {
-    // Fetch patient data if we have a patientId
-    if (patientId) {
-      fetchPatientData();
-    } else if (patientEmail) {
-      // If we only have email, we'll send it with consultation creation
-      setPatient({
-        email: patientEmail,
-        name: patientEmail,
-        gender: 'Unknown',
-        age: 'Unknown',
-        insurance: 'Unknown'
-      });
-      setIsLoading(false);
-    } else {
-      // No patient specified
-      toast.error('No patient specified for consultation');
-      navigate('/provider/patients');
+    const fetchData = async () => {
+      // Fetch provider profile data first
+      await fetchProviderProfile();
+      
+      if (isEditing) {
+        // If editing, fetch the consultation data
+        await fetchConsultationData();
+      } else {
+        // If creating new, fetch patient data
+        if (patientId) {
+          await fetchPatientData();
+        } else if (patientEmail) {
+          // If we only have email, we'll send it with consultation creation
+          setPatient({
+            email: patientEmail,
+            name: patientEmail,
+            gender: 'Unknown',
+            age: 'Unknown',
+            insurance: 'Unknown'
+          });
+          setIsLoading(false);
+        } else {
+          // No patient specified
+          toast.error('No patient specified for consultation');
+          navigate('/provider/patients');
+        }
+      }
+    };
+    
+    fetchData();
+  }, [patientId, patientEmail, consultationId, isEditing]);
+  
+  const fetchProviderProfile = async () => {
+    try {
+      const response = await ApiService.get('/provider/profile');
+      
+      if (response.success && response.provider) {
+        const provider = response.provider;
+        const providerProfileData = provider.providerProfile || {};
+        
+        setProviderProfile(providerProfileData);
+      }
+    } catch (error) {
+      console.error('Error fetching provider profile:', error);
+      // Don't show error toast as this is optional data for auto-population
     }
-  }, [patientId, patientEmail]);
+  };
+  
+  const fetchConsultationData = async () => {
+    try {
+      const response = await ApiService.get(`/consultations/${consultationId}`);
+      
+      if (response) {
+        setConsultationData(response);
+        
+        // Set patient data from consultation
+        if (response.patient) {
+          setPatient({
+            id: response.patient._id,
+            name: `${response.patient.firstName || ''} ${response.patient.lastName || ''}`.trim() || 'Unknown',
+            gender: 'Unknown', // You might want to get this from patient profile
+            age: 'Unknown',    // You might want to calculate this
+            insurance: 'Unknown',
+            email: response.patient.email
+          });
+        }
+        
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error fetching consultation data:', error);
+      toast.error('Failed to load consultation data');
+      navigate('/provider/consultations');
+    }
+  };
   
   const fetchPatientData = async () => {
     try {
@@ -261,11 +359,16 @@ const AddConsultation = () => {
       // Remove practiceName from general as it's now mapped to practice
       delete consultationData.general.practiceName;
       
-      const response = await ConsultationService.createConsultation(consultationData);
+      let response;
+      if (isEditing) {
+        response = await ConsultationService.updateConsultation(consultationId, consultationData);
+      } else {
+        response = await ConsultationService.createConsultation(consultationData);
+      }
       
-      if (response && response._id) {
-        toast.success('Consultation draft saved successfully');
-        navigate(`/provider/consultations/${response._id}/edit`);
+      if (response && (response._id || response.id)) {
+        toast.success(isEditing ? 'Consultation draft updated successfully' : 'Consultation draft saved successfully');
+        navigate('/provider/consultations');
       }
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -389,10 +492,15 @@ const AddConsultation = () => {
       
       console.log('Sending consultation data:', consultationData);
       
-      const response = await ConsultationService.createConsultation(consultationData);
+      let response;
+      if (isEditing) {
+        response = await ConsultationService.updateConsultation(consultationId, consultationData);
+      } else {
+        response = await ConsultationService.createConsultation(consultationData);
+      }
       
-      if (response && response._id) {
-        toast.success('Consultation saved successfully');
+      if (response && (response._id || response.id)) {
+        toast.success(isEditing ? 'Consultation updated successfully' : 'Consultation saved successfully');
         navigate('/provider/consultations');
       }
     } catch (error) {
@@ -407,7 +515,7 @@ const AddConsultation = () => {
     return (
       <div className={styles.loadingContainer}>
         <LoadingSpinner />
-        <p>Loading patient data...</p>
+        <p>{isEditing ? 'Loading consultation data...' : 'Loading patient data...'}</p>
       </div>
     );
   }
@@ -424,15 +532,25 @@ const AddConsultation = () => {
     );
   }
   
+  // When editing, ensure consultation data is loaded
+  if (isEditing && !consultationData) {
+    return (
+      <div className={styles.loadingContainer}>
+        <LoadingSpinner />
+        <p>Loading consultation data...</p>
+      </div>
+    );
+  }
+  
   return (
     <div className={styles.consultationContainer}>
       <div className={styles.header}>
         <div className={styles.titleSection}>
-          <Link to="/provider/patients" className={styles.backLink}>
-            &larr; Back to Patients
+          <Link to={isEditing ? "/provider/consultations" : "/provider/patients"} className={styles.backLink}>
+            &larr; Back to {isEditing ? "Consultations" : "Patients"}
           </Link>
-          <h1>New Consultation</h1>
-          <p>Add a new consultation record for your patient</p>
+          <h1>{isEditing ? "Edit Consultation" : "New Consultation"}</h1>
+          <p>{isEditing ? "Edit the consultation record for your patient" : "Add a new consultation record for your patient"}</p>
         </div>
       </div>
       
@@ -458,7 +576,8 @@ const AddConsultation = () => {
         />
         
         <ConsultationForm 
-          initialValues={initialFormValues}
+          key={isEditing ? `edit-${consultationId}` : 'new'}
+          initialValues={getInitialFormValues()}
           activeTab={activeTab}
           onTabChange={handleTabChange}
           onSaveDraft={handleSaveDraft}

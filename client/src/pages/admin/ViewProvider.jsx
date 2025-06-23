@@ -183,7 +183,8 @@ const ViewProvider = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>Do you currently collaborate with other specialists or departments?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.patientManagement?.collaboration || '-'}
+                {provider.providerProfile?.patientManagement?.collaboratesWithOthers === true ? 'Yes' : 
+                 provider.providerProfile?.patientManagement?.collaboratesWithOthers === false ? 'No' : '-'}
               </span>
             </div>
           </div>
@@ -195,13 +196,16 @@ const ViewProvider = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>What patient information is most critical for your decision making?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.dataPreferences?.criticalInfo || '-'}
+                {Array.isArray(provider.providerProfile?.dataPreferences?.criticalInformation) 
+                  ? provider.providerProfile?.dataPreferences?.criticalInformation.join(', ') 
+                  : provider.providerProfile?.dataPreferences?.criticalInformation || '-'}
               </span>
             </div>
             <div className={styles.infoItem}>
               <span className={styles.label}>Do you require access to historical data trends?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.dataPreferences?.historicalData || '-'}
+                {provider.providerProfile?.dataPreferences?.requiresHistoricalData === true ? 'Yes' : 
+                 provider.providerProfile?.dataPreferences?.requiresHistoricalData === false ? 'No' : '-'}
               </span>
             </div>
           </div>
@@ -213,7 +217,7 @@ const ViewProvider = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>Are there specific data security or privacy practices you need to adhere to?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.privacyPractices || '-'}
+                {provider.providerProfile?.dataPrivacyPractices || '-'}
               </span>
             </div>
           </div>
@@ -225,19 +229,20 @@ const ViewProvider = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>How would you prefer to receive technical support?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.communication?.supportPreference || '-'}
+                {provider.providerProfile?.supportPreferences?.technicalSupportPreference || '-'}
               </span>
             </div>
             <div className={styles.infoItem}>
               <span className={styles.label}>Would you require training on how to use the Onus platform?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.communication?.trainingRequired || '-'}
+                {provider.providerProfile?.supportPreferences?.requiresTraining === true ? 'Yes' : 
+                 provider.providerProfile?.supportPreferences?.requiresTraining === false ? 'No' : '-'}
               </span>
             </div>
             <div className={styles.infoItem}>
               <span className={styles.label}>How would you like to receive updates about new features or platform changes?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.communication?.updatePreference || '-'}
+                {provider.providerProfile?.supportPreferences?.updatePreference || '-'}
               </span>
             </div>
           </div>

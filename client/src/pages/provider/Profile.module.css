@@ -4,7 +4,12 @@
 }
 
 .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
 }
 
 .titleSection h1 {
@@ -17,17 +22,78 @@
 .titleSection p {
   color: #666;
   margin: 0;
+  font-size: 0.95rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+}
+
+.editButton {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editButton:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
 }
 
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
+  margin-bottom: 30px;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 768px) {
   .contentGrid {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 1200px) {
+  .contentGrid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* Card styles */
+.basicInfoCard,
+.professionalInfoCard,
+.practiceInfoCard {
+  /* These cards should span single columns on all screen sizes */
+}
+
+.managementInfoCard {
+  /* This card has more content, so let it span wider on larger screens */
+}
+
+.supportInfoCard {
+  /* This card also has more content */
+}
+
+@media (min-width: 768px) {
+  .managementInfoCard {
+    grid-column: span 2;
+  }
+}
+
+@media (min-width: 1200px) {
+  .managementInfoCard {
+    grid-column: span 2;
+  }
+  
+  .supportInfoCard {
+    grid-column: span 2;
   }
 }
 
@@ -56,12 +122,182 @@
   }
 }
 
-.formActions {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
+/* Three column row for basic info */
+.basicInfoCard .formRow:first-of-type {
+  grid-template-columns: 1fr;
 }
 
+@media (min-width: 768px) {
+  .basicInfoCard .formRow:first-of-type {
+    grid-template-columns: auto 1fr 1fr;
+  }
+}
+
+/* Practice License Field Styles */
+.licenseField {
+  margin-bottom: 20px;
+}
+
+.licenseLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.licenseContent {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: #f9fafb;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+}
+
+.licenseInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.licenseFilename {
+  font-size: 0.9rem;
+  color: #374151;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noLicense {
+  font-size: 0.9rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.viewLicenseButton {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.viewLicenseButton:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.viewLicenseButton:active {
+  transform: translateY(0);
+}
+
+/* Checkbox styles */
+.checkboxGroup {
+  margin-bottom: 20px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: #333;
+  cursor: pointer;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  transition: all 0.2s ease;
+}
+
+.checkboxLabel:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+}
+
+.checkboxLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #007bff;
+  cursor: pointer;
+}
+
+.checkboxLabel input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* Form actions */
+.formActions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 30px 0;
+  border-top: 2px solid #eee;
+  margin-top: 20px;
+}
+
+.cancelButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 120px;
+}
+
+.cancelButton:hover {
+  background-color: #545b62;
+  transform: translateY(-1px);
+}
+
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.saveButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 160px;
+}
+
+.saveButton:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading container */
 .loadingContainer {
   display: flex;
   flex-direction: column;
@@ -69,4 +305,61 @@
   justify-content: center;
   height: 60vh;
   padding: 20px;
+}
+
+.loadingContainer p {
+  margin-top: 15px;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .profileContainer {
+    padding: 15px;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .headerActions {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .editButton {
+    width: 100%;
+    padding: 12px 20px;
+  }
+  
+  .contentGrid {
+    gap: 15px;
+  }
+  
+  .formActions {
+    flex-direction: column;
+    padding: 20px 0;
+  }
+  
+  .cancelButton,
+  .saveButton {
+    width: 100%;
+    margin: 0;
+  }
+  
+  /* Mobile license field adjustments */
+  .licenseInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .viewLicenseButton {
+    align-self: flex-end;
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
 } 

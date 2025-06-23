@@ -360,6 +360,20 @@
   color: #666;
 }
 
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: #666;
+}
+
+.loadingContainer p {
+  margin-top: 16px;
+  font-size: 16px;
+}
+
 .notFound {
   color: #f44336;
 }
@@ -380,4 +394,260 @@
   color: #3F51B5;
   font-style: italic;
   margin-top: 8px;
+}
+
+/* New consultation status styles */
+.consultationSpecialty {
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.specialtyLabel {
+  font-weight: 500;
+  color: #555;
+}
+
+.viewAllConsultations {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.status-draft {
+  background-color: #FFF3E0;
+  color: #FF9800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-completed {
+  background-color: #E8F5E8;
+  color: #4CAF50;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Consultations tab styles */
+.consultationsTab {
+  padding: 24px;
+}
+
+.consultationsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.consultationsHeader h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.consultationsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 24px;
+}
+
+.consultationCard {
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 20px;
+  background-color: white;
+  transition: box-shadow 0.2s ease;
+}
+
+.consultationCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.consultationCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.consultationMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consultationActions {
+  display: flex;
+  gap: 8px;
+}
+
+.consultationDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consultationField {
+  display: flex;
+  align-items: flex-start;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  min-width: 80px;
+  margin-right: 8px;
+}
+
+.fieldValue {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+}
+
+/* Medical records tabs styles */
+.recordsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 24px;
+}
+
+.recordsHeader h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.recordsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+  padding: 0 24px 24px;
+}
+
+.recordsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+
+.recordCard {
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 20px;
+  background-color: white;
+  transition: box-shadow 0.2s ease;
+}
+
+.recordCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.recordHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.recordHeader h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.recordDate {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.recordProvider {
+  font-size: 14px;
+  color: #888;
+}
+
+/* Detail row styles for records */
+.detailRow {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.detailLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  min-width: 120px;
+  margin-right: 12px;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+}
+
+/* Specific medical record type styles */
+.vitalsTab,
+.medicationsTab,
+.immunizationsTab,
+.labResultsTab,
+.radiologyTab,
+.hospitalTab,
+.surgeryTab {
+  padding: 24px 0;
+}
+
+.medicationDetails,
+.immunizationDetails,
+.labDetails,
+.radiologyDetails,
+.hospitalDetails,
+.surgeryDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .overviewTab {
+    grid-template-columns: 1fr;
+  }
+  
+  .patientDetailsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .medicalHistoryGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .emergencyContactDetails {
+    grid-template-columns: 1fr;
+  }
+  
+  .vitalsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .consultationsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .recordsGrid {
+    grid-template-columns: 1fr;
+  }
 } 
