@@ -11,20 +11,26 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: FRONTEND_URL
-        sync: false # Will be set after frontend is deployed
       - key: MONGODB_ATLAS_URI
-        sync: false # Set from dashboard
+        sync: false # Set from dashboard - MongoDB connection string
       - key: JWT_SECRET
-        sync: false # Set from dashboard
+        sync: false # Set from dashboard - Generate secure random string
       - key: JWT_REFRESH_SECRET
-        sync: false # Set from dashboard
+        sync: false # Set from dashboard - Generate secure random string
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 30d
       - key: SENDGRID_API_KEY
-        sync: false # Set from dashboard
+        sync: false # Set from dashboard - SendGrid API key for emails
       - key: EMAIL_FROM
         value: no-reply@onus.health
       - key: SESSION_TIMEOUT
         value: "30"
+      - key: FRONTEND_URL
+        value: https://onus-health-frontend.onrender.com # Update with actual frontend URL
+      - key: MAX_FILE_SIZE
+        value: "5242880" # 5MB in bytes
 
   # Frontend service
   - type: web
@@ -37,12 +43,17 @@ services:
       - path: /*
         name: X-Frame-Options
         value: DENY
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
       - key: REACT_APP_API_URL
-        sync: false # Will be set after backend is deployed
+        value: https://onus-health-backend.onrender.com/api # Update with actual backend URL
       - key: REACT_APP_SESSION_TIMEOUT
         value: "1800000"
+      - key: NODE_ENV
+        value: production

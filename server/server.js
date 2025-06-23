@@ -37,26 +37,44 @@ app.disable('etag');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Use more permissive CORS settings in development for debugging
+// CORS configuration with better error handling
+const corsOptions = {
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: false,
+  optionsSuccessStatus: 200,
+  preflightContinue: false
+};
+
 if (config.env === 'development') {
-  app.use(cors({
-    origin: '*', // Allow any origin in development
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false,
-    optionsSuccessStatus: 200
-  }));
+  // More permissive CORS settings in development for debugging
+  corsOptions.origin = '*';
   logger.info('Development mode: CORS configured to allow all origins');
 } else {
-  app.use(cors({
-    origin: config.frontendUrl,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false,
-    optionsSuccessStatus: 200
-  }));
-  logger.info(`CORS configured with origin: ${config.frontendUrl}`);
+  // Production CORS with proper origin validation
+  corsOptions.origin = (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches frontend URL
+    const allowedOrigin = config.frontendUrl;
+    if (origin === allowedOrigin) {
+      return callback(null, true);
+    }
+    
+    // Also allow localhost variations for testing
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      logger.warn(`Allowing localhost origin in production: ${origin}`);
+      return callback(null, true);
+    }
+    
+    logger.error(`CORS blocked origin: ${origin}. Expected: ${allowedOrigin}`);
+    return callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
+  };
+  logger.info(`CORS configured with origin validation for: ${config.frontendUrl}`);
 }
+
+app.use(cors(corsOptions));
 
 logger.info(`Frontend URL configured as: ${config.frontendUrl}`);
 logger.info(`Current environment: ${config.env}`);

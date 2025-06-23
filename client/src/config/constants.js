@@ -3,8 +3,11 @@
  * Central location for application-wide constants
  */
 
-// API configuration
-export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+// API configuration - consistent with config/index.js
+export const API_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' ? 
+    `${window.location.protocol}//${window.location.host}/api` : 
+    'http://localhost:5001/api');
 
 // Authentication
 export const SESSION_TIMEOUT = parseInt(process.env.REACT_APP_SESSION_TIMEOUT || '1800000', 10); // 30 minutes in ms

@@ -4,8 +4,11 @@
  */
 
 const config = {
-  // API endpoints - use environment variable in production, relative path in development
-  apiUrl: process.env.REACT_APP_API_URL || '/api',
+  // API endpoints - use environment variable or construct from window.location in production
+  apiUrl: process.env.REACT_APP_API_URL || 
+    (process.env.NODE_ENV === 'production' ? 
+      `${window.location.protocol}//${window.location.host}/api` : 
+      'http://localhost:5001/api'),
   
   // Authentication
   sessionTimeout: parseInt(process.env.REACT_APP_SESSION_TIMEOUT || '1800000', 10), // 30 minutes in milliseconds
