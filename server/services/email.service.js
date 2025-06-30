@@ -419,8 +419,10 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
     throw new Error('Provider information is required');
   }
 
-  // Explicitly set admin email
-  const adminEmail = 'rowan.franciscus.2@gmail.com';
+  // Admin emails
+  const adminEmails = ['rowan.franciscus.2@gmail.com', 'julian@onus.health'];
+  // Use the first admin email for now (can be extended to send to all admins)
+  const adminEmail = adminEmails[0];
   
   logger.info(`Sending provider verification request to admin email: ${adminEmail}`);
   
@@ -436,7 +438,7 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
     experience: provider.providerProfile?.yearsOfExperience || 'Not specified',
     verificationLink: adminUrl,
     appName: 'Onus Health',
-    supportEmail: config.emailFrom
+    supportEmail: config.supportEmail || 'support@onus.health'
   };
 
   try {
@@ -484,7 +486,7 @@ const sendProviderVerificationApprovalEmail = async (provider, options = {}) => 
     providerName: provider.firstName,
     loginLink: loginUrl,
     appName: 'Onus Health',
-    supportEmail: config.emailFrom
+    supportEmail: config.supportEmail || 'support@onus.health'
   };
 
   try {
@@ -523,7 +525,7 @@ const sendProviderVerificationRejectionEmail = async (provider, rejectionReason,
     rejectionReason: rejectionReason || 'Your application did not meet our current requirements',
     contactLink: contactUrl,
     appName: 'Onus Health',
-    supportEmail: config.emailFrom
+    supportEmail: config.supportEmail || 'support@onus.health'
   };
 
   try {

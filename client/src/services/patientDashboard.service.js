@@ -54,7 +54,8 @@ const PatientDashboardService = {
    */
   getProviderRequests: async () => {
     try {
-      return await ConnectionService.getConnections({ status: 'pending', role: 'patient' });
+      const requests = await ConnectionService.getPatientConnectionRequests();
+      return { requests };
     } catch (error) {
       console.error('Error fetching provider requests:', error);
       throw error;
@@ -69,9 +70,8 @@ const PatientDashboardService = {
    */
   respondToProviderRequest: async (requestId, action) => {
     try {
-      return await ConnectionService.updateConnection(requestId, { 
-        status: action === 'accept' ? 'approved' : 'rejected' 
-      });
+      const apiAction = action === 'accept' ? 'approve' : 'deny';
+      return await ConnectionService.respondToConnectionRequest(requestId, apiAction);
     } catch (error) {
       console.error(`Error ${action}ing provider request:`, error);
       throw error;

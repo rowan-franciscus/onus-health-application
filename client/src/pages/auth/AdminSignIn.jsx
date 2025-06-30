@@ -281,6 +281,10 @@ const AdminSignIn = () => {
           {errors.password && <div className={styles.errorText}>{errors.password}</div>}
         </div>
         
+        <div className={styles.forgotPassword}>
+          <a href="/forgot-password">Forgot password?</a>
+        </div>
+        
         <div style={{ display: 'flex', gap: '10px' }}>
           <button 
             type="submit" 

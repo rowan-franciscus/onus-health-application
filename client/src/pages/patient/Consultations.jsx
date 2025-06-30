@@ -57,7 +57,8 @@ const PatientConsultations = () => {
         (consultation.specialist || '').toLowerCase().includes(lowercasedTerm) ||
         (consultation.clinic || '').toLowerCase().includes(lowercasedTerm) ||
         (consultation.reason || '').toLowerCase().includes(lowercasedTerm) ||
-        (consultation.date || '').includes(lowercasedTerm)
+        (consultation.date || '').includes(lowercasedTerm) ||
+        (consultation.status || 'draft').toLowerCase().includes(lowercasedTerm)
     );
     
     setFilteredConsultations(results);
@@ -95,12 +96,18 @@ const PatientConsultations = () => {
       <Card className={styles.consultationsCard}>
         <div className={styles.searchContainer}>
           <SearchBox
-            placeholder="Search consultations by type, doctor, clinic, reason, or date..."
+            placeholder="Search consultations by type, doctor, clinic, reason, date, or status (draft/completed)..."
             value={searchTerm}
             onChange={handleSearch}
             className={styles.searchBox}
           />
         </div>
+        
+        {searchTerm && consultations.length > 0 && (
+          <div className={styles.searchResultsInfo}>
+            Found {filteredConsultations.length} {filteredConsultations.length === 1 ? 'consultation' : 'consultations'} matching "{searchTerm}"
+          </div>
+        )}
         
         {isLoading ? (
           <div className={styles.loading}>Loading consultations...</div>
@@ -114,6 +121,7 @@ const PatientConsultations = () => {
               <div className={styles.specialist}>Specialist</div>
               <div className={styles.clinic}>Clinic / Practice</div>
               <div className={styles.reason}>Reason for Visit</div>
+              <div className={styles.status}>Status</div>
               <div className={styles.actions}>Actions</div>
             </div>
             
@@ -124,6 +132,9 @@ const PatientConsultations = () => {
                 <div className={styles.specialist}>{consultation.specialist || 'Not specified'}</div>
                 <div className={styles.clinic}>{consultation.clinic || 'Not specified'}</div>
                 <div className={styles.reason}>{consultation.reason || 'Not specified'}</div>
+                <div className={`${styles.status} ${styles[`status-${(consultation.status || 'draft').toLowerCase()}`]}`}>
+                  {(consultation.status || 'draft').charAt(0).toUpperCase() + (consultation.status || 'draft').slice(1)}
+                </div>
                 <div className={styles.actions}>
                   <Link
                     to={`/patient/consultations/${consultation.id}`}

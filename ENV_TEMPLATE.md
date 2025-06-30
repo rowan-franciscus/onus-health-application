@@ -21,6 +21,8 @@ JWT_REFRESH_EXPIRES_IN=30d
 # Email Configuration
 MAIL_PROVIDER=sendgrid
 EMAIL_FROM=no-reply@onus.health
+SUPPORT_EMAIL=support@onus.health
+SUPPORT_PHONE=081 000 0000
 
 # SendGrid
 SENDGRID_API_KEY=SG.your_sendgrid_api_key_here
@@ -51,6 +53,8 @@ REACT_APP_SESSION_TIMEOUT=1800000
 - `JWT_REFRESH_SECRET=generate_secure_production_refresh_secret`
 - `SENDGRID_API_KEY=your_sendgrid_api_key`
 - `EMAIL_FROM=no-reply@onus.health`
+- `SUPPORT_EMAIL=support@onus.health`
+- `SUPPORT_PHONE=081 000 0000`
 - `FRONTEND_URL=https://your-frontend-url.onrender.com`
 - `SESSION_TIMEOUT=30`
 

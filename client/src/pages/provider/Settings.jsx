@@ -93,8 +93,14 @@ const Settings = () => {
     }
     
     try {
-      // This would be an API call in a real app
-      toast.success('Password changed successfully');
+      // Import API service at the top
+      const ApiService = await import('../../services/api.service');
+      
+      // Call API to change password
+      await ApiService.default.put('/provider/change-password', {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
       
       // Reset form
       setPasswordData({
@@ -102,8 +108,15 @@ const Settings = () => {
         newPassword: '',
         confirmPassword: ''
       });
+      
+      toast.success('Password changed successfully');
     } catch (error) {
-      toast.error('Failed to change password');
+      console.error('Error changing password:', error);
+      if (error.response?.status === 401) {
+        toast.error('Current password is incorrect');
+      } else {
+        toast.error('Failed to change password. Please try again.');
+      }
     }
   };
   

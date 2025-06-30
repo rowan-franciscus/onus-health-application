@@ -220,7 +220,8 @@ class AuthService {
    */
   static async requestPasswordReset(data) {
     try {
-      return await ApiService.post('/auth/password-reset-request', data);
+      const response = await ApiService.post('/auth/password-reset-request', data);
+      return { success: true, ...response };
     } catch (error) {
       console.error('Password reset request error:', error);
       const errorMessage = error.userMessage || 'Failed to request password reset. Please try again.';
@@ -235,7 +236,8 @@ class AuthService {
    */
   static async resetPassword(data) {
     try {
-      return await ApiService.post('/auth/password-reset', data);
+      const response = await ApiService.post('/auth/password-reset', data);
+      return { success: true, ...response };
     } catch (error) {
       console.error('Password reset error:', error);
       const errorMessage = error.userMessage || 'Failed to reset password. Please try again.';

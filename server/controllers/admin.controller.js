@@ -393,14 +393,21 @@ const getDashboardAnalytics = async (req, res, next) => {
     let averageAge = 0;
     if (patientsWithDob.length > 0) {
       const totalAge = patientsWithDob.reduce((sum, patient) => {
-        const birthDate = new Date(patient.patientProfile.dateOfBirth);
-        const ageInMs = Date.now() - birthDate.getTime();
-        const ageDate = new Date(ageInMs);
-        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
-        return sum + age;
+        if (patient.patientProfile && patient.patientProfile.dateOfBirth) {
+          const birthDate = new Date(patient.patientProfile.dateOfBirth);
+          const ageInMs = Date.now() - birthDate.getTime();
+          const ageDate = new Date(ageInMs);
+          const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+          return sum + age;
+        }
+        return sum;
       }, 0);
       
-      averageAge = Math.round(totalAge / patientsWithDob.length);
+      // Only calculate average if we have valid ages
+      const validPatients = patientsWithDob.filter(p => p.patientProfile && p.patientProfile.dateOfBirth);
+      if (validPatients.length > 0) {
+        averageAge = Math.round(totalAge / validPatients.length);
+      }
     }
     
     // Format gender distribution
@@ -425,14 +432,18 @@ const getDashboardAnalytics = async (req, res, next) => {
     const activityLog = [
       ...recentActivities[0].map(user => ({
         type: 'user_created',
-        user: `${user.firstName} ${user.lastName}`,
-        role: user.role,
-        timestamp: user.createdAt
+        user: user ? `${user.firstName || 'Unknown'} ${user.lastName || 'User'}` : 'Unknown User',
+        role: user ? user.role : 'unknown',
+        timestamp: user ? user.createdAt : new Date()
       })),
       ...recentActivities[1].map(consultation => ({
         type: 'consultation_created',
-        provider: `${consultation.provider.firstName} ${consultation.provider.lastName}`,
-        patient: `${consultation.patient.firstName} ${consultation.patient.lastName}`,
+        provider: consultation.provider ? 
+          `${consultation.provider.firstName || 'Unknown'} ${consultation.provider.lastName || 'Provider'}` : 
+          'Unknown Provider',
+        patient: consultation.patient ? 
+          `${consultation.patient.firstName || 'Unknown'} ${consultation.patient.lastName || 'Patient'}` : 
+          'Unknown Patient',
         timestamp: consultation.createdAt
       }))
     ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 5);
@@ -712,6 +723,83 @@ const completeProviderVerification = async (req, res) => {
   }
 };
 
+/**
+ * Change admin password
+ */
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Current password and new password are required' 
+      });
+    }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        message: 'New password must be at least 8 characters long' 
+      });
+    }
+    
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+    
+    return res.json({ 
+      success: true,
+      message: 'Password changed successfully' 
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Update admin profile
+ */
+const updateProfile = async (req, res, next) => {
+  try {
+    const adminId = req.user.id;
+    const { firstName, lastName, email } = req.body;
+    
+    // Don't allow certain fields to be updated
+    const updateData = {};
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (email) updateData.email = email;
+    
+    const updatedAdmin = await User.findByIdAndUpdate(
+      adminId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!updatedAdmin) {
+      return next(new ApiError(httpStatus.NOT_FOUND, 'Admin not found'));
+    }
+    
+    res.json(updatedAdmin);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -723,5 +811,7 @@ module.exports = {
   getDashboardAnalytics,
   getProviderVerificationRequests,
   processProviderVerification,
-  completeProviderVerification
+  completeProviderVerification,
+  changePassword,
+  updateProfile
 }; 

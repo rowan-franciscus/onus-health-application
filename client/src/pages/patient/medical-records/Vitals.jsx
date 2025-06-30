@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
@@ -8,6 +9,7 @@ const VitalsRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchVitalsRecords = async () => {
@@ -43,16 +45,22 @@ const VitalsRecords = () => {
     return `${value} ${unit || ''}`;
   };
 
+  // Handle navigation to consultation view
+  const handleViewConsultation = (consultationId) => {
+    navigate(`/patient/consultations/${consultationId}?tab=vitals`);
+  };
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
       <>
         <th>Date</th>
+        <th>Provider</th>
         <th>Heart Rate</th>
         <th>Blood Pressure</th>
         <th>Body Temperature</th>
         <th>Blood Glucose</th>
-        <th>Respiratory Rate</th>
+        <th>Actions</th>
       </>
     );
   };
@@ -62,11 +70,19 @@ const VitalsRecords = () => {
     return (
       <>
         <td>{formatDate(record.date)}</td>
+        <td>{record.provider || 'N/A'}</td>
         <td>{formatValueWithUnit(record.heartRate)}</td>
         <td>{formatBloodPressure(record)}</td>
         <td>{formatValueWithUnit(record.bodyTemperature)}</td>
         <td>{formatValueWithUnit(record.bloodGlucose)}</td>
-        <td>{formatValueWithUnit(record.respiratoryRate)}</td>
+        <td>
+          <button 
+            className={styles.viewButton}
+            onClick={() => handleViewConsultation(record.consultationId)}
+          >
+            View
+          </button>
+        </td>
       </>
     );
   };
@@ -80,7 +96,7 @@ const VitalsRecords = () => {
       error={error}
       renderTableHeaders={renderTableHeaders}
       renderRecordContent={renderRecordContent}
-      searchFields={['date', 'heartRate.value', 'bloodPressure.systolic', 'bloodPressure.diastolic']}
+      searchFields={['date', 'provider', 'heartRate.value', 'bloodPressure.systolic', 'bloodPressure.diastolic']}
       noRecordsMessage="No vitals records found. Your health provider will add vitals during consultations."
     />
   );

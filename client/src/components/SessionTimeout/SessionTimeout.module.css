@@ -37,6 +37,7 @@
   padding: 20px;
   color: #333;
   line-height: 1.5;
+  text-align: center;
 }
 
 .modalBody p {
@@ -45,6 +46,43 @@
 
 .modalBody p:last-child {
   margin-bottom: 0;
+}
+
+.warningIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.warningText {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 20px;
+}
+
+.countdown {
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.countdownLabel {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px !important;
+}
+
+.countdownTimer {
+  font-size: 32px;
+  font-weight: bold;
+  color: #d32f2f;
+  margin: 0 !important;
+  font-family: 'Courier New', monospace;
+}
+
+.questionText {
+  font-size: 16px;
+  margin-top: 20px;
 }
 
 .modalFooter {

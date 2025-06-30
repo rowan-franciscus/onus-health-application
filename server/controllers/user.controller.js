@@ -58,6 +58,92 @@ exports.updateCurrentUser = async (req, res) => {
 };
 
 /**
+ * Get user profile
+ */
+exports.getUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await User.findById(userId)
+      .select('-password -resetPasswordToken -resetPasswordExpires');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    return res.json(user);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Update user profile
+ */
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const updateData = req.body;
+    
+    // Don't allow certain fields to be updated through this endpoint
+    delete updateData.password;
+    delete updateData.role;
+    delete updateData.isEmailVerified;
+    delete updateData.resetPasswordToken;
+    delete updateData.resetPasswordExpires;
+    
+    // Get current user
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Handle different user types
+    if (currentUser.role === 'patient' && updateData.patientProfile) {
+      // Deep merge patient profile data
+      currentUser.patientProfile = {
+        ...currentUser.patientProfile,
+        ...updateData.patientProfile
+      };
+      delete updateData.patientProfile;
+    } else if (currentUser.role === 'provider' && updateData.providerProfile) {
+      // Preserve verification status for providers
+      if (currentUser.providerProfile?.isVerified) {
+        updateData.providerProfile.isVerified = true;
+      }
+      // Deep merge provider profile data
+      currentUser.providerProfile = {
+        ...currentUser.providerProfile,
+        ...updateData.providerProfile
+      };
+      delete updateData.providerProfile;
+    }
+    
+    // Update basic fields
+    Object.keys(updateData).forEach(key => {
+      currentUser[key] = updateData[key];
+    });
+    
+    // Save the updated user
+    await currentUser.save();
+    
+    // Return updated user without sensitive fields
+    const updatedUser = await User.findById(userId)
+      .select('-password -resetPasswordToken -resetPasswordExpires');
+    
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
  * Get all users (admin only)
  */
 exports.getAllUsers = async (req, res) => {
@@ -205,6 +291,53 @@ exports.searchProviders = async (req, res) => {
 };
 
 /**
+ * Change user password
+ */
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ 
+        message: 'Current password and new password are required' 
+      });
+    }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        message: 'New password must be at least 8 characters long' 
+      });
+    }
+    
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+    
+    return res.json({ 
+      success: true,
+      message: 'Password changed successfully' 
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
  * Delete current user account
  */
 exports.deleteCurrentUser = async (req, res) => {
@@ -221,9 +354,65 @@ exports.deleteCurrentUser = async (req, res) => {
     user.deletedAt = new Date();
     await user.save();
     
-    return res.json({ message: 'User account has been deactivated successfully' });
+      return res.json({ message: 'User account has been deactivated successfully' });
+} catch (error) {
+  console.error('Error deleting user:', error);
+  return res.status(500).json({ message: 'Server error', error: error.message });
+}
+};
+
+/**
+ * Update notification preferences
+ */
+exports.updateNotificationPreferences = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const notificationPreferences = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { notificationPreferences } },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    return res.json({ 
+      success: true,
+      message: 'Notification preferences updated successfully',
+      notificationPreferences: user.notificationPreferences
+    });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    console.error('Error updating notification preferences:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+/**
+ * Delete user account
+ */
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Soft delete by marking as inactive
+    user.active = false;
+    user.deletedAt = new Date();
+    await user.save();
+    
+    return res.json({ 
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting account:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -482,9 +671,12 @@ exports.getPatientDashboard = async (req, res) => {
   try {
     const patientId = req.user.id;
     
-    // Get recent consultations
+    // Get recent consultations - only completed ones for patients
     const Consultation = require('../models/Consultation');
-    const consultations = await Consultation.find({ patient: patientId })
+    const consultations = await Consultation.find({ 
+      patient: patientId,
+      status: 'completed'  // Only show completed consultations to patients
+    })
       .populate('provider', 'firstName lastName providerProfile')
       .sort({ date: -1 })
       .limit(3);
@@ -554,7 +746,10 @@ exports.getPatientRecentConsultations = async (req, res) => {
     const limit = parseInt(req.query.limit) || 3;
     
     const Consultation = require('../models/Consultation');
-    const consultations = await Consultation.find({ patient: patientId })
+    const consultations = await Consultation.find({ 
+      patient: patientId,
+      status: 'completed'  // Only show completed consultations to patients
+    })
       .populate('provider', 'firstName lastName providerProfile')
       .sort({ date: -1 })
       .limit(limit);

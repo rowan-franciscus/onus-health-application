@@ -1,97 +1,173 @@
 .settingsContainer {
-  padding: 20px;
-  width: 100%;
+  padding: 1.5rem;
+  max-width: 100%;
 }
 
 .header {
-  margin-bottom: 20px;
+  margin-bottom: 2rem;
 }
 
 .titleSection h1 {
-  font-size: 1.8rem;
-  font-weight: 600;
+  color: #333;
   margin: 0;
-  margin-bottom: 5px;
+  margin-bottom: 0.5rem;
+  font-size: 1.75rem;
 }
 
 .titleSection p {
   color: #666;
   margin: 0;
+  font-size: 1rem;
 }
 
 .cardHeader {
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eee;
 }
 
 .cardHeader h2 {
-  font-size: 1.2rem;
-  font-weight: 500;
+  color: #6039cc;
   margin: 0;
-  margin-bottom: 5px;
+  font-size: 1.25rem;
 }
 
 .cardHeader p {
   color: #666;
-  margin: 0;
+  margin: 0.5rem 0 0 0;
   font-size: 0.9rem;
 }
 
 .formItem {
-  margin-bottom: 15px;
+  margin-bottom: 1.5rem;
 }
 
 .formActions {
-  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
+/* Card Styles */
 .changePasswordCard,
 .notificationsCard,
 .dangerZoneCard {
-  margin-bottom: 20px;
-  padding: 20px;
+  margin-bottom: 1.5rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
 }
 
 .dangerZoneCard {
-  border-color: #ffebee;
+  border: 1px solid #e53e3e;
 }
 
 .deleteWarning {
-  margin-bottom: 20px;
+  color: #e53e3e;
+  margin-bottom: 1.5rem;
 }
 
 .checkboxGroup {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 1.5rem;
 }
 
 .checkboxLabel {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: #333;
   cursor: pointer;
 }
 
-.checkboxLabel input {
-  margin-right: 10px;
+.checkboxLabel input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #6039cc;
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.checkboxLabel input[type="checkbox"]:checked {
+  background-color: #6039cc;
+}
+
+.checkboxLabel input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkboxLabel input[type="checkbox"]:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .checkboxLabel span {
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .deleteModalContent {
-  padding: 15px;
+  padding: 1.5rem;
 }
 
 .deleteModalContent p {
-  margin-bottom: 15px;
+  margin-bottom: 1.5rem;
+  color: #333;
 }
 
 .modalActions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* Button styles - reusing from patient settings */
+.saveButton {
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.saveButton:hover {
+  background-color: #4c2da3;
+}
+
+.saveButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .formActions,
+  .modalActions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .formActions button,
+  .modalActions button {
+    width: 100%;
+  }
 } 

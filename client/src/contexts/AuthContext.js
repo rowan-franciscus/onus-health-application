@@ -14,8 +14,8 @@ import AuthService from '../services/auth.service';
 
 // Session timeout in milliseconds (30 minutes)
 const SESSION_TIMEOUT = 30 * 60 * 1000;
-// Warning before timeout (1 minute before)
-const WARNING_TIME = 1 * 60 * 1000;
+// Warning before timeout (3 minutes before)
+const WARNING_TIME = 3 * 60 * 1000;
 
 // Create context
 const AuthContext = createContext();

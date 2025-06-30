@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './ProviderSearch.module.css';
 import Card from '../common/Card';
 import Button from '../common/Button';
@@ -13,31 +13,33 @@ const ProviderSearch = () => {
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Handle search for providers
-  const handleSearch = async (value) => {
-    setSearchTerm(value);
-    
-    if (!value.trim()) {
+  // Handle search for providers with proper debouncing
+  useEffect(() => {
+    if (!searchTerm.trim()) {
       setSearchResults([]);
       return;
     }
     
     setIsSearching(true);
     
-    try {
-      // A slight delay to avoid too many API calls while typing
-      const delayDebounceFn = setTimeout(async () => {
-        const results = await ConnectionService.searchProviders(value);
+    // Debounce the search
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const results = await ConnectionService.searchProviders(searchTerm);
         setSearchResults(results);
         setIsSearching(false);
-      }, 500);
-      
-      return () => clearTimeout(delayDebounceFn);
-    } catch (error) {
-      console.error('Error searching for providers:', error);
-      toast.error('Failed to search for providers. Please try again.');
-      setIsSearching(false);
-    }
+      } catch (error) {
+        console.error('Error searching for providers:', error);
+        toast.error('Failed to search for providers. Please try again.');
+        setIsSearching(false);
+      }
+    }, 500);
+    
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  const handleSearch = (value) => {
+    setSearchTerm(value);
   };
 
   // Handle provider selection

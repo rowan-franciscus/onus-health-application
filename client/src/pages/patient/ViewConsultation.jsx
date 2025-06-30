@@ -1,19 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import styles from './ViewConsultation.module.css';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import Tabs from '../../components/common/Tabs';
 import ApiService from '../../services/api.service';
 
+// Define tabs array outside component
+const tabs = [
+  { id: 'general', label: 'General' },
+  { id: 'vitals', label: 'Vitals' },
+  { id: 'medications', label: 'Medications' },
+  { id: 'immunizations', label: 'Immunizations' },
+  { id: 'labResults', label: 'Lab Results' },
+  { id: 'radiologyReports', label: 'Radiology Reports' },
+  { id: 'hospital', label: 'Hospital' },
+  { id: 'surgery', label: 'Surgery' },
+  { id: 'files', label: 'Files' },
+];
+
 const PatientViewConsultation = () => {
   const { id } = useParams();
+  const location = useLocation();
   const [consultation, setConsultation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check for tab parameter in URL
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam && tabs.find(tab => tab.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+
     // Fetch actual consultation details from API
     const fetchConsultationDetails = async () => {
       try {
@@ -32,7 +53,7 @@ const PatientViewConsultation = () => {
             specialty: consultationData.general?.specialty || 'General Medicine',
             clinic: consultationData.general?.practice || 'N/A',
             reason: consultationData.general?.reasonForVisit || 'N/A',
-            notes: consultationData.general?.observations || 'No notes available',
+            notes: consultationData.general?.observations || consultationData.general?.notes || 'No notes available',
             
             // Different medical record types
             general: {
@@ -41,7 +62,7 @@ const PatientViewConsultation = () => {
               specialty: consultationData.general?.specialty || 'N/A',
               practice: consultationData.general?.practice || 'N/A',
               reasonForVisit: consultationData.general?.reasonForVisit || 'N/A',
-              observations: consultationData.general?.observations || 'No observations recorded',
+              observations: consultationData.general?.observations || consultationData.general?.notes || 'No observations recorded',
             },
             
             vitals: consultationData.vitals || {},
@@ -49,11 +70,11 @@ const PatientViewConsultation = () => {
             immunizations: consultationData.immunizations || [],
             labResults: consultationData.labResults || [],
             radiologyReports: consultationData.radiologyReports || [],
-            hospital: consultationData.hospitalRecords || [],
-            surgery: consultationData.surgeryRecords || [],
+            hospitalRecords: consultationData.hospitalRecords || [],
+            surgeryRecords: consultationData.surgeryRecords || [],
             
             // File attachments
-            files: consultationData.attachments || []
+            attachments: consultationData.attachments || []
           };
           
           setConsultation(formattedConsultation);
@@ -69,11 +90,23 @@ const PatientViewConsultation = () => {
     };
 
     fetchConsultationDetails();
-  }, [id]);
+  }, [id, location.search]);
 
   // Handle tab switching
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
+  };
+
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Format value helper
+  const formatValue = (value, unit = '') => {
+    if (!value || value === '' || value === 'N/A') return 'N/A';
+    return `${value}${unit ? ` ${unit}` : ''}`;
   };
 
   // Download consultation data as JSON
@@ -93,18 +126,7 @@ const PatientViewConsultation = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Define tabs
-  const tabs = [
-    { id: 'general', label: 'General' },
-    { id: 'vitals', label: 'Vitals' },
-    { id: 'medications', label: 'Medications' },
-    { id: 'immunizations', label: 'Immunizations' },
-    { id: 'labResults', label: 'Lab Results' },
-    { id: 'radiologyReports', label: 'Radiology Reports' },
-    { id: 'hospital', label: 'Hospital' },
-    { id: 'surgery', label: 'Surgery' },
-    { id: 'files', label: 'Files' },
-  ];
+
 
   // Render tab content based on active tab
   const renderTabContent = () => {
@@ -117,7 +139,7 @@ const PatientViewConsultation = () => {
             <div className={styles.infoGrid}>
               <div className={styles.infoItem}>
                 <h3>Date</h3>
-                <p>{consultation.general.date}</p>
+                <p>{formatDate(consultation.general.date)}</p>
               </div>
               <div className={styles.infoItem}>
                 <h3>Specialist</h3>
@@ -144,189 +166,303 @@ const PatientViewConsultation = () => {
         );
       
       case 'vitals':
+        const vitals = consultation.vitals || {};
         return (
           <div className={styles.vitalsInfo}>
-            <div className={styles.vitalsGrid}>
-              {Object.entries(consultation.vitals).map(([key, value]) => (
-                <div key={key} className={styles.vitalItem}>
-                  <h3>{key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())}</h3>
-                  <p>{value}</p>
+            {Object.keys(vitals).length === 0 ? (
+              <div className={styles.noData}>No vitals recorded for this consultation</div>
+            ) : (
+              <div className={styles.vitalsGrid}>
+                <div className={styles.vitalItem}>
+                  <h3>Heart Rate</h3>
+                  <p>{formatValue(vitals.heartRate?.value, 'bpm')}</p>
                 </div>
-              ))}
-            </div>
+                <div className={styles.vitalItem}>
+                  <h3>Blood Pressure</h3>
+                  <p>
+                    {vitals.bloodPressure?.systolic && vitals.bloodPressure?.diastolic 
+                      ? `${vitals.bloodPressure.systolic}/${vitals.bloodPressure.diastolic} mmHg`
+                      : 'N/A'}
+                  </p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Body Temperature</h3>
+                  <p>{formatValue(vitals.bodyTemperature?.value, '°F')}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Respiratory Rate</h3>
+                  <p>{formatValue(vitals.respiratoryRate?.value, '/min')}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Blood Glucose</h3>
+                  <p>{formatValue(vitals.bloodGlucose?.value, 'mg/dL')}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Blood Oxygen Saturation</h3>
+                  <p>{formatValue(vitals.bloodOxygenSaturation?.value, '%')}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>BMI</h3>
+                  <p>{formatValue(vitals.bmi?.value)}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Body Fat Percentage</h3>
+                  <p>{formatValue(vitals.bodyFatPercentage?.value, '%')}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Weight</h3>
+                  <p>{formatValue(vitals.weight?.value, 'lbs')}</p>
+                </div>
+                <div className={styles.vitalItem}>
+                  <h3>Height</h3>
+                  <p>{formatValue(vitals.height?.value, 'inches')}</p>
+                </div>
+              </div>
+            )}
           </div>
         );
       
       case 'medications':
+        const medications = consultation.medications || [];
         return (
           <div className={styles.medicationsInfo}>
-            {consultation.medications && consultation.medications.length > 0 ? (
+            {medications.length === 0 ? (
+              <div className={styles.noData}>No medications recorded for this consultation</div>
+            ) : (
               <div className={styles.medicationsList}>
-                {consultation.medications.map((medication, index) => (
+                {medications.map((medication, index) => (
                   <div key={index} className={styles.medicationItem}>
-                    <h3>{medication.name}</h3>
+                    <h3>{medication.nameOfMedication || 'Unnamed Medication'}</h3>
                     <div className={styles.medicationDetails}>
                       <div className={styles.medicationDetail}>
-                        <span>Dosage:</span> {medication.dosage}
+                        <span>Dosage:</span> {formatValue(medication.dosage)}
                       </div>
                       <div className={styles.medicationDetail}>
-                        <span>Frequency:</span> {medication.frequency}
+                        <span>Frequency:</span> {formatValue(medication.frequency)}
                       </div>
                       <div className={styles.medicationDetail}>
-                        <span>Reason:</span> {medication.reason}
+                        <span>Reason:</span> {formatValue(medication.reasonForPrescription)}
                       </div>
                       <div className={styles.medicationDetail}>
-                        <span>Start Date:</span> {medication.startDate}
+                        <span>Start Date:</span> {formatDate(medication.startDate)}
                       </div>
                       <div className={styles.medicationDetail}>
-                        <span>End Date:</span> {medication.endDate}
+                        <span>End Date:</span> {formatDate(medication.endDate)}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No medications recorded for this consultation</div>
             )}
           </div>
         );
       
       case 'immunizations':
+        const immunizations = consultation.immunizations || [];
         return (
           <div className={styles.immunizationsInfo}>
-            {consultation.immunizations && consultation.immunizations.length > 0 ? (
+            {immunizations.length === 0 ? (
+              <div className={styles.noData}>No immunizations recorded for this consultation</div>
+            ) : (
               <div className={styles.immunizationsList}>
-                {consultation.immunizations.map((immunization, index) => (
+                {immunizations.map((immunization, index) => (
                   <div key={index} className={styles.immunizationItem}>
-                    <h3>{immunization.vaccineName}</h3>
+                    <h3>{immunization.vaccineName || 'Unnamed Vaccine'}</h3>
                     <div className={styles.immunizationDetails}>
                       <div className={styles.immunizationDetail}>
-                        <span>Date Administered:</span> {immunization.dateAdministered}
+                        <span>Date Administered:</span> {formatDate(immunization.dateAdministered)}
                       </div>
                       <div className={styles.immunizationDetail}>
-                        <span>Vaccine Serial Number:</span> {immunization.vaccineSerialNumber}
+                        <span>Vaccine Serial Number:</span> {formatValue(immunization.vaccineSerialNumber)}
                       </div>
                       <div className={styles.immunizationDetail}>
-                        <span>Next Due Date:</span> {immunization.nextDueDate}
+                        <span>Next Due Date:</span> {formatDate(immunization.nextDueDate)}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No immunizations recorded for this consultation</div>
             )}
           </div>
         );
       
       case 'labResults':
+        const labResults = consultation.labResults || [];
         return (
           <div className={styles.labResultsInfo}>
-            {consultation.labResults && consultation.labResults.length > 0 ? (
+            {labResults.length === 0 ? (
+              <div className={styles.noData}>No lab results recorded for this consultation</div>
+            ) : (
               <div className={styles.labResultsList}>
-                {consultation.labResults.map((labResult, index) => (
+                {labResults.map((labResult, index) => (
                   <div key={index} className={styles.labResultItem}>
-                    <h3>{labResult.testName}</h3>
+                    <h3>{labResult.testName || 'Unnamed Test'}</h3>
                     <div className={styles.labResultDetails}>
                       <div className={styles.labResultDetail}>
-                        <span>Lab Name:</span> {labResult.labName}
+                        <span>Lab Name:</span> {formatValue(labResult.labName)}
                       </div>
                       <div className={styles.labResultDetail}>
-                        <span>Date:</span> {labResult.date}
+                        <span>Date of Test:</span> {formatDate(labResult.dateOfTest)}
                       </div>
                       <div className={styles.labResultDetail}>
-                        <span>Results:</span> {labResult.results}
+                        <span>Results:</span> {formatValue(labResult.results)}
                       </div>
                       <div className={styles.labResultDetail}>
-                        <span>Comments:</span> {labResult.comments}
+                        <span>Comments:</span> {formatValue(labResult.comments || labResult.commentsOrDiagnosis)}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No lab results recorded for this consultation</div>
             )}
           </div>
         );
       
       case 'radiologyReports':
+        const radiologyReports = consultation.radiologyReports || [];
         return (
           <div className={styles.radiologyInfo}>
-            {consultation.radiologyReports && consultation.radiologyReports.length > 0 ? (
+            {radiologyReports.length === 0 ? (
+              <div className={styles.noData}>No radiology reports recorded for this consultation</div>
+            ) : (
               <div className={styles.radiologyList}>
-                {consultation.radiologyReports.map((report, index) => (
+                {radiologyReports.map((report, index) => (
                   <div key={index} className={styles.radiologyItem}>
-                    {/* Radiology report details */}
+                    <h3>{report.typeOfScan || 'Unnamed Scan'}</h3>
+                    <div className={styles.radiologyDetails}>
+                      <div className={styles.radiologyDetail}>
+                        <span>Date:</span> {formatDate(report.date)}
+                      </div>
+                      <div className={styles.radiologyDetail}>
+                        <span>Body Part Examined:</span> {formatValue(report.bodyPartExamined)}
+                      </div>
+                      <div className={styles.radiologyDetail}>
+                        <span>Findings:</span> {formatValue(report.findings)}
+                      </div>
+                      <div className={styles.radiologyDetail}>
+                        <span>Recommendations:</span> {formatValue(report.recommendations)}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No radiology reports recorded for this consultation</div>
             )}
           </div>
         );
       
       case 'hospital':
+        const hospitalRecords = consultation.hospitalRecords || [];
         return (
           <div className={styles.hospitalInfo}>
-            {consultation.hospital && consultation.hospital.length > 0 ? (
+            {hospitalRecords.length === 0 ? (
+              <div className={styles.noData}>No hospital records for this consultation</div>
+            ) : (
               <div className={styles.hospitalList}>
-                {consultation.hospital.map((hospitalStay, index) => (
+                {hospitalRecords.map((hospital, index) => (
                   <div key={index} className={styles.hospitalItem}>
-                    {/* Hospital stay details */}
+                    <h3>{hospital.hospitalName || 'Hospital Stay'}</h3>
+                    <div className={styles.hospitalDetails}>
+                      <div className={styles.hospitalDetail}>
+                        <span>Admission Date:</span> {formatDate(hospital.admissionDate)}
+                      </div>
+                      <div className={styles.hospitalDetail}>
+                        <span>Discharge Date:</span> {formatDate(hospital.dischargeDate)}
+                      </div>
+                      <div className={styles.hospitalDetail}>
+                        <span>Reason for Hospitalization:</span> {formatValue(hospital.reasonForHospitalization)}
+                      </div>
+                      <div className={styles.hospitalDetail}>
+                        <span>Treatments Received:</span> 
+                        {hospital.treatmentsReceived && hospital.treatmentsReceived.length > 0 
+                          ? hospital.treatmentsReceived.join(', ') 
+                          : 'N/A'}
+                      </div>
+                      <div className={styles.hospitalDetail}>
+                        <span>Attending Doctors:</span> 
+                        {hospital.attendingDoctors && hospital.attendingDoctors.length > 0 
+                          ? hospital.attendingDoctors.map(doc => doc.name || doc).join(', ')
+                          : 'N/A'}
+                      </div>
+                      <div className={styles.hospitalDetail}>
+                        <span>Discharge Summary:</span> {formatValue(hospital.dischargeSummary)}
+                      </div>
+                      <div className={styles.hospitalDetail}>
+                        <span>Investigations Done:</span> 
+                        {hospital.investigationsDone && hospital.investigationsDone.length > 0 
+                          ? hospital.investigationsDone.join(', ') 
+                          : 'N/A'}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No hospital records for this consultation</div>
             )}
           </div>
         );
       
       case 'surgery':
+        const surgeryRecords = consultation.surgeryRecords || [];
         return (
           <div className={styles.surgeryInfo}>
-            {consultation.surgery && consultation.surgery.length > 0 ? (
+            {surgeryRecords.length === 0 ? (
+              <div className={styles.noData}>No surgery records for this consultation</div>
+            ) : (
               <div className={styles.surgeryList}>
-                {consultation.surgery.map((surgery, index) => (
+                {surgeryRecords.map((surgery, index) => (
                   <div key={index} className={styles.surgeryItem}>
-                    {/* Surgery details */}
+                    <h3>{surgery.typeOfSurgery || 'Unnamed Surgery'}</h3>
+                    <div className={styles.surgeryDetails}>
+                      <div className={styles.surgeryDetail}>
+                        <span>Date:</span> {formatDate(surgery.date)}
+                      </div>
+                      <div className={styles.surgeryDetail}>
+                        <span>Reason:</span> {formatValue(surgery.reason)}
+                      </div>
+                      <div className={styles.surgeryDetail}>
+                        <span>Complications:</span> {formatValue(surgery.complications)}
+                      </div>
+                      <div className={styles.surgeryDetail}>
+                        <span>Recovery Notes:</span> {formatValue(surgery.recoveryNotes)}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No surgery records for this consultation</div>
             )}
           </div>
         );
       
       case 'files':
+        const attachments = consultation.attachments || [];
         return (
           <div className={styles.filesInfo}>
-            {consultation.files && consultation.files.length > 0 ? (
+            {attachments.length === 0 ? (
+              <div className={styles.noData}>No files attached to this consultation</div>
+            ) : (
               <div className={styles.filesList}>
-                {consultation.files.map((file) => (
-                  <div key={file.id} className={styles.fileItem}>
+                {attachments.map((file) => (
+                  <div key={file._id || file.id} className={styles.fileItem}>
                     <div className={styles.fileIcon}>
                       <img src="/icons/document-icon.svg" alt="Document" />
                     </div>
                     <div className={styles.fileDetails}>
-                      <h3>{file.name}</h3>
+                      <h3>{file.originalName || file.filename}</h3>
                       <div className={styles.fileInfo}>
-                        <span>Type: {file.type.split('/')[1].toUpperCase()}</span>
-                        <span>Size: {file.size}</span>
-                        <span>Uploaded: {file.uploadedDate}</span>
+                        <span>Type: {file.mimetype || 'Unknown'}</span>
+                        <span>Size: {file.size ? `${(file.size / 1024).toFixed(2)} KB` : 'Unknown'}</span>
+                        <span>Uploaded: {formatDate(file.uploadDate)}</span>
                       </div>
                     </div>
-                    <Button className={styles.downloadButton}>
+                    <a 
+                      href={`/api/files/consultations/${file.filename}`}
+                      download={file.originalName}
+                      className={styles.downloadButton}
+                    >
                       Download
-                    </Button>
+                    </a>
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className={styles.noData}>No files attached to this consultation</div>
             )}
           </div>
         );

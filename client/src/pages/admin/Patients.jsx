@@ -141,6 +141,12 @@ const Patients = () => {
 
       {error && <div className={styles.error}>{error}</div>}
       
+      {searchQuery && patients.length > 0 && (
+        <div className={styles.searchResultsInfo}>
+          Showing {filteredPatients.length} of {patients.length} patients
+        </div>
+      )}
+      
       {isLoading ? (
         <LoadingIndicator />
       ) : (

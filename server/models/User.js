@@ -69,6 +69,13 @@ const UserSchema = new mongoose.Schema({
   facebookId: {
     type: String
   },
+  // Password reset fields
+  resetPasswordToken: {
+    type: String
+  },
+  resetPasswordExpires: {
+    type: Date
+  },
   
   // Patient-specific fields
   patientProfile: {
@@ -261,7 +268,8 @@ UserSchema.statics.checkAndFixTestAuthentication = async function() {
     const testEmails = [
       'admin.test@email.com',
       'provider.test@email.com',
-      'patient.test@email.com'
+      'patient.test@email.com',
+      'julian@onus.health' // Additional admin user
     ];
     
     const defaultPassword = 'password@123';

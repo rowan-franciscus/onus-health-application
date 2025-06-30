@@ -50,7 +50,7 @@ const getNavItems = (role, logoutFn) => {
 
   const footerItems = [
     { label: 'Sign Out', icon: <img src={signOutIcon} alt="Sign Out" />, onClick: logoutFn },
-    { to: '/help', label: 'Help', icon: <img src={helpIcon} alt="Help" /> },
+    { to: `/${role}/help`, label: 'Help', icon: <img src={helpIcon} alt="Help" /> },
   ];
 
   return {

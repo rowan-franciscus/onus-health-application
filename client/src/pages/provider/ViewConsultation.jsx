@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styles from './ViewConsultation.module.css';
 import ApiService from '../../services/api.service';
@@ -14,6 +14,7 @@ import FileViewer from '../../components/common/FileViewer';
 const ViewConsultation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [consultation, setConsultation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
@@ -32,7 +33,14 @@ const ViewConsultation = () => {
 
   useEffect(() => {
     fetchConsultationData();
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    // Check for tab parameter in URL
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam && consultationTabs.some(tab => tab.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [id, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchConsultationData = async () => {
     try {

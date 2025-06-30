@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
@@ -8,6 +9,7 @@ const SurgeryRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSurgeryRecords = async () => {
@@ -29,7 +31,7 @@ const SurgeryRecords = () => {
 
   // Get complexity level based on surgery type
   const getComplexityLevel = (surgery) => {
-    if (!surgery.type) return 'N/A';
+    if (!surgery.typeOfSurgery) return 'N/A';
     
     const minorSurgeries = [
       'biopsy', 'cyst removal', 'mole removal', 'minor', 'simple', 'routine',
@@ -41,7 +43,7 @@ const SurgeryRecords = () => {
       'knee replacement', 'major', 'complex', 'radical', 'reconstruction', 'amputation'
     ];
     
-    const surgeryType = surgery.type.toLowerCase();
+    const surgeryType = surgery.typeOfSurgery.toLowerCase();
     
     if (minorSurgeries.some(term => surgeryType.includes(term))) {
       return 'Minor';
@@ -58,16 +60,22 @@ const SurgeryRecords = () => {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  // Handle navigation to consultation view
+  const handleViewConsultation = (consultationId) => {
+    navigate(`/patient/consultations/${consultationId}?tab=surgery`);
+  };
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
       <>
-        <th>Surgery Type</th>
         <th>Date</th>
+        <th>Provider</th>
+        <th>Surgery Type</th>
+        <th>Surgery Date</th>
         <th>Reason</th>
         <th>Complications</th>
-        <th>Recovery Notes</th>
-        <th>Complexity</th>
+        <th>Actions</th>
       </>
     );
   };
@@ -77,15 +85,19 @@ const SurgeryRecords = () => {
     const complexity = getComplexityLevel(record);
     return (
       <>
-        <td>{record.type || 'N/A'}</td>
         <td>{formatDate(record.date)}</td>
+        <td>{record.provider || 'N/A'}</td>
+        <td>{record.typeOfSurgery || 'N/A'}</td>
+        <td>{formatDate(record.dateOfSurgery)}</td>
         <td title={record.reason}>{truncateText(record.reason)}</td>
         <td title={record.complications}>{truncateText(record.complications) || 'None'}</td>
-        <td title={record.recoveryNotes}>{truncateText(record.recoveryNotes)}</td>
         <td>
-          <span className={`${styles.complexity} ${styles[complexity.toLowerCase()]}`}>
-            {complexity}
-          </span>
+          <button 
+            className={styles.viewButton}
+            onClick={() => handleViewConsultation(record.consultationId)}
+          >
+            View
+          </button>
         </td>
       </>
     );
@@ -100,7 +112,7 @@ const SurgeryRecords = () => {
       error={error}
       renderTableHeaders={renderTableHeaders}
       renderRecordContent={renderRecordContent}
-      searchFields={['type', 'reason', 'complications', 'recoveryNotes']}
+      searchFields={['date', 'provider', 'typeOfSurgery', 'reason', 'complications', 'recoveryNotes']}
       noRecordsMessage="No surgery records found. Your health provider will add surgery records during consultations."
     />
   );

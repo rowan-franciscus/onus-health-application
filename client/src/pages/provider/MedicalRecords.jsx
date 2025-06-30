@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styles from './MedicalRecords.module.css';
+import ApiService from '../../services/api.service';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -27,9 +28,9 @@ const RECORD_TYPES = [
   { id: 'medications', label: 'Medications', icon: medicationsIcon },
   { id: 'immunizations', label: 'Immunizations', icon: immunizationsIcon },
   { id: 'lab-results', label: 'Lab Results', icon: labResultsIcon },
-  { id: 'radiology', label: 'Radiology', icon: radiologyIcon },
-  { id: 'hospital', label: 'Hospital', icon: hospitalIcon },
-  { id: 'surgery', label: 'Surgery', icon: surgeryIcon }
+  { id: 'radiology-reports', label: 'Radiology', icon: radiologyIcon },
+  { id: 'hospital-records', label: 'Hospital', icon: hospitalIcon },
+  { id: 'surgery-records', label: 'Surgery', icon: surgeryIcon }
 ];
 
 const MedicalRecords = () => {
@@ -46,6 +47,15 @@ const MedicalRecords = () => {
   // Check if we're on the main medical records page or a specific type
   const isMainPage = location.pathname === '/provider/medical-records';
 
+  // Sync activeTab with URL parameter when it changes
+  useEffect(() => {
+    if (type && type !== activeTab) {
+      setActiveTab(type);
+      setCurrentPage(1);
+      setSearchTerm('');
+    }
+  }, [type]);
+
   useEffect(() => {
     // If we're on a specific type page, fetch the records
     if (!isMainPage) {
@@ -60,53 +70,72 @@ const MedicalRecords = () => {
   const fetchRecords = async (recordType) => {
     setIsLoading(true);
     try {
-      // Use the real medical records service to fetch records
-      const response = await fetch(`/api/medical-records/provider/${recordType}?limit=10&page=${currentPage}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
+      console.log(`Fetching ${recordType} records for provider...`);
+      
+      // Use ApiService which handles authentication and base URL correctly
+      const data = await ApiService.get(`/medical-records/provider/${recordType}`, {
+        limit: 10,
+        page: currentPage
       });
       
-      if (response.ok) {
-        const data = await response.json();
+      console.log(`Received ${recordType} data:`, data);
+      
+      if (data && data.records) {
+        // Transform the data to match our component's expected format
+        const formattedRecords = data.records.map(record => ({
+          id: record._id,
+          consultationId: record.consultation?._id,
+          patientId: record.patient?._id,
+          patientName: record.patient ? 
+            `${record.patient.firstName} ${record.patient.lastName}` : 'Unknown Patient',
+          date: record.date || record.createdAt,
+          // Add type-specific properties based on recordType
+          ...(recordType === 'vitals' && {
+            heartRate: record.heartRate?.value || 'N/A',
+            bloodPressure: record.bloodPressure ? 
+              `${record.bloodPressure.systolic || 'N/A'}/${record.bloodPressure.diastolic || 'N/A'}` : 'N/A',
+            temperature: record.bodyTemperature?.value || 'N/A'
+          }),
+                      ...(recordType === 'medications' && {
+              medication: record.name || 'N/A',
+              dosage: record.dosage ? 
+                (typeof record.dosage === 'object' ? 
+                  `${record.dosage.value || ''} ${record.dosage.unit || ''}`.trim() : 
+                  record.dosage) : 'N/A',
+              frequency: record.frequency || 'N/A'
+            }),
+          ...(recordType === 'immunizations' && {
+            vaccine: record.vaccineName || 'N/A',
+            serialNumber: record.vaccineSerialNumber || 'N/A',
+            nextDueDate: record.nextDueDate
+          }),
+          ...(recordType === 'lab-results' && {
+            testName: record.testName || 'N/A',
+            labName: record.labName || 'N/A',
+            results: record.results || 'N/A'
+          }),
+          ...(recordType === 'radiology-reports' && {
+            scanType: record.typeOfScan || 'N/A',
+            bodyPart: record.bodyPartExamined || 'N/A',
+            findings: record.findings || 'N/A'
+          }),
+          ...(recordType === 'hospital-records' && {
+            hospitalName: record.hospitalName || 'N/A',
+            admissionDate: record.admissionDate,
+            reason: record.reasonForHospitalization || 'N/A'
+          }),
+          ...(recordType === 'surgery-records' && {
+            surgeryType: record.typeOfSurgery || 'N/A',
+            surgeryDate: record.date,
+            reason: record.reason || 'N/A'
+          })
+        }));
         
-        if (data && data.records) {
-          // Transform the data to match our component's expected format
-          const formattedRecords = data.records.map(record => ({
-            id: record._id,
-            patientName: record.patient ? 
-              `${record.patient.firstName} ${record.patient.lastName}` : 'Unknown Patient',
-            date: record.date || record.createdAt,
-            // Add type-specific properties based on recordType
-            ...(recordType === 'vitals' && {
-              heartRate: record.heartRate?.value,
-              bloodPressure: record.bloodPressure ? 
-                `${record.bloodPressure.systolic}/${record.bloodPressure.diastolic}` : 'N/A',
-              temperature: record.bodyTemperature?.value
-            }),
-            ...(recordType === 'medications' && {
-              medication: record.name,
-              dosage: record.dosage,
-              frequency: record.frequency
-            }),
-            ...(recordType === 'immunizations' && {
-              vaccine: record.vaccineName,
-              serialNumber: record.vaccineSerialNumber,
-              nextDueDate: record.nextDueDate
-            })
-          }));
-          
-          setRecords(formattedRecords);
-          setTotalPages(data.pagination?.pages || 1);
-        } else {
-          console.log(`No ${recordType} records found`);
-          setRecords([]);
-          setTotalPages(1);
-        }
+        console.log(`Formatted ${recordType} records:`, formattedRecords);
+        setRecords(formattedRecords);
+        setTotalPages(data.pagination?.pages || 1);
       } else {
-        console.error(`Failed to fetch ${recordType} records:`, response.statusText);
+        console.log(`No ${recordType} records found in response`);
         setRecords([]);
         setTotalPages(1);
       }
@@ -137,6 +166,22 @@ const MedicalRecords = () => {
     setCurrentPage(page);
   };
 
+  const handleViewConsultation = (consultationId, recordType) => {
+    // Navigate to consultation with the specific tab selected
+    const tabMapping = {
+      'vitals': 'vitals',
+      'medications': 'medication',
+      'immunizations': 'immunization',
+      'lab-results': 'labResults',
+      'radiology-reports': 'radiology',
+      'hospital-records': 'hospital',
+      'surgery-records': 'surgery'
+    };
+    
+    const tabName = tabMapping[recordType] || 'general';
+    navigate(`/provider/consultations/${consultationId}?tab=${tabName}`);
+  };
+
   const handleViewPatient = (patientId) => {
     navigate(`/provider/patients/${patientId}`);
   };
@@ -158,7 +203,7 @@ const MedicalRecords = () => {
         header: 'Date',
         accessor: 'date',
         sortable: true,
-        render: (item) => new Date(item.date).toLocaleDateString()
+        render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A'
       }
     ];
 
@@ -166,12 +211,19 @@ const MedicalRecords = () => {
       header: 'Actions',
       accessor: 'actions',
       sortable: false,
-      render: (item) => (
+      render: (value, row) => (
         <div className={styles.actionButtons}>
+          <Button 
+            variant="primary" 
+            size="small" 
+            onClick={() => handleViewConsultation(row.consultationId, activeTab)}
+          >
+            View Consultation
+          </Button>
           <Button 
             variant="tertiary" 
             size="small" 
-            onClick={() => handleViewPatient(item.id.split('-')[1])}
+            onClick={() => handleViewPatient(row.patientId)}
           >
             View Patient
           </Button>
@@ -187,7 +239,7 @@ const MedicalRecords = () => {
         specificColumns = [
           { header: 'Heart Rate', accessor: 'heartRate', sortable: true },
           { header: 'Blood Pressure', accessor: 'bloodPressure', sortable: true },
-          { header: 'Temperature (°C)', accessor: 'temperature', sortable: true }
+          { header: 'Temperature', accessor: 'temperature', sortable: true }
         ];
         break;
       case 'medications':
@@ -202,7 +254,37 @@ const MedicalRecords = () => {
           { header: 'Vaccine', accessor: 'vaccine', sortable: true },
           { header: 'Serial Number', accessor: 'serialNumber', sortable: true },
           { header: 'Next Due Date', accessor: 'nextDueDate', sortable: true,
-            render: (item) => item.nextDueDate ? new Date(item.nextDueDate).toLocaleDateString() : 'N/A' }
+            render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A' }
+        ];
+        break;
+      case 'lab-results':
+        specificColumns = [
+          { header: 'Test Name', accessor: 'testName', sortable: true },
+          { header: 'Lab Name', accessor: 'labName', sortable: true },
+          { header: 'Results', accessor: 'results', sortable: false }
+        ];
+        break;
+      case 'radiology-reports':
+        specificColumns = [
+          { header: 'Scan Type', accessor: 'scanType', sortable: true },
+          { header: 'Body Part', accessor: 'bodyPart', sortable: true },
+          { header: 'Findings', accessor: 'findings', sortable: false }
+        ];
+        break;
+      case 'hospital-records':
+        specificColumns = [
+          { header: 'Hospital', accessor: 'hospitalName', sortable: true },
+          { header: 'Admission Date', accessor: 'admissionDate', sortable: true,
+            render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A' },
+          { header: 'Reason', accessor: 'reason', sortable: false }
+        ];
+        break;
+      case 'surgery-records':
+        specificColumns = [
+          { header: 'Surgery Type', accessor: 'surgeryType', sortable: true },
+          { header: 'Surgery Date', accessor: 'surgeryDate', sortable: true,
+            render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A' },
+          { header: 'Reason', accessor: 'reason', sortable: false }
         ];
         break;
       default:

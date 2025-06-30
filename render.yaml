@@ -25,6 +25,10 @@ services:
         sync: false # Set from dashboard - SendGrid API key for emails
       - key: EMAIL_FROM
         value: no-reply@onus.health
+      - key: SUPPORT_EMAIL
+        value: support@onus.health
+      - key: SUPPORT_PHONE
+        value: 081 000 0000
       - key: SESSION_TIMEOUT
         value: "30"
       - key: FRONTEND_URL

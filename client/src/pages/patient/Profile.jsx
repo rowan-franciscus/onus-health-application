@@ -14,7 +14,7 @@ const UserProfileService = {
   // Get current user's profile
   getUserProfile: async () => {
     try {
-      const response = await ApiService.get('/users/me');
+      const response = await ApiService.get('/users/profile');
       return response;
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -25,7 +25,7 @@ const UserProfileService = {
   // Update user profile
   updateUserProfile: async (profileData) => {
     try {
-      const response = await ApiService.put('/users/me', profileData);
+      const response = await ApiService.put('/users/profile', profileData);
       return response;
     } catch (error) {
       console.error('Error updating user profile:', error);

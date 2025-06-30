@@ -39,7 +39,7 @@
 
 .consultationsHeader {
   display: grid;
-  grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 2fr 0.75fr;
+  grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 2fr 0.75fr 0.75fr;
   gap: 1rem;
   padding: 0.75rem 1rem;
   background-color: #f5f2fe;
@@ -52,7 +52,7 @@
 
 .consultationRow {
   display: grid;
-  grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 2fr 0.75fr;
+  grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 2fr 0.75fr 0.75fr;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid #eee;
@@ -149,7 +149,7 @@
 /* Responsive adjustments */
 @media (max-width: 992px) {
   .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 1fr;
+    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 0.75fr 0.75fr;
   }
   
   .reason {
@@ -159,7 +159,7 @@
 
 @media (max-width: 768px) {
   .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 1.5fr 0.75fr;
+    grid-template-columns: 0.75fr 1fr 1.5fr 0.75fr 0.75fr;
   }
   
   .clinic {
@@ -169,7 +169,7 @@
 
 @media (max-width: 576px) {
   .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 0.75fr;
+    grid-template-columns: 0.75fr 1fr 0.75fr 0.75fr;
   }
   
   .specialist {
@@ -219,4 +219,31 @@
   margin-left: 1rem;
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
+}
+
+.searchResultsInfo {
+  padding: 0.75rem 1rem;
+  background-color: #f5f3ff;
+  border-radius: 4px;
+  color: #6D46FF;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-draft {
+  color: #ff9800;
+}
+
+.status-completed {
+  color: #4caf50;
+}
+
+.status-archived {
+  color: #9e9e9e;
 } 

@@ -278,6 +278,22 @@
   font-size: 0.85rem;
 }
 
+.downloadButton {
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.downloadButton:hover {
+  background-color: #4c2da3;
+}
+
 /* No Data State */
 .noData {
   text-align: center;

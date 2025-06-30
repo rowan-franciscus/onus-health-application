@@ -11,6 +11,7 @@
     "fix:auth": "node scripts/fixAuthenticationIssues.js",
     "fix:onboarding": "node scripts/checkOnboardingIssue.js",
     "update:admin": "node scripts/updateAdmin.js",
+    "add:admin": "node scripts/addAdminUser.js",
     "debug:registration": "node scripts/debugRegistration.js",
     "consolidate:db": "node scripts/consolidateToOnusHealth.js",
     "test": "jest --runInBand",

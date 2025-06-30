@@ -1,27 +1,24 @@
 .profileContainer {
-  padding: 20px;
-  width: 100%;
+  padding: 1.5rem;
+  max-width: 100%;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eee;
+  margin-bottom: 2rem;
 }
 
 .titleSection h1 {
-  font-size: 1.8rem;
-  font-weight: 600;
+  color: #333;
   margin: 0;
-  margin-bottom: 5px;
+  font-size: 1.75rem;
 }
 
 .titleSection p {
   color: #666;
-  margin: 0;
+  margin: 0.5rem 0 0 0;
   font-size: 0.95rem;
 }
 
@@ -31,26 +28,23 @@
 }
 
 .editButton {
-  background-color: #007bff;
+  background-color: #6039cc;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 4px;
+  padding: 0.75rem 1.5rem;
   font-size: 0.9rem;
-  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .editButton:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
+  background-color: #4c2da3;
 }
 
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 1.5rem;
   margin-bottom: 30px;
 }
 
@@ -69,50 +63,31 @@
 /* Card styles */
 .basicInfoCard,
 .professionalInfoCard,
-.practiceInfoCard {
-  /* These cards should span single columns on all screen sizes */
-}
-
-.managementInfoCard {
-  /* This card has more content, so let it span wider on larger screens */
-}
-
+.practiceInfoCard,
+.managementInfoCard,
 .supportInfoCard {
-  /* This card also has more content */
-}
-
-@media (min-width: 768px) {
-  .managementInfoCard {
-    grid-column: span 2;
-  }
-}
-
-@media (min-width: 1200px) {
-  .managementInfoCard {
-    grid-column: span 2;
-  }
-  
-  .supportInfoCard {
-    grid-column: span 2;
-  }
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
 }
 
 .cardHeader {
-  margin-bottom: 20px;
-  padding-bottom: 10px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #eee;
 }
 
 .cardHeader h2 {
-  font-size: 1.2rem;
-  font-weight: 500;
+  color: #6039cc;
   margin: 0;
+  font-size: 1.25rem;
 }
 
 .formRow {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 15px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
   margin-bottom: 15px;
 }
 
@@ -135,25 +110,25 @@
 
 /* Practice License Field Styles */
 .licenseField {
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
 }
 
 .licenseLabel {
   display: block;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  color: #374151;
-  margin-bottom: 6px;
+  color: #6039cc;
+  margin-bottom: 0.25rem;
 }
 
 .licenseContent {
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   background-color: #f9fafb;
   min-height: 44px;
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 0.75rem;
 }
 
 .licenseInfo {
@@ -165,8 +140,8 @@
 }
 
 .licenseFilename {
-  font-size: 0.9rem;
-  color: #374151;
+  font-size: 1rem;
+  color: #333;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -174,18 +149,18 @@
 }
 
 .noLicense {
-  font-size: 0.9rem;
-  color: #6b7280;
+  font-size: 1rem;
+  color: #666;
   font-style: italic;
 }
 
 .viewLicenseButton {
-  background-color: #10b981;
+  background-color: #6039cc;
   color: white;
   border: none;
-  padding: 6px 12px;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -194,43 +169,37 @@
 }
 
 .viewLicenseButton:hover {
-  background-color: #059669;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.viewLicenseButton:active {
-  transform: translateY(0);
+  background-color: #4c2da3;
 }
 
 /* Checkbox styles */
 .checkboxGroup {
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
 }
 
 .checkboxLabel {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #333;
   cursor: pointer;
-  padding: 10px;
+  padding: 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 4px;
   background-color: #f9f9f9;
   transition: all 0.2s ease;
 }
 
 .checkboxLabel:hover {
   background-color: #f0f0f0;
-  border-color: #ccc;
+  border-color: #6039cc;
 }
 
 .checkboxLabel input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #007bff;
+  accent-color: #6039cc;
   cursor: pointer;
 }
 
@@ -242,59 +211,49 @@
 /* Form actions */
 .formActions {
   display: flex;
-  justify-content: center;
-  gap: 15px;
-  padding: 30px 0;
-  border-top: 2px solid #eee;
-  margin-top: 20px;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
 }
 
 .cancelButton {
-  background-color: #6c757d;
+  background-color: #666;
   color: white;
   border: none;
-  padding: 12px 30px;
-  border-radius: 6px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 120px;
 }
 
 .cancelButton:hover {
-  background-color: #545b62;
-  transform: translateY(-1px);
+  background-color: #555;
 }
 
 .cancelButton:disabled {
-  opacity: 0.6;
+  background-color: #cccccc;
   cursor: not-allowed;
-  transform: none;
 }
 
 .saveButton {
-  background-color: #28a745;
+  background-color: #6039cc;
   color: white;
   border: none;
-  padding: 12px 30px;
-  border-radius: 6px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 160px;
 }
 
 .saveButton:hover {
-  background-color: #218838;
-  transform: translateY(-1px);
+  background-color: #4c2da3;
 }
 
 .saveButton:disabled {
-  opacity: 0.6;
+  background-color: #cccccc;
   cursor: not-allowed;
-  transform: none;
 }
 
 /* Loading container */
@@ -303,8 +262,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
-  padding: 20px;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
 }
 
 .loadingContainer p {
@@ -314,15 +274,17 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 767px) {
-  .profileContainer {
-    padding: 15px;
+@media (max-width: 992px) {
+  .formRow {
+    grid-template-columns: 1fr;
   }
-  
+}
+
+@media (max-width: 768px) {
   .header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 15px;
+    gap: 1rem;
   }
   
   .headerActions {
@@ -332,22 +294,15 @@
   
   .editButton {
     width: 100%;
-    padding: 12px 20px;
-  }
-  
-  .contentGrid {
-    gap: 15px;
   }
   
   .formActions {
     flex-direction: column;
-    padding: 20px 0;
   }
   
   .cancelButton,
   .saveButton {
     width: 100%;
-    margin: 0;
   }
   
   /* Mobile license field adjustments */
@@ -359,7 +314,5 @@
   
   .viewLicenseButton {
     align-self: flex-end;
-    font-size: 0.75rem;
-    padding: 5px 10px;
   }
 } 

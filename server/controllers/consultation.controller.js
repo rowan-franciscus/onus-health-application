@@ -32,6 +32,10 @@ exports.getAllConsultations = async (req, res) => {
     if (userRole === 'patient') {
       // Patients can only view their own consultations
       query.patient = userId;
+      // Patients should only see completed consultations unless explicitly filtering
+      if (!status) {
+        query.status = 'completed';
+      }
     } else if (userRole === 'provider') {
       // Providers can only view consultations they created
       query.provider = userId;
@@ -112,6 +116,11 @@ exports.getConsultationById = async (req, res) => {
       (userRole === 'provider' && consultation.provider._id.toString() !== userId)
     ) {
       return res.status(403).json({ message: 'Unauthorized to access this consultation' });
+    }
+    
+    // Additional check: Patients should only see completed consultations
+    if (userRole === 'patient' && consultation.status !== 'completed') {
+      return res.status(403).json({ message: 'Consultation not available for viewing' });
     }
     
     return res.json(consultation);
@@ -946,7 +955,11 @@ exports.getPatientConsultations = async (req, res) => {
     const patientId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
     
-    const consultations = await Consultation.find({ patient: patientId })
+    // Patients should only see completed consultations, not drafts
+    const consultations = await Consultation.find({ 
+      patient: patientId,
+      status: 'completed'  // Only show completed consultations to patients
+    })
       .populate('provider', 'firstName lastName providerProfile')
       .sort({ date: -1 })
       .limit(limit);

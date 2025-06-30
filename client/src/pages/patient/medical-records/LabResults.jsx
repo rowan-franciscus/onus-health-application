@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
@@ -8,6 +9,7 @@ const LabResultsRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLabResultsRecords = async () => {
@@ -27,81 +29,60 @@ const LabResultsRecords = () => {
     fetchLabResultsRecords();
   }, []);
 
-  // Determine result status based on normalRange and value
-  const getResultStatus = (labResult) => {
-    if (!labResult.normalRange || !labResult.value) return 'N/A';
+  // Determine result status
+  const getResultStatus = (result) => {
+    const resultValue = result.results?.toLowerCase() || '';
     
-    // Parse normal range (assuming format like "70-99" or "<100")
-    const rangeString = labResult.normalRange;
-    let isNormal = false;
-    
-    // Handle different range formats
-    if (rangeString.includes('-')) {
-      const [min, max] = rangeString.split('-').map(val => parseFloat(val.trim()));
-      const value = parseFloat(labResult.value);
-      
-      isNormal = value >= min && value <= max;
-    } else if (rangeString.startsWith('<')) {
-      const max = parseFloat(rangeString.substring(1).trim());
-      const value = parseFloat(labResult.value);
-      
-      isNormal = value < max;
-    } else if (rangeString.startsWith('>')) {
-      const min = parseFloat(rangeString.substring(1).trim());
-      const value = parseFloat(labResult.value);
-      
-      isNormal = value > min;
-    } else if (rangeString.startsWith('≤')) {
-      const max = parseFloat(rangeString.substring(1).trim());
-      const value = parseFloat(labResult.value);
-      
-      isNormal = value <= max;
-    } else if (rangeString.startsWith('≥')) {
-      const min = parseFloat(rangeString.substring(1).trim());
-      const value = parseFloat(labResult.value);
-      
-      isNormal = value >= min;
+    if (resultValue.includes('normal') || resultValue.includes('negative')) {
+      return 'normal';
+    } else if (resultValue.includes('abnormal') || resultValue.includes('positive')) {
+      return 'abnormal';
+    } else {
+      return 'pending';
     }
-    
-    return isNormal ? 'Normal' : 'Abnormal';
+  };
+
+  // Handle navigation to consultation view
+  const handleViewConsultation = (consultationId) => {
+    navigate(`/patient/consultations/${consultationId}?tab=labResults`);
   };
 
   // Render table headers
   const renderTableHeaders = () => {
     return (
       <>
+        <th>Date</th>
+        <th>Provider</th>
         <th>Test Name</th>
         <th>Lab Name</th>
-        <th>Date</th>
-        <th>Result</th>
-        <th>Normal Range</th>
-        <th>Status</th>
+        <th>Results</th>
+        <th>Comments</th>
+        <th>Actions</th>
       </>
     );
   };
 
   // Render record row content
   const renderRecordContent = (record) => {
-    const status = getResultStatus(record);
     return (
       <>
+        <td>{formatDate(record.date)}</td>
+        <td>{record.provider || 'N/A'}</td>
         <td>{record.testName || 'N/A'}</td>
         <td>{record.labName || 'N/A'}</td>
-        <td>{formatDate(record.date)}</td>
         <td>
-          {record.value ? 
-            `${record.value} ${record.unit || ''}` : 
-            'N/A'
-          }
+          <span className={`${styles.status} ${styles[getResultStatus(record)]}`}>
+            {record.results || 'Pending'}
+          </span>
         </td>
-        <td>{record.normalRange || 'N/A'}</td>
+        <td className={styles.comments}>{record.comments || 'N/A'}</td>
         <td>
-          {status !== 'N/A' && (
-            <span className={`${styles.status} ${styles[status.toLowerCase()]}`}>
-              {status}
-            </span>
-          )}
-          {status === 'N/A' && 'N/A'}
+          <button 
+            className={styles.viewButton}
+            onClick={() => handleViewConsultation(record.consultationId)}
+          >
+            View
+          </button>
         </td>
       </>
     );
@@ -116,7 +97,7 @@ const LabResultsRecords = () => {
       error={error}
       renderTableHeaders={renderTableHeaders}
       renderRecordContent={renderRecordContent}
-      searchFields={['testName', 'labName', 'value']}
+      searchFields={['date', 'provider', 'testName', 'labName', 'results']}
       noRecordsMessage="No lab results found. Your health provider will add lab results during consultations."
     />
   );

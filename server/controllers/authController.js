@@ -439,9 +439,10 @@ exports.forgotPassword = async (req, res) => {
       subject: 'Password Reset Request',
       template: 'passwordReset',
       templateData: {
-        name: user.firstName,
+        firstName: user.firstName,
         resetUrl,
-        expiryTime: '1 hour'
+        expiryTime: '1 hour',
+        frontendUrl: config.frontendUrl
       }
     });
     await emailQueue.save();
@@ -492,7 +493,8 @@ exports.resetPassword = async (req, res) => {
       subject: 'Password Reset Successful',
       template: 'passwordResetSuccess',
       templateData: {
-        name: user.firstName
+        firstName: user.firstName,
+        frontendUrl: config.frontendUrl
       }
     });
     await emailQueue.save();

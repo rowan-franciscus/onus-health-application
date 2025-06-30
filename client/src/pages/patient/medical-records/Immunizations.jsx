@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
@@ -8,6 +9,7 @@ const ImmunizationsRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchImmunizationsRecords = async () => {
@@ -49,15 +51,22 @@ const ImmunizationsRecords = () => {
     }
   };
 
+  // Handle navigation to consultation view
+  const handleViewConsultation = (consultationId) => {
+    navigate(`/patient/consultations/${consultationId}?tab=immunizations`);
+  };
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
       <>
+        <th>Date</th>
+        <th>Provider</th>
         <th>Vaccine Name</th>
         <th>Date Administered</th>
         <th>Serial Number</th>
         <th>Next Due Date</th>
-        <th>Status</th>
+        <th>Actions</th>
       </>
     );
   };
@@ -67,14 +76,27 @@ const ImmunizationsRecords = () => {
     const status = getImmunizationStatus(record);
     return (
       <>
-        <td>{record.name || 'N/A'}</td>
         <td>{formatDate(record.date)}</td>
-        <td>{record.serialNumber || 'N/A'}</td>
-        <td>{record.nextDueDate ? formatDate(record.nextDueDate) : 'Not required'}</td>
+        <td>{record.provider || 'N/A'}</td>
+        <td>{record.vaccineName || 'N/A'}</td>
+        <td>{formatDate(record.dateAdministered)}</td>
+        <td>{record.vaccineSerialNumber || 'N/A'}</td>
         <td>
-          <span className={`${styles.status} ${styles[status.replace(/\s+/g, '').toLowerCase()]}`}>
-            {status}
-          </span>
+          {record.nextDueDate ? (
+            <span className={`${styles.status} ${styles[status.replace(/\s+/g, '').toLowerCase()]}`}>
+              {formatDate(record.nextDueDate)}
+            </span>
+          ) : (
+            'Not required'
+          )}
+        </td>
+        <td>
+          <button 
+            className={styles.viewButton}
+            onClick={() => handleViewConsultation(record.consultationId)}
+          >
+            View
+          </button>
         </td>
       </>
     );
@@ -89,7 +111,7 @@ const ImmunizationsRecords = () => {
       error={error}
       renderTableHeaders={renderTableHeaders}
       renderRecordContent={renderRecordContent}
-      searchFields={['name', 'serialNumber']}
+      searchFields={['date', 'provider', 'vaccineName', 'vaccineSerialNumber']}
       noRecordsMessage="No immunization records found. Your health provider will add immunizations during consultations."
     />
   );

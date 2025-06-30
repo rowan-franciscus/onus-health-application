@@ -30,14 +30,9 @@ router.get('/me', authenticateJWT, (req, res) => {
   });
 });
 
-// Profile routes (make sure these controller functions exist)
-if (userController.getUserProfile) {
-  router.get('/profile', authenticateJWT, userController.getUserProfile);
-}
-
-if (userController.updateUserProfile) {
-  router.put('/profile', authenticateJWT, userController.updateUserProfile);
-}
+// Profile routes
+router.get('/profile', authenticateJWT, userController.getUserProfile);
+router.put('/profile', authenticateJWT, userController.updateUserProfile);
 
 // Patient onboarding route
 router.post('/onboarding', authenticateJWT, userController.completeOnboarding);
@@ -50,6 +45,18 @@ router.get('/patient/consultations/recent', authenticateJWT, isPatient, userCont
 
 // Patient recent vitals
 router.get('/patient/vitals/recent', authenticateJWT, isPatient, userController.getPatientRecentVitals);
+
+// Change password (all authenticated users)
+router.put('/change-password', authenticateJWT, userController.changePassword);
+
+// Update notification preferences
+router.put('/notifications', authenticateJWT, userController.updateNotificationPreferences);
+
+// Delete account
+router.delete('/account', authenticateJWT, userController.deleteAccount);
+
+// Search providers (for patients to connect with)
+router.get('/providers/search', authenticateJWT, isPatient, userController.searchProviders);
 
 // Set up storage for license files
 const licenseStorage = multer.diskStorage({

@@ -105,4 +105,10 @@ router.get('/provider-verification-requests', adminController.getProviderVerific
 router.post('/provider-verification/:providerId', adminController.processProviderVerification);
 router.post('/complete-provider-verification/:providerId', adminController.completeProviderVerification);
 
+// Admin change password
+router.put('/change-password', adminController.changePassword);
+
+// Admin profile update
+router.put('/profile', adminController.updateProfile);
+
 module.exports = router; 

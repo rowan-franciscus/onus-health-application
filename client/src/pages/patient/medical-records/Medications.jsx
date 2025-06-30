@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
@@ -8,6 +9,7 @@ const MedicationsRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchMedicationsRecords = async () => {
@@ -30,9 +32,15 @@ const MedicationsRecords = () => {
   // Format dosage for display
   const formatDosage = (medication) => {
     if (!medication?.dosage) return 'N/A';
-    const { value, unit } = medication.dosage;
-    if (!value) return 'N/A';
-    return `${value} ${unit || ''}`;
+    
+    // Handle both object and string format
+    if (typeof medication.dosage === 'object') {
+      const { value, unit } = medication.dosage;
+      if (!value) return 'N/A';
+      return `${value} ${unit || ''}`;
+    }
+    
+    return medication.dosage;
   };
 
   // Format date range for display
@@ -50,7 +58,6 @@ const MedicationsRecords = () => {
 
   // Get status of medication (active or completed)
   const getMedicationStatus = (medication) => {
-    if (!medication.isActive) return 'Completed';
     if (!medication.endDate) return 'Active';
     
     const today = new Date();
@@ -58,16 +65,22 @@ const MedicationsRecords = () => {
     return today > endDate ? 'Completed' : 'Active';
   };
 
+  // Handle navigation to consultation view
+  const handleViewConsultation = (consultationId) => {
+    navigate(`/patient/consultations/${consultationId}?tab=medications`);
+  };
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
       <>
-        <th>Name</th>
+        <th>Date</th>
+        <th>Provider</th>
+        <th>Medication</th>
         <th>Dosage</th>
         <th>Frequency</th>
-        <th>Duration</th>
         <th>Reason</th>
-        <th>Status</th>
+        <th>Actions</th>
       </>
     );
   };
@@ -76,15 +89,19 @@ const MedicationsRecords = () => {
   const renderRecordContent = (record) => {
     return (
       <>
-        <td>{record.name || 'N/A'}</td>
+        <td>{formatDate(record.date)}</td>
+        <td>{record.provider || 'N/A'}</td>
+        <td>{record.nameOfMedication || 'N/A'}</td>
         <td>{formatDosage(record)}</td>
         <td>{record.frequency || 'N/A'}</td>
-        <td>{formatDateRange(record)}</td>
         <td>{record.reasonForPrescription || 'N/A'}</td>
         <td>
-          <span className={`${styles.status} ${styles[getMedicationStatus(record).toLowerCase()]}`}>
-            {getMedicationStatus(record)}
-          </span>
+          <button 
+            className={styles.viewButton}
+            onClick={() => handleViewConsultation(record.consultationId)}
+          >
+            View
+          </button>
         </td>
       </>
     );
@@ -99,7 +116,7 @@ const MedicationsRecords = () => {
       error={error}
       renderTableHeaders={renderTableHeaders}
       renderRecordContent={renderRecordContent}
-      searchFields={['name', 'frequency', 'reasonForPrescription']}
+      searchFields={['date', 'provider', 'nameOfMedication', 'frequency', 'reasonForPrescription']}
       noRecordsMessage="No medication records found. Your health provider will add medications during consultations."
     />
   );

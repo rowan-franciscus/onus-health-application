@@ -33,7 +33,7 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
   try {
     const { type } = req.params;
     const { 
-      patientId = req.user.role === 'patient' ? req.user._id : null,
+      patientId,
       startDate, 
       endDate, 
       search, 
@@ -42,20 +42,6 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
       limit = 20, 
       page = 1 
     } = req.query;
-
-    // Validate patient access
-    if (req.user.role === 'patient' && patientId && patientId !== req.user._id.toString()) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'You are not authorized to access this data' 
-      });
-    }
-
-    // Validate provider access to patient data
-    if (req.user.role === 'provider' && patientId) {
-      // Logic to check if provider has connection to patient would go here
-      // This is just a stub - implement actual connection check
-    }
 
     // Get the appropriate model
     const Model = MODEL_MAP[type];
@@ -66,12 +52,32 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
       });
     }
 
-    // Build query
+    // Build query based on user role
     const query = {};
     
-    // Add patient filter
-    if (patientId) {
-      query.patient = mongoose.Types.ObjectId(patientId);
+    if (req.user.role === 'patient') {
+      // Patients can only view their own records
+      query.patient = req.user._id;
+      
+      // Validate patient access
+      if (patientId && patientId !== req.user._id.toString()) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'You are not authorized to access this data' 
+        });
+      }
+    } else if (req.user.role === 'provider') {
+      // Providers can view records they created
+      query.provider = req.user._id;
+      
+      // Optionally filter by specific patient if provided
+      if (patientId) {
+        query.patient = mongoose.Types.ObjectId(patientId);
+      }
+    } else if (req.user.role === 'admin') {
+      // Admins can filter by patient and provider
+      if (patientId) query.patient = mongoose.Types.ObjectId(patientId);
+      if (req.query.providerId) query.provider = mongoose.Types.ObjectId(req.query.providerId);
     }
 
     // Add date range filter
@@ -113,25 +119,29 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
       .skip(skip)
       .limit(parseInt(limit))
       .populate('patient', 'firstName lastName email')
-      .populate('consultation', 'date provider');
+      .populate('provider', 'firstName lastName email')
+      .populate('consultation', 'date _id general.specialistName general.specialty');
 
     // Count total matching records
     const total = await Model.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: {
-        records,
-        pagination: {
-          total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          pages: Math.ceil(total / limit)
-        }
+      records,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / limit)
       }
     });
   } catch (error) {
-    next(error);
+    console.error('Error in getMedicalRecordsByType:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 
@@ -275,17 +285,26 @@ exports.getPatientRecentVitals = async (req, res) => {
 exports.getProviderVitals = async (req, res) => {
   try {
     const { patientId, limit = 10 } = req.query;
-    const query = {};
+    const providerId = req.user._id;
     
-    // If patientId is specified, filter by that patient
+    // IMPORTANT: Filter by provider to ensure data security
+    const query = { provider: providerId };
+    
+    // If patientId is specified, filter by that patient as well
     if (patientId) {
-      query.patient = patientId;
+      query.patient = mongoose.Types.ObjectId(patientId);
     }
+    
+    console.log('Provider vitals query:', query);
     
     const vitals = await VitalsRecord.find(query)
       .populate('patient', 'firstName lastName')
+      .populate('provider', 'firstName lastName email')
+      .populate('consultation', 'date _id general.specialistName general.specialty')
       .sort({ date: -1 })
       .limit(parseInt(limit));
+    
+    console.log(`Found ${vitals.length} vitals records for provider ${providerId}`);
     
     return res.json({
       success: true,
@@ -312,17 +331,43 @@ exports.getProviderVitals = async (req, res) => {
 exports.getRadiologyReports = async (req, res) => {
   try {
     const { patientId, limit = 10 } = req.query;
+    
+    // Build query based on user role for proper access control
     const query = {};
     
-    // If patientId is specified, filter by that patient
-    if (patientId) {
-      query.patient = patientId;
+    if (req.user.role === 'provider') {
+      // Providers can only see their own radiology reports
+      query.provider = req.user._id;
+    } else if (req.user.role === 'patient') {
+      // Patients can only see their own records
+      query.patient = req.user._id;
     }
+    // Admins can see all records (no additional filtering)
+    
+    // If patientId is specified, filter by that patient (for admins/providers with access)
+    if (patientId) {
+      if (req.user.role === 'provider') {
+        // Provider can filter by patient they have access to
+        query.patient = mongoose.Types.ObjectId(patientId);
+      } else if (req.user.role === 'patient' && patientId !== req.user._id.toString()) {
+        // Patients can't access other patients' records
+        return res.status(403).json({
+          success: false,
+          message: 'You are not authorized to access this data'
+        });
+      }
+    }
+    
+    console.log('Radiology reports query:', query);
     
     const reports = await RadiologyReport.find(query)
       .populate('patient', 'firstName lastName')
+      .populate('provider', 'firstName lastName email')
+      .populate('consultation', 'date _id general.specialistName general.specialty')
       .sort({ date: -1 })
       .limit(parseInt(limit));
+    
+    console.log(`Found ${reports.length} radiology reports for user ${req.user._id} (${req.user.role})`);
     
     return res.json({
       success: true,

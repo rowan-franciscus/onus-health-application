@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatDate, getDateDifference } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
@@ -8,6 +9,7 @@ const HospitalRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchHospitalRecords = async () => {
@@ -45,16 +47,22 @@ const HospitalRecords = () => {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  // Handle navigation to consultation view
+  const handleViewConsultation = (consultationId) => {
+    navigate(`/patient/consultations/${consultationId}?tab=hospital`);
+  };
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
       <>
+        <th>Date</th>
+        <th>Provider</th>
         <th>Admission Date</th>
         <th>Discharge Date</th>
         <th>Duration</th>
         <th>Reason</th>
-        <th>Attending Doctors</th>
-        <th>Treatments</th>
+        <th>Actions</th>
       </>
     );
   };
@@ -63,12 +71,20 @@ const HospitalRecords = () => {
   const renderRecordContent = (record) => {
     return (
       <>
+        <td>{formatDate(record.date)}</td>
+        <td>{record.provider || 'N/A'}</td>
         <td>{formatDate(record.admissionDate)}</td>
         <td>{record.dischargeDate ? formatDate(record.dischargeDate) : 'In progress'}</td>
         <td>{calculateStayDuration(record.admissionDate, record.dischargeDate)}</td>
-        <td title={record.reasonForHospitalization}>{truncateText(record.reasonForHospitalization)}</td>
-        <td>{record.attendingDoctors || 'N/A'}</td>
-        <td title={record.treatmentsReceived}>{truncateText(record.treatmentsReceived)}</td>
+        <td title={record.reasonForHospitalisation}>{truncateText(record.reasonForHospitalisation)}</td>
+        <td>
+          <button 
+            className={styles.viewButton}
+            onClick={() => handleViewConsultation(record.consultationId)}
+          >
+            View
+          </button>
+        </td>
       </>
     );
   };
@@ -82,7 +98,7 @@ const HospitalRecords = () => {
       error={error}
       renderTableHeaders={renderTableHeaders}
       renderRecordContent={renderRecordContent}
-      searchFields={['reasonForHospitalization', 'attendingDoctors', 'treatmentsReceived']}
+      searchFields={['date', 'provider', 'reasonForHospitalisation', 'attendingDoctors', 'treatmentsReceived']}
       noRecordsMessage="No hospital records found. Your health provider will add hospital records during consultations."
     />
   );

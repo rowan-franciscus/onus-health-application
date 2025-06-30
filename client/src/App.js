@@ -69,6 +69,9 @@ const AdminPatientProfile = lazy(() => import('./pages/admin/PatientProfile'));
 
 // Shared pages
 const NotFound = lazy(() => import('./pages/shared/NotFound'));
+const Help = lazy(() => import('./pages/shared/Help'));
+
+
 
 // Loading component
 const LoadingFallback = () => {
@@ -331,6 +334,16 @@ function App() {
                 />
               } 
             />
+            <Route 
+              path="/patient/help" 
+              element={
+                <ProtectedRoute 
+                  element={<Help />} 
+                  allowedRoles={['patient']} 
+                  requireOnboarding={true}
+                />
+              } 
+            />
           </Route>
 
           {/* Provider routes */}
@@ -455,6 +468,16 @@ function App() {
                 />
               } 
             />
+            <Route 
+              path="/provider/help" 
+              element={
+                <ProtectedRoute 
+                  element={<Help />} 
+                  allowedRoles={['provider']} 
+                  requireOnboarding={true}
+                />
+              } 
+            />
           </Route>
 
           {/* Admin routes */}
@@ -545,6 +568,15 @@ function App() {
               element={
                 <ProtectedRoute 
                   element={<AdminSettings />} 
+                  allowedRoles={['admin']} 
+                />
+              } 
+            />
+            <Route 
+              path="/admin/help" 
+              element={
+                <ProtectedRoute 
+                  element={<Help />} 
                   allowedRoles={['admin']} 
                 />
               } 
