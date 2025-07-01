@@ -52,6 +52,37 @@ const PatientProfile = () => {
       try {
         const userData = await UserProfileService.getUserProfile();
         
+        // Helper function to format arrays as comma-separated strings
+        const formatArrayField = (field) => {
+          if (Array.isArray(field)) {
+            return field.filter(item => item).join(', ') || '';
+          }
+          return field || '';
+        };
+
+        // Helper function to format address object
+        const formatAddress = (address) => {
+          if (typeof address === 'object' && address !== null) {
+            const parts = [
+              address.street,
+              address.city,
+              address.state,
+              address.postalCode,
+              address.country
+            ].filter(part => part);
+            return parts.join(', ') || '';
+          }
+          return address || '';
+        };
+
+        // Helper function to format boolean fields
+        const formatBoolean = (value) => {
+          if (typeof value === 'boolean') {
+            return value ? 'Yes' : 'No';
+          }
+          return value || 'None';
+        };
+
         // Map the user data to the profile structure needed by the UI
         const userProfile = {
           personalInfo: {
@@ -62,39 +93,41 @@ const PatientProfile = () => {
             gender: userData.patientProfile?.gender || '',
             email: userData.email || '',
             phone: userData.phone || '',
-            address: userData.patientProfile?.address || ''
+            address: formatAddress(userData.patientProfile?.address)
           },
           insurance: {
             provider: userData.patientProfile?.insurance?.provider || '',
             plan: userData.patientProfile?.insurance?.plan || '',
             insuranceNumber: userData.patientProfile?.insurance?.insuranceNumber || '',
-            emergencyContactName: userData.patientProfile?.emergency?.contactName || '',
-            emergencyContactNumber: userData.patientProfile?.emergency?.contactNumber || '',
-            relationship: userData.patientProfile?.emergency?.relationship || ''
+            emergencyContactName: userData.patientProfile?.emergencyContact?.name || '',
+            emergencyContactNumber: userData.patientProfile?.emergencyContact?.phone || '',
+            relationship: userData.patientProfile?.emergencyContact?.relationship || ''
           },
           medicalHistory: {
-            chronicConditions: userData.patientProfile?.medicalHistory?.chronicConditions || '',
-            significantIllnesses: userData.patientProfile?.medicalHistory?.significantIllnesses || '',
-            mentalHealthHistory: userData.patientProfile?.medicalHistory?.mentalHealthHistory || ''
+            chronicConditions: formatArrayField(userData.patientProfile?.medicalHistory?.chronicConditions),
+            significantIllnesses: formatArrayField(userData.patientProfile?.medicalHistory?.significantIllnesses),
+            mentalHealthHistory: formatArrayField(userData.patientProfile?.medicalHistory?.mentalHealthHistory)
           },
           familyHistory: {
-            familyConditions: userData.patientProfile?.familyHistory?.conditions || ''
+            familyConditions: formatArrayField(userData.patientProfile?.familyMedicalHistory)
           },
           currentMedication: {
-            medications: userData.patientProfile?.currentMedication?.medications || '',
-            supplements: userData.patientProfile?.currentMedication?.supplements || ''
+            medications: userData.patientProfile?.currentMedications && userData.patientProfile.currentMedications.length > 0
+              ? userData.patientProfile.currentMedications.map(med => med.name).join(', ')
+              : '',
+            supplements: ''
           },
           allergies: {
-            knownAllergies: userData.patientProfile?.allergies?.list || ''
+            knownAllergies: formatArrayField(userData.patientProfile?.allergies)
           },
           lifestyle: {
-            smoking: userData.patientProfile?.lifestyle?.smoking || 'None',
-            alcohol: userData.patientProfile?.lifestyle?.alcohol || 'None',
+            smoking: formatBoolean(userData.patientProfile?.lifestyle?.smoking),
+            alcohol: formatBoolean(userData.patientProfile?.lifestyle?.alcohol),
             exercise: userData.patientProfile?.lifestyle?.exercise || 'None',
             dietaryPreferences: userData.patientProfile?.lifestyle?.dietaryPreferences || ''
           },
           immunisation: {
-            vaccinations: userData.patientProfile?.immunization?.vaccinations || ''
+            vaccinations: formatArrayField(userData.patientProfile?.immunisationHistory)
           }
         };
         
@@ -185,6 +218,19 @@ const PatientProfile = () => {
     setIsSaving(true);
     
     try {
+      // Helper function to parse comma-separated strings back to arrays
+      const parseStringToArray = (str) => {
+        if (!str) return [];
+        return str.split(',').map(item => item.trim()).filter(item => item);
+      };
+
+      // Helper function to parse Yes/No back to boolean
+      const parseBoolean = (value) => {
+        if (value === 'Yes') return true;
+        if (value === 'No') return false;
+        return false;
+      };
+
       // Map the edited profile back to API format
       const updateData = {
         title: editedProfile.personalInfo.title,
@@ -194,41 +240,42 @@ const PatientProfile = () => {
         patientProfile: {
           dateOfBirth: editedProfile.personalInfo.dateOfBirth,
           gender: editedProfile.personalInfo.gender,
-          address: editedProfile.personalInfo.address,
+          address: {
+            street: editedProfile.personalInfo.address,
+            city: '',
+            state: '',
+            postalCode: '',
+            country: ''
+          },
           insurance: {
             provider: editedProfile.insurance.provider,
             plan: editedProfile.insurance.plan,
             insuranceNumber: editedProfile.insurance.insuranceNumber
           },
-          emergency: {
-            contactName: editedProfile.insurance.emergencyContactName,
-            contactNumber: editedProfile.insurance.emergencyContactNumber,
+          emergencyContact: {
+            name: editedProfile.insurance.emergencyContactName,
+            phone: editedProfile.insurance.emergencyContactNumber,
             relationship: editedProfile.insurance.relationship
           },
           medicalHistory: {
-            chronicConditions: editedProfile.medicalHistory.chronicConditions,
-            significantIllnesses: editedProfile.medicalHistory.significantIllnesses,
-            mentalHealthHistory: editedProfile.medicalHistory.mentalHealthHistory
+            chronicConditions: parseStringToArray(editedProfile.medicalHistory.chronicConditions),
+            significantIllnesses: parseStringToArray(editedProfile.medicalHistory.significantIllnesses),
+            mentalHealthHistory: parseStringToArray(editedProfile.medicalHistory.mentalHealthHistory)
           },
-          familyHistory: {
-            conditions: editedProfile.familyHistory.familyConditions
-          },
-          currentMedication: {
-            medications: editedProfile.currentMedication.medications,
-            supplements: editedProfile.currentMedication.supplements
-          },
-          allergies: {
-            list: editedProfile.allergies.knownAllergies
-          },
+          familyMedicalHistory: parseStringToArray(editedProfile.familyHistory.familyConditions),
+          currentMedications: parseStringToArray(editedProfile.currentMedication.medications).map(med => ({
+            name: med,
+            dosage: '',
+            frequency: ''
+          })),
+          allergies: parseStringToArray(editedProfile.allergies.knownAllergies),
           lifestyle: {
-            smoking: editedProfile.lifestyle.smoking,
-            alcohol: editedProfile.lifestyle.alcohol,
+            smoking: parseBoolean(editedProfile.lifestyle.smoking),
+            alcohol: parseBoolean(editedProfile.lifestyle.alcohol),
             exercise: editedProfile.lifestyle.exercise,
             dietaryPreferences: editedProfile.lifestyle.dietaryPreferences
           },
-          immunization: {
-            vaccinations: editedProfile.immunisation.vaccinations
-          }
+          immunisationHistory: parseStringToArray(editedProfile.immunisation.vaccinations)
         }
       };
       
