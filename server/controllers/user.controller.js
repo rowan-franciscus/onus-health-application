@@ -433,35 +433,25 @@ exports.completeOnboarding = async (req, res) => {
     // Update user with profile completion status
     user.isProfileCompleted = true;
     
+    // Update basic user fields if provided
+    if (profileData.title) user.title = profileData.title;
+    if (profileData.firstName) user.firstName = profileData.firstName;
+    if (profileData.lastName) user.lastName = profileData.lastName;
+    if (profileData.phone) user.phone = profileData.phone;
+    
     // Handle profile data based on user role
     if (user.role === 'patient' && profileData.patientProfile) {
-      // If patient profile exists, update it
-      if (user.patientProfile) {
-        await mongoose.model('PatientProfile').findByIdAndUpdate(
-          user.patientProfile,
-          { $set: profileData.patientProfile }
-        );
-      } else {
-        // Create new patient profile
-        const PatientProfile = mongoose.model('PatientProfile');
-        const newProfile = new PatientProfile(profileData.patientProfile);
-        await newProfile.save();
-        user.patientProfile = newProfile._id;
-      }
+      // Update patient profile directly on the user document
+      user.patientProfile = {
+        ...user.patientProfile,
+        ...profileData.patientProfile
+      };
     } else if (user.role === 'provider' && profileData.providerProfile) {
-      // If provider profile exists, update it
-      if (user.providerProfile) {
-        await mongoose.model('ProviderProfile').findByIdAndUpdate(
-          user.providerProfile,
-          { $set: profileData.providerProfile }
-        );
-      } else {
-        // Create new provider profile
-        const ProviderProfile = mongoose.model('ProviderProfile');
-        const newProfile = new ProviderProfile(profileData.providerProfile);
-        await newProfile.save();
-        user.providerProfile = newProfile._id;
-      }
+      // Update provider profile directly on the user document
+      user.providerProfile = {
+        ...user.providerProfile,
+        ...profileData.providerProfile
+      };
       
       // For providers, also send an email to admin for verification
       try {
@@ -476,9 +466,7 @@ exports.completeOnboarding = async (req, res) => {
     await user.save();
     
     const updatedUser = await User.findById(userId)
-      .select('-password')
-      .populate('patientProfile')
-      .populate('providerProfile');
+      .select('-password -resetPasswordToken -resetPasswordExpires');
     
     return res.json({
       success: true,
