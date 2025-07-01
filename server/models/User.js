@@ -114,6 +114,7 @@ const UserSchema = new mongoose.Schema({
       dosage: String,
       frequency: String
     }],
+    supplements: String,
     allergies: [String],
     lifestyle: {
       smoking: Boolean,

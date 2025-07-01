@@ -75,11 +75,12 @@ const PatientProfile = () => {
           return address || '';
         };
 
-        // Helper function to format boolean fields
+        // Helper function to format boolean/string fields
         const formatBoolean = (value) => {
           if (typeof value === 'boolean') {
             return value ? 'Yes' : 'No';
           }
+          // If it's a string, keep it as is (since lifestyle data is stored as strings)
           return value || 'None';
         };
 
@@ -115,14 +116,14 @@ const PatientProfile = () => {
             medications: userData.patientProfile?.currentMedications && userData.patientProfile.currentMedications.length > 0
               ? userData.patientProfile.currentMedications.map(med => med.name).join(', ')
               : '',
-            supplements: ''
+            supplements: userData.patientProfile?.supplements || ''
           },
           allergies: {
             knownAllergies: formatArrayField(userData.patientProfile?.allergies)
           },
           lifestyle: {
-            smoking: formatBoolean(userData.patientProfile?.lifestyle?.smoking),
-            alcohol: formatBoolean(userData.patientProfile?.lifestyle?.alcohol),
+            smoking: userData.patientProfile?.lifestyle?.smoking || 'None',
+            alcohol: userData.patientProfile?.lifestyle?.alcohol || 'None',
             exercise: userData.patientProfile?.lifestyle?.exercise || 'None',
             dietaryPreferences: userData.patientProfile?.lifestyle?.dietaryPreferences || ''
           },
@@ -224,11 +225,10 @@ const PatientProfile = () => {
         return str.split(',').map(item => item.trim()).filter(item => item);
       };
 
-      // Helper function to parse Yes/No back to boolean
-      const parseBoolean = (value) => {
-        if (value === 'Yes') return true;
-        if (value === 'No') return false;
-        return false;
+      // Helper function to handle lifestyle fields (keep as strings)
+      const parseLifestyleField = (value) => {
+        // For lifestyle fields, we keep them as strings since that's how they're stored
+        return value || '';
       };
 
       // Map the edited profile back to API format
@@ -268,12 +268,13 @@ const PatientProfile = () => {
             dosage: '',
             frequency: ''
           })),
+          supplements: editedProfile.currentMedication.supplements,
           allergies: parseStringToArray(editedProfile.allergies.knownAllergies),
           lifestyle: {
-            smoking: parseBoolean(editedProfile.lifestyle.smoking),
-            alcohol: parseBoolean(editedProfile.lifestyle.alcohol),
-            exercise: editedProfile.lifestyle.exercise,
-            dietaryPreferences: editedProfile.lifestyle.dietaryPreferences
+            smoking: parseLifestyleField(editedProfile.lifestyle.smoking),
+            alcohol: parseLifestyleField(editedProfile.lifestyle.alcohol),
+            exercise: parseLifestyleField(editedProfile.lifestyle.exercise),
+            dietaryPreferences: parseLifestyleField(editedProfile.lifestyle.dietaryPreferences)
           },
           immunisationHistory: parseStringToArray(editedProfile.immunisation.vaccinations)
         }

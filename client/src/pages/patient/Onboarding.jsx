@@ -83,49 +83,52 @@ const PatientOnboarding = () => {
         insurance: {
           provider: formData.healthInsurance?.provider || '',
           plan: formData.healthInsurance?.plan || '',
-          insuranceNumber: formData.healthInsurance?.number || ''
+          insuranceNumber: formData.healthInsurance?.insuranceNumber || ''
         },
         
-        // Map emergency contact
+        // Map emergency contact - fix: use emergencyContactNumber not emergencyContactPhone
         emergencyContact: {
           name: formData.healthInsurance?.emergencyContactName || '',
-          phone: formData.healthInsurance?.emergencyContactPhone || '',
+          phone: formData.healthInsurance?.emergencyContactNumber || '',
           relationship: formData.healthInsurance?.emergencyContactRelationship || ''
         },
         
-        // Map medical history
+        // Map medical history - fix field names
         medicalHistory: {
           chronicConditions: formData.medicalHistory?.chronicConditions ? [formData.medicalHistory.chronicConditions] : [],
-          significantIllnesses: formData.medicalHistory?.significantHistory ? [formData.medicalHistory.significantHistory] : [],
-          mentalHealthHistory: formData.medicalHistory?.mentalHealth ? [formData.medicalHistory.mentalHealth] : []
+          significantIllnesses: formData.medicalHistory?.significantIllnesses ? [formData.medicalHistory.significantIllnesses] : [],
+          mentalHealthHistory: formData.medicalHistory?.mentalHealthHistory ? [formData.medicalHistory.mentalHealthHistory] : []
         },
         
-        // Map family history
+        // Map family history - fix field names
         familyMedicalHistory: [
-          formData.familyHistory?.chronicIllnesses || '',
+          formData.familyHistory?.familyChronicConditions || '',
           formData.familyHistory?.hereditaryConditions || ''
         ].filter(item => item),
         
-        // Map current medications
+        // Map current medications - include both medications and supplements
         currentMedications: formData.currentMedication?.medications ? [{
           name: formData.currentMedication.medications,
           dosage: '',
           frequency: ''
         }] : [],
         
-        // Map allergies
-        allergies: formData.allergies?.list ? [formData.allergies.list] : [],
+        // Add supplements as a separate field
+        supplements: formData.currentMedication?.supplements || '',
         
-        // Map lifestyle
+        // Map allergies - fix: use knownAllergies not list
+        allergies: formData.allergies?.knownAllergies ? [formData.allergies.knownAllergies] : [],
+        
+        // Map lifestyle - keep as strings, not booleans
         lifestyle: {
-          smoking: Boolean(formData.lifestyle?.smoking),
-          alcohol: Boolean(formData.lifestyle?.alcohol),
+          smoking: formData.lifestyle?.smoking || '',
+          alcohol: formData.lifestyle?.alcohol || '',
           exercise: formData.lifestyle?.exercise || '',
-          dietaryPreferences: ''
+          dietaryPreferences: formData.lifestyle?.dietaryPreferences || ''
         },
         
-        // Map immunizations
-        immunisationHistory: formData.immunization?.history ? [formData.immunization.history] : []
+        // Map immunizations - fix field name
+        immunisationHistory: formData.immunization?.immunizationHistory ? [formData.immunization.immunizationHistory] : []
       };
 
       // Submit onboarding data to API
