@@ -117,8 +117,8 @@ const UserSchema = new mongoose.Schema({
     supplements: String,
     allergies: [String],
     lifestyle: {
-      smoking: Boolean,
-      alcohol: Boolean,
+      smoking: String,
+      alcohol: String,
       exercise: String,
       dietaryPreferences: String
     },
