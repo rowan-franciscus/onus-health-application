@@ -95,11 +95,12 @@ module.exports = {
           frequency: 'Twice daily'
         }
       ],
+      supplements: 'Vitamin D 1000 IU daily, Omega-3 supplements',
       allergies: ['Penicillin', 'Shellfish'],
       lifestyle: {
-        smoking: false,
-        alcohol: true,
-        exercise: 'Moderate',
+        smoking: 'No',
+        alcohol: 'Occasionally',
+        exercise: 'Moderate (3-4 times per week)',
         dietaryPreferences: 'Balanced diet'
       },
       immunisationHistory: ['Influenza (2023)', 'COVID-19 (2022)', 'Tetanus (2020)']

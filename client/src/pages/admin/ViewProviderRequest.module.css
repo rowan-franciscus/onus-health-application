@@ -114,6 +114,43 @@
   color: #d32f2f;
 }
 
+/* Actions Section */
+.actionsSection {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.actionsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+}
+
+.notes {
+  margin-bottom: 20px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+}
+
+/* License Container Styles */
+.licenseContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.viewLicenseButton {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;

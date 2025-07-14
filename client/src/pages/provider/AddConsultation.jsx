@@ -13,6 +13,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
 import ConsultationService from '../../services/consultation.service';
 import ApiService from '../../services/api.service';
+import FileService from '../../services/file.service';
 
 const AddConsultation = () => {
   const { patientId: paramPatientId, id: consultationId } = useParams();
@@ -253,11 +254,7 @@ const AddConsultation = () => {
   const handleSaveDraft = async (formData) => {
     setIsSaving(true);
     try {
-      // Check if patient data is available
-      if (!patient) {
-        toast.error('Patient information is not available');
-        return;
-      }
+      console.log('handleSaveDraft called with formData:', formData);
       
       // Extract date from general and move to top level
       const { date, ...generalWithoutDate } = formData.general;
@@ -330,14 +327,10 @@ const AddConsultation = () => {
         type: undefined
       }));
       
-      // Filter out empty or invalid attachments
-      const validAttachments = (formData.attachments || []).filter(attachment => 
-        attachment && 
-        typeof attachment === 'object' && 
-        (attachment.filename || attachment.name || attachment.originalName)
-      );
+      // Store files separately - we'll upload them after consultation creation
+      const filesToUpload = formData.attachments || [];
       
-      // Restructure the form data to match backend expectations
+      // Restructure the form data to match backend expectations (without attachments)
       const consultationData = {
         ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
         date: date, // Date at top level
@@ -352,7 +345,7 @@ const AddConsultation = () => {
         radiology: transformedRadiology,
         hospital: transformedHospital,
         surgery: transformedSurgery,
-        attachments: validAttachments,
+        attachments: [], // Empty initially, we'll upload files separately
         status: 'draft'
       };
       
@@ -367,7 +360,33 @@ const AddConsultation = () => {
       }
       
       if (response && (response._id || response.id)) {
-        toast.success(isEditing ? 'Consultation draft updated successfully' : 'Consultation draft saved successfully');
+        const consultationId = response._id || response.id;
+        
+        // Upload files if any
+        if (filesToUpload.length > 0) {
+          console.log(`Uploading ${filesToUpload.length} files for draft consultation ${consultationId}`);
+          
+          try {
+            // Upload each file
+            for (const file of filesToUpload) {
+              // Skip if it's not a File object (could be existing attachment data)
+              if (!(file instanceof File)) {
+                continue;
+              }
+              
+              console.log(`Uploading file: ${file.name}`);
+              await FileService.uploadConsultationFile(consultationId, file);
+            }
+            
+            toast.success(isEditing ? 'Consultation draft updated successfully with attachments' : 'Consultation draft saved successfully with attachments');
+          } catch (uploadError) {
+            console.error('Error uploading files:', uploadError);
+            toast.warning('Draft saved but some files failed to upload');
+          }
+        } else {
+          toast.success(isEditing ? 'Consultation draft updated successfully' : 'Consultation draft saved successfully');
+        }
+        
         navigate('/provider/consultations');
       }
     } catch (error) {
@@ -461,14 +480,10 @@ const AddConsultation = () => {
         type: undefined
       }));
       
-      // Filter out empty or invalid attachments
-      const validAttachments = (formData.attachments || []).filter(attachment => 
-        attachment && 
-        typeof attachment === 'object' && 
-        (attachment.filename || attachment.name || attachment.originalName)
-      );
+      // Store files separately - we'll upload them after consultation creation
+      const filesToUpload = formData.attachments || [];
       
-      // Restructure the form data to match backend expectations
+      // Restructure the form data to match backend expectations (without attachments)
       const consultationData = {
         ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
         date: date, // Date at top level
@@ -483,7 +498,7 @@ const AddConsultation = () => {
         radiology: transformedRadiology,
         hospital: transformedHospital,
         surgery: transformedSurgery,
-        attachments: validAttachments,
+        attachments: [], // Empty initially, we'll upload files separately
         status: 'completed'
       };
       
@@ -500,7 +515,33 @@ const AddConsultation = () => {
       }
       
       if (response && (response._id || response.id)) {
-        toast.success(isEditing ? 'Consultation updated successfully' : 'Consultation saved successfully');
+        const consultationId = response._id || response.id;
+        
+        // Upload files if any
+        if (filesToUpload.length > 0) {
+          console.log(`Uploading ${filesToUpload.length} files for consultation ${consultationId}`);
+          
+          try {
+            // Upload each file
+            for (const file of filesToUpload) {
+              // Skip if it's not a File object (could be existing attachment data)
+              if (!(file instanceof File)) {
+                continue;
+              }
+              
+              console.log(`Uploading file: ${file.name}`);
+              await FileService.uploadConsultationFile(consultationId, file);
+            }
+            
+            toast.success(isEditing ? 'Consultation updated successfully with attachments' : 'Consultation saved successfully with attachments');
+          } catch (uploadError) {
+            console.error('Error uploading files:', uploadError);
+            toast.warning('Consultation saved but some files failed to upload');
+          }
+        } else {
+          toast.success(isEditing ? 'Consultation updated successfully' : 'Consultation saved successfully');
+        }
+        
         navigate('/provider/consultations');
       }
     } catch (error) {

@@ -112,6 +112,7 @@ export const validationSchema = Yup.object().shape({
   
   hospital: Yup.array().of(
     Yup.object().shape({
+      hospitalName: Yup.string().nullable(),
       admissionDate: Yup.date().nullable(),
       dischargeDate: Yup.date()
         .min(Yup.ref('admissionDate'), 'Discharge date cannot be before admission date')

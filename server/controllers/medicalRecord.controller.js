@@ -67,12 +67,33 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
         });
       }
     } else if (req.user.role === 'provider') {
-      // Providers can view records they created
-      query.provider = req.user._id;
-      
-      // Optionally filter by specific patient if provided
+      // Check if provider is viewing a specific patient's records
       if (patientId) {
-        query.patient = mongoose.Types.ObjectId(patientId);
+        // Check provider's access level to this patient
+        const Connection = require('../models/Connection');
+        const connection = await Connection.findOne({
+          provider: req.user._id,
+          patient: patientId
+        });
+        
+        if (!connection) {
+          return res.status(403).json({ 
+            success: false, 
+            message: 'No connection to this patient' 
+          });
+        }
+        
+        // If provider has full approved access, they can see all records
+        if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
+          query.patient = mongoose.Types.ObjectId(patientId);
+        } else {
+          // Limited access - only see records they created
+          query.patient = mongoose.Types.ObjectId(patientId);
+          query.provider = req.user._id;
+        }
+      } else {
+        // If no patient specified, show all records created by this provider
+        query.provider = req.user._id;
       }
     } else if (req.user.role === 'admin') {
       // Admins can filter by patient and provider

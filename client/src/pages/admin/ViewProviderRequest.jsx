@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import adminService from '../../services/admin.service';
+import FileService from '../../services/file.service';
 import styles from './ViewProviderRequest.module.css';
 import Button from '../../components/common/Button';
 import Textarea from '../../components/common/Textarea';
@@ -79,6 +80,18 @@ const ViewProviderRequest = () => {
     }
   };
 
+  const handleViewLicense = () => {
+    if (provider?.providerProfile?.practiceLicense) {
+      // Extract filename from path like "/uploads/licenses/filename.pdf"
+      const licensePath = provider.providerProfile.practiceLicense;
+      const filename = licensePath.split('/').pop();
+      
+      if (filename) {
+        FileService.viewFile('licenses', filename);
+      }
+    }
+  };
+
   if (loading) {
     return <div className={styles.loadingContainer}>Loading provider details...</div>;
   }
@@ -143,7 +156,23 @@ const ViewProviderRequest = () => {
             </div>
             <div className={styles.infoItem}>
               <span className={styles.label}>Practice License:</span>
-              <span className={styles.value}>{provider.providerProfile?.practiceLicense || '-'}</span>
+              <span className={styles.value}>
+                {provider.providerProfile?.practiceLicense ? (
+                  <div className={styles.licenseContainer}>
+                    <span>{provider.providerProfile.practiceLicense.split('/').pop()}</span>
+                    <Button
+                      variant="tertiary"
+                      size="small"
+                      onClick={handleViewLicense}
+                      className={styles.viewLicenseButton}
+                    >
+                      View License
+                    </Button>
+                  </div>
+                ) : (
+                  'Not provided'
+                )}
+              </span>
             </div>
           </div>
         </div>
@@ -206,9 +235,7 @@ const ViewProviderRequest = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>Do you require access to historical data trends?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.dataPreferences?.requiresHistoricalData ? 'Yes' : 
-                 provider.providerProfile?.dataPreferences?.historicalData === 'true' ? 'Yes' : 
-                 provider.providerProfile?.dataPreferences?.historicalData === true ? 'Yes' : 'No'}
+                {provider.providerProfile?.dataPreferences?.requiresHistoricalData ? 'Yes' : 'No'}
               </span>
             </div>
           </div>
@@ -240,10 +267,7 @@ const ViewProviderRequest = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>Would you require training on how to use the Onus platform?</span>
               <span className={styles.value}>
-                {(provider.providerProfile?.supportPreferences?.requiresTraining === true || 
-                  provider.providerProfile?.communication?.trainingRequired === true || 
-                  provider.providerProfile?.communication?.trainingRequired === 'Yes') 
-                  ? 'Yes' : 'No'}
+                {provider.providerProfile?.supportPreferences?.requiresTraining || '-'}
               </span>
             </div>
             <div className={styles.infoItem}>

@@ -108,7 +108,26 @@ exports.addPatient = async (req, res) => {
     });
     
     if (existingConnection) {
-      return res.status(400).json({ success: false, message: 'Patient connection already exists' });
+      // If connection exists but access was revoked (limited access), 
+      // allow provider to request full access again
+      if (existingConnection.accessLevel === 'limited' && 
+          (existingConnection.fullAccessStatus === 'denied' || 
+           existingConnection.fullAccessStatus === 'none')) {
+        
+        // Provider can request full access again
+        return res.status(200).json({ 
+          success: true, 
+          message: 'You have limited access to this patient. You can request full access.',
+          connection: existingConnection,
+          canRequestFullAccess: true
+        });
+      }
+      
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Patient connection already exists',
+        connection: existingConnection
+      });
     }
     
     // Create new connection with limited access (patient can upgrade to full access if needed)
@@ -155,17 +174,26 @@ exports.getPatientById = async (req, res) => {
       return res.status(403).json({ success: false, message: 'No connection to this patient' });
     }
     
-    // Get patient data
-    const patient = await User.findById(patientId)
-      .select('-password -resetPasswordToken -resetPasswordExpires');
+    // Determine what data to return based on access level and status
+    let patientData;
     
-    if (!patient) {
+    if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
+      // Full access approved - return all patient data
+      patientData = await User.findById(patientId)
+        .select('-password -resetPasswordToken -resetPasswordExpires');
+    } else {
+      // Limited access or pending/denied full access - return only basic info
+      patientData = await User.findById(patientId)
+        .select('firstName lastName email _id');
+    }
+    
+    if (!patientData) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
     
     res.json({
       success: true,
-      patient,
+      patient: patientData,
       connectionInfo: {
         accessLevel: connection.accessLevel,
         fullAccessStatus: connection.fullAccessStatus,

@@ -31,7 +31,20 @@ const ConsultationForm = ({
   isSaving
 }) => {
   const [attachments, setAttachments] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
   const [attachmentErrors, setAttachmentErrors] = useState(null);
+  
+  // Initialize attachments when component mounts or initialValues change
+  React.useEffect(() => {
+    if (initialValues.attachments && initialValues.attachments.length > 0) {
+      // Separate existing attachments (from server) and new files
+      const existing = initialValues.attachments.filter(att => att._id || att.filename);
+      const newFiles = initialValues.attachments.filter(att => att instanceof File);
+      
+      setExistingAttachments(existing);
+      setAttachments(newFiles);
+    }
+  }, [initialValues.attachments]);
   
   // Function to render active tab content
   const renderTabContent = (formik) => {
@@ -152,10 +165,10 @@ const ConsultationForm = ({
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={(values) => {
-        // Add attachments to values
+        // Add attachments to values - only send new files to be uploaded
         const formData = {
           ...values,
-          attachments
+          attachments // Only new files, existing attachments stay on server
         };
         onSubmit(formData);
       }}
@@ -181,26 +194,53 @@ const ConsultationForm = ({
               helpText="Drag and drop files here, or click to browse (max 5MB per file)"
             />
             
-            {attachments.length > 0 && (
+            {(attachments.length > 0 || existingAttachments.length > 0) && (
               <div className={styles.attachmentsList}>
                 <h4>Uploaded Files</h4>
-                <FileViewer
-                  files={attachments.map((file, index) => ({
-                    id: index.toString(),
-                    filename: file.name,
-                    originalName: file.name,
-                    size: file.size,
-                    mimetype: file.type,
-                    uploadDate: new Date().toISOString()
-                  }))}
-                  onDelete={(file) => {
-                    const index = parseInt(file.id);
-                    handleRemoveFile(index);
-                  }}
-                  canDelete={true}
-                  showActions={true}
-                  emptyMessage="No files selected"
-                />
+                
+                {/* Show existing attachments from server */}
+                {existingAttachments.length > 0 && (
+                  <div className={styles.existingAttachments}>
+                    <h5>Existing Attachments</h5>
+                    <FileViewer
+                      files={existingAttachments.map((file, index) => ({
+                        id: file._id || `existing-${index}`,
+                        filename: file.filename,
+                        originalName: file.originalName || file.filename,
+                        size: file.size || 0,
+                        mimetype: file.mimetype || file.type || 'application/octet-stream',
+                        uploadDate: file.uploadDate || new Date().toISOString()
+                      }))}
+                      canDelete={false} // Don't allow deletion of existing attachments here
+                      showActions={false}
+                      emptyMessage="No existing files"
+                    />
+                  </div>
+                )}
+                
+                {/* Show new files to be uploaded */}
+                {attachments.length > 0 && (
+                  <div className={styles.newAttachments}>
+                    <h5>New Files to Upload</h5>
+                    <FileViewer
+                      files={attachments.map((file, index) => ({
+                        id: `new-${index}`,
+                        filename: file.name,
+                        originalName: file.name,
+                        size: file.size,
+                        mimetype: file.type,
+                        uploadDate: new Date().toISOString()
+                      }))}
+                      onDelete={(file) => {
+                        const index = parseInt(file.id.split('-')[1]);
+                        handleRemoveFile(index);
+                      }}
+                      canDelete={true}
+                      showActions={true}
+                      emptyMessage="No new files selected"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

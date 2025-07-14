@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import adminService from '../../services/admin.service';
+import FileService from '../../services/file.service';
 import styles from './ViewProvider.module.css';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -75,6 +76,22 @@ const ViewProvider = () => {
     window.open(`/provider/profile?view-as-admin=${id}`, '_blank');
   };
 
+  const handleViewProfile = () => {
+    navigate(`/provider/dashboard/${id}`);
+  };
+
+  const handleViewLicense = () => {
+    if (provider?.providerProfile?.practiceLicense) {
+      // Extract filename from path like "/uploads/licenses/filename.pdf"
+      const licensePath = provider.providerProfile.practiceLicense;
+      const filename = licensePath.split('/').pop();
+      
+      if (filename) {
+        FileService.viewFile('licenses', filename);
+      }
+    }
+  };
+
   if (loading) {
     return <div className={styles.loadingContainer}>Loading provider details...</div>;
   }
@@ -144,7 +161,23 @@ const ViewProvider = () => {
             </div>
             <div className={styles.infoItem}>
               <span className={styles.label}>Practice License:</span>
-              <span className={styles.value}>{provider.providerProfile?.practiceLicense || '-'}</span>
+              <span className={styles.value}>
+                {provider.providerProfile?.practiceLicense ? (
+                  <div className={styles.licenseContainer}>
+                    <span>{provider.providerProfile.practiceLicense.split('/').pop()}</span>
+                    <Button
+                      variant="tertiary"
+                      size="small"
+                      onClick={handleViewLicense}
+                      className={styles.viewLicenseButton}
+                    >
+                      View License
+                    </Button>
+                  </div>
+                ) : (
+                  '-'
+                )}
+              </span>
             </div>
           </div>
         </div>
@@ -235,8 +268,7 @@ const ViewProvider = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>Would you require training on how to use the Onus platform?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.supportPreferences?.requiresTraining === true ? 'Yes' : 
-                 provider.providerProfile?.supportPreferences?.requiresTraining === false ? 'No' : '-'}
+                {provider.providerProfile?.supportPreferences?.requiresTraining || '-'}
               </span>
             </div>
             <div className={styles.infoItem}>

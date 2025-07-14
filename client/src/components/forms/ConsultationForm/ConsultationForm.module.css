@@ -9,31 +9,62 @@
   min-height: 300px;
 }
 
+/* Attachments Section */
 .fileUploadSection {
-  padding: 1.5rem;
-  border-top: 1px solid #eee;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
 }
 
 .fileUploadSection h3 {
-  margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
-  color: #333;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.5rem;
 }
 
 .fileUploadSection p {
-  margin: 0 0 1rem 0;
-  color: #666;
-  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
 }
 
 .attachmentsList {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 
 .attachmentsList h4 {
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
-  color: #333;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 1rem;
+}
+
+.existingAttachments,
+.newAttachments {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.existingAttachments h5,
+.newAttachments h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.existingAttachments {
+  background: #f3f4f6;
+}
+
+.newAttachments {
+  background: #fef3c7;
+  border-color: #fbbf24;
 }
 
 .fileList {
@@ -68,6 +99,7 @@
   font-size: 0.85rem;
 }
 
+/* Form Actions */
 .formActions {
   display: flex;
   justify-content: flex-end;

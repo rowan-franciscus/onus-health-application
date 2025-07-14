@@ -596,8 +596,7 @@ exports.completeProviderOnboarding = async (req, res) => {
       // Support & Communication
       supportPreferences: {
         technicalSupportPreference: String(providerData.supportCommunication?.technicalSupport || ''),
-        requiresTraining: providerData.supportCommunication?.trainingRequired === true || 
-                         providerData.supportCommunication?.trainingRequired === "true",
+        requiresTraining: String(providerData.supportCommunication?.training || ''),
         updatePreference: String(providerData.supportCommunication?.updates || '')
       },
       

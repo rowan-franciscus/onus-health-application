@@ -7,6 +7,15 @@ const Consultation = require('../models/Consultation');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 
+// Security: Sanitize query params for logging to avoid exposing tokens
+const sanitizeQueryForLogging = (query) => {
+  const sanitized = { ...query };
+  if (sanitized.token) {
+    sanitized.token = '[REDACTED]';
+  }
+  return sanitized;
+};
+
 /**
  * Get file info without downloading
  */
@@ -45,44 +54,73 @@ router.get('/:type/:filename/info', authenticateJWT, async (req, res) => {
 
 /**
  * Download/view file with authentication
+ * 
+ * SECURITY NOTE: This route accepts JWT tokens via query parameter as a fallback
+ * when Authorization header is not present. This is necessary for file viewing
+ * in new browser windows/tabs (via window.open()) which don't send custom headers.
+ * 
+ * Security measures:
+ * - Token in query params is only used if Authorization header is missing
+ * - Tokens are sanitized from logs to prevent exposure
+ * - All permission checks remain in place
+ * - Should only be used over HTTPS in production
+ * 
+ * Consider implementing temporary signed URLs for better security in the future.
  */
-router.get('/:type/:filename', authenticateJWT, async (req, res) => {
+router.get('/:type/:filename', async (req, res, next) => {
   try {
-    const { type, filename } = req.params;
-    const filePath = path.join(__dirname, '../uploads', type, filename);
-    
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: 'File not found' });
+    // Check for token in query parameter if no Authorization header
+    if (!req.headers.authorization && req.query.token) {
+      req.headers.authorization = `Bearer ${req.query.token}`;
     }
     
-    // Check permissions based on file type
-    const hasPermission = await checkFilePermission(req.user, type, filename);
-    if (!hasPermission) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-    
-    // Determine if this should be viewed inline or downloaded
-    const isInline = req.query.inline === 'true';
-    const mimeType = getMimeType(filename);
-    
-    // Set appropriate headers
-    res.setHeader('Content-Type', mimeType);
-    
-    if (isInline && (mimeType.startsWith('image/') || mimeType === 'application/pdf')) {
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    } else {
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    }
-    
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
-    
-    // Log access
-    logger.info(`File accessed: ${type}/${filename} by user ${req.user.id}`);
+    // Apply authentication middleware
+    authenticateJWT(req, res, async (err) => {
+      if (err) return next(err);
+      
+      try {
+        const { type, filename } = req.params;
+        const filePath = path.join(__dirname, '../uploads', type, filename);
+        
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+          return res.status(404).json({ message: 'File not found' });
+        }
+        
+        // Check permissions based on file type
+        const hasPermission = await checkFilePermission(req.user, type, filename);
+        if (!hasPermission) {
+          return res.status(403).json({ message: 'Access denied' });
+        }
+        
+        // Determine if this should be viewed inline or downloaded
+        const isInline = req.query.inline === 'true';
+        const mimeType = getMimeType(filename);
+        
+        // Set appropriate headers
+        res.setHeader('Content-Type', mimeType);
+        
+        if (isInline && (mimeType.startsWith('image/') || mimeType === 'application/pdf')) {
+          res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        } else {
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        }
+        
+        // Stream the file
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.pipe(res);
+        
+        // Log access (with sanitized query to avoid exposing tokens)
+        logger.info(`File accessed: ${type}/${filename} by user ${req.user.id}`, {
+          query: sanitizeQueryForLogging(req.query)
+        });
+      } catch (error) {
+        logger.error('Error serving file:', error);
+        res.status(500).json({ message: 'Server error' });
+      }
+    });
   } catch (error) {
-    logger.error('Error serving file:', error);
+    logger.error('Error in file route:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

@@ -1,4 +1,5 @@
 import ApiService from './api.service';
+import config from '../config';
 
 /**
  * File service for handling file operations
@@ -68,10 +69,17 @@ class FileService {
    * @returns {Object} - Object with viewUrl and downloadUrl
    */
   static getFileUrls(fileType, filename) {
-    const baseUrl = `/api/files/${fileType}/${filename}`;
+    // Use full API URL to avoid React Router intercepting the request
+    const baseUrl = config.apiUrl.replace(/\/api$/, ''); // Remove /api suffix if present
+    const fileBaseUrl = `${baseUrl}/api/files/${fileType}/${filename}`;
+    
+    // Get JWT token from localStorage
+    const token = localStorage.getItem(config.tokenKey || 'onus_auth_token');
+    const tokenParam = token ? `token=${encodeURIComponent(token)}` : '';
+    
     return {
-      viewUrl: `${baseUrl}?inline=true`,
-      downloadUrl: baseUrl
+      viewUrl: `${fileBaseUrl}?inline=true${tokenParam ? '&' + tokenParam : ''}`,
+      downloadUrl: `${fileBaseUrl}${tokenParam ? '?' + tokenParam : ''}`
     };
   }
 
@@ -118,7 +126,14 @@ class FileService {
    * @param {string} filename - The filename
    */
   static viewFile(fileType, filename) {
-    const viewUrl = `/api/files/${fileType}/${filename}?inline=true`;
+    // Use full API URL to avoid React Router intercepting the request
+    const baseUrl = config.apiUrl.replace(/\/api$/, ''); // Remove /api suffix if present
+    
+    // Get JWT token from localStorage
+    const token = localStorage.getItem(config.tokenKey || 'onus_auth_token');
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+    
+    const viewUrl = `${baseUrl}/api/files/${fileType}/${filename}?inline=true${tokenParam}`;
     window.open(viewUrl, '_blank');
   }
 

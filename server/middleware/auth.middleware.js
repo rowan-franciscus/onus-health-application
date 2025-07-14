@@ -241,21 +241,31 @@ const isOwnProfileOrAdmin = async (req, res, next) => {
  * Helper function to check if provider has access to patient data
  * @param {String} providerId - Provider ID
  * @param {String} patientId - Patient ID
+ * @param {Boolean} requireFullAccess - Whether full approved access is required
  * @returns {Promise<Boolean>} - Whether provider has access
  */
-const canProviderAccessPatient = async (providerId, patientId) => {
+const canProviderAccessPatient = async (providerId, patientId, requireFullAccess = false) => {
   try {
     // Import Connection model
     const Connection = require('../models/Connection');
     
     // Find connection between provider and patient
-    // Check for any connection (regardless of access level)
     const connection = await Connection.findOne({
       provider: providerId,
       patient: patientId
     });
     
-    return !!connection; // Return true if connection exists
+    if (!connection) {
+      return false;
+    }
+    
+    // If full access is required, check that it's approved
+    if (requireFullAccess) {
+      return connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved';
+    }
+    
+    // Otherwise, any connection is sufficient (for limited access)
+    return true;
   } catch (error) {
     logger.error('Error checking provider-patient connection:', error);
     return false;

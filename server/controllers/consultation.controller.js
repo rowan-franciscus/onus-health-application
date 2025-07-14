@@ -37,8 +37,33 @@ exports.getAllConsultations = async (req, res) => {
         query.status = 'completed';
       }
     } else if (userRole === 'provider') {
-      // Providers can only view consultations they created
-      query.provider = userId;
+      // Check if provider is viewing a specific patient's consultations
+      if (patient) {
+        // Check provider's access level to this patient
+        const connection = await Connection.findOne({
+          provider: userId,
+          patient: patient
+        });
+        
+        if (!connection) {
+          return res.status(403).json({ 
+            success: false, 
+            message: 'No connection to this patient' 
+          });
+        }
+        
+        // If provider has full approved access, they can see all consultations
+        if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
+          query.patient = patient;
+        } else {
+          // Limited access - only see consultations they created
+          query.patient = patient;
+          query.provider = userId;
+        }
+      } else {
+        // If no patient specified, show all consultations created by this provider
+        query.provider = userId;
+      }
     } else if (userRole === 'admin') {
       // Admins can filter by patient and provider
       if (patient) query.patient = patient;

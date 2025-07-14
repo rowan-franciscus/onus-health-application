@@ -49,3 +49,5 @@ Thumbs.db
 .cache/
 dist/
 build/ 
+# User uploads
+server/uploads/

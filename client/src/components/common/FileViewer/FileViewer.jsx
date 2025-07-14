@@ -82,21 +82,19 @@ const FileViewer = ({
   const handleView = (file) => {
     if (onView) {
       onView(file);
-    } else if (file.viewUrl) {
-      window.open(file.viewUrl, '_blank');
+    } else {
+      // Don't use file.viewUrl directly as it might be a relative URL
+      // that gets intercepted by React Router
+      console.warn('No onView handler provided for FileViewer');
     }
   };
 
   const handleDownload = (file) => {
     if (onDownload) {
       onDownload(file);
-    } else if (file.downloadUrl) {
-      const link = document.createElement('a');
-      link.href = file.downloadUrl;
-      link.download = file.originalName || file.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    } else {
+      // Don't use file.downloadUrl directly as it might be a relative URL
+      console.warn('No onDownload handler provided for FileViewer');
     }
   };
 

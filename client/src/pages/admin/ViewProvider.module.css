@@ -118,8 +118,34 @@
   color: #d32f2f;
 }
 
+/* Delete Modal Styles */
 .modalContent {
-  padding: 16px 0;
+  padding: 2rem;
+  text-align: center;
+}
+
+.modalText {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* License Container Styles */
+.licenseContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.viewLicenseButton {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
 }
 
 .warningText {

@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import styles from './ViewConsultation.module.css';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import Tabs from '../../components/common/Tabs';
 import ApiService from '../../services/api.service';
+import FileService from '../../services/file.service';
+import { exportAsJSON, exportAsCSV } from '../../utils/consultationExport';
 
 // Define tabs array outside component
 const tabs = [
@@ -26,6 +28,8 @@ const PatientViewConsultation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
   const [error, setError] = useState(null);
+  const [showDownloadMenu, setShowDownloadMenu] = useState(false);
+  const downloadMenuRef = useRef(null);
 
   useEffect(() => {
     // Check for tab parameter in URL
@@ -109,24 +113,64 @@ const PatientViewConsultation = () => {
     return `${value}${unit ? ` ${unit}` : ''}`;
   };
 
-  // Download consultation data as JSON
-  const handleDownload = () => {
-    if (!consultation) return;
-    
-    const dataStr = JSON.stringify(consultation, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `consultation_${consultation.id}_${consultation.date}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  // Handle click outside download menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target)) {
+        setShowDownloadMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Toggle download menu
+  const toggleDownloadMenu = () => {
+    setShowDownloadMenu(prev => !prev);
   };
 
+  // Handle download by format
+  const handleDownload = (format) => {
+    if (!consultation) return;
+    
+    try {
+      switch (format) {
+        case 'json':
+          exportAsJSON(consultation);
+          break;
+        case 'csv':
+          exportAsCSV(consultation);
+          break;
+        default:
+          console.error('Unknown format:', format);
+      }
+      setShowDownloadMenu(false);
+    } catch (error) {
+      console.error('Error exporting consultation:', error);
+      // You could show a toast error here if needed
+    }
+  };
 
+  // Handle file download
+  const handleFileDownload = (file) => {
+    try {
+      FileService.downloadFile('consultations', file.filename, file.originalName || file.filename);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
+  // Handle file view
+  const handleFileView = (file) => {
+    try {
+      FileService.viewFile('consultations', file.filename);
+    } catch (error) {
+      console.error('Error viewing file:', error);
+    }
+  };
 
   // Render tab content based on active tab
   const renderTabContent = () => {
@@ -187,7 +231,7 @@ const PatientViewConsultation = () => {
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Body Temperature</h3>
-                  <p>{formatValue(vitals.bodyTemperature?.value, '°F')}</p>
+                  <p>{formatValue(vitals.bodyTemperature?.value, '°C')}</p>
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Respiratory Rate</h3>
@@ -211,11 +255,11 @@ const PatientViewConsultation = () => {
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Weight</h3>
-                  <p>{formatValue(vitals.weight?.value, 'lbs')}</p>
+                  <p>{formatValue(vitals.weight?.value, 'kg')}</p>
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Height</h3>
-                  <p>{formatValue(vitals.height?.value, 'inches')}</p>
+                  <p>{formatValue(vitals.height?.value, 'cm')}</p>
                 </div>
               </div>
             )}
@@ -232,10 +276,10 @@ const PatientViewConsultation = () => {
               <div className={styles.medicationsList}>
                 {medications.map((medication, index) => (
                   <div key={index} className={styles.medicationItem}>
-                    <h3>{medication.nameOfMedication || 'Unnamed Medication'}</h3>
+                    <h3>{medication.name || 'Unnamed Medication'}</h3>
                     <div className={styles.medicationDetails}>
                       <div className={styles.medicationDetail}>
-                        <span>Dosage:</span> {formatValue(medication.dosage)}
+                        <span>Dosage:</span> {medication.dosage ? `${medication.dosage.value} ${medication.dosage.unit}` : 'N/A'}
                       </div>
                       <div className={styles.medicationDetail}>
                         <span>Frequency:</span> {formatValue(medication.frequency)}
@@ -363,6 +407,9 @@ const PatientViewConsultation = () => {
                     <h3>{hospital.hospitalName || 'Hospital Stay'}</h3>
                     <div className={styles.hospitalDetails}>
                       <div className={styles.hospitalDetail}>
+                        <span>Hospital Name:</span> {formatValue(hospital.hospitalName)}
+                      </div>
+                      <div className={styles.hospitalDetail}>
                         <span>Admission Date:</span> {formatDate(hospital.admissionDate)}
                       </div>
                       <div className={styles.hospitalDetail}>
@@ -440,28 +487,45 @@ const PatientViewConsultation = () => {
               <div className={styles.noData}>No files attached to this consultation</div>
             ) : (
               <div className={styles.filesList}>
-                {attachments.map((file) => (
-                  <div key={file._id || file.id} className={styles.fileItem}>
-                    <div className={styles.fileIcon}>
-                      <img src="/icons/document-icon.svg" alt="Document" />
-                    </div>
-                    <div className={styles.fileDetails}>
-                      <h3>{file.originalName || file.filename}</h3>
-                      <div className={styles.fileInfo}>
-                        <span>Type: {file.mimetype || 'Unknown'}</span>
-                        <span>Size: {file.size ? `${(file.size / 1024).toFixed(2)} KB` : 'Unknown'}</span>
-                        <span>Uploaded: {formatDate(file.uploadDate)}</span>
+                {attachments.map((file) => {
+                  const canPreview = file.mimetype && (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf');
+                  
+                  return (
+                    <div key={file._id || file.id} className={styles.fileItem}>
+                      <div className={styles.fileIcon}>
+                        <img src="/icons/document-icon.svg" alt="Document" />
+                      </div>
+                      <div className={styles.fileDetails}>
+                        <h3>{file.originalName || file.filename}</h3>
+                        <div className={styles.fileInfo}>
+                          <span>Type: {file.mimetype || 'Unknown'}</span>
+                          <span>Size: {file.size ? `${(file.size / 1024).toFixed(2)} KB` : 'Unknown'}</span>
+                          <span>Uploaded: {formatDate(file.uploadDate)}</span>
+                        </div>
+                      </div>
+                      <div className={styles.fileActions}>
+                        {canPreview && (
+                          <Button
+                            variant="tertiary"
+                            size="small"
+                            onClick={() => handleFileView(file)}
+                            className={styles.viewButton}
+                          >
+                            View
+                          </Button>
+                        )}
+                        <Button
+                          variant="tertiary"
+                          size="small"
+                          onClick={() => handleFileDownload(file)}
+                          className={styles.downloadButton}
+                        >
+                          Download
+                        </Button>
                       </div>
                     </div>
-                    <a 
-                      href={`/api/files/consultations/${file.filename}`}
-                      download={file.originalName}
-                      className={styles.downloadButton}
-                    >
-                      Download
-                    </a>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -482,13 +546,32 @@ const PatientViewConsultation = () => {
           <h1>Consultation Details</h1>
         </div>
         
-        <Button 
-          onClick={handleDownload} 
-          className={styles.downloadButton}
-          disabled={isLoading || !consultation}
-        >
-          Download Consultation Data
-        </Button>
+        <div className={styles.downloadContainer} ref={downloadMenuRef}>
+          <Button 
+            onClick={toggleDownloadMenu} 
+            className={styles.downloadButton}
+            disabled={isLoading || !consultation}
+          >
+            Download Consultation Data ▼
+          </Button>
+          
+          {showDownloadMenu && (
+            <div className={styles.downloadMenu}>
+              <button 
+                className={styles.downloadOption} 
+                onClick={() => handleDownload('csv')}
+              >
+                Download as CSV
+              </button>
+              <button 
+                className={styles.downloadOption} 
+                onClick={() => handleDownload('json')}
+              >
+                Download as JSON
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       
       {isLoading ? (

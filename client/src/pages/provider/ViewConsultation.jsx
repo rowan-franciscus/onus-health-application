@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styles from './ViewConsultation.module.css';
 import ApiService from '../../services/api.service';
+import FileService from '../../services/file.service';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -62,6 +63,36 @@ const ViewConsultation = () => {
 
   const handleEdit = () => {
     navigate(`/provider/consultations/${id}/edit`);
+  };
+
+  const handleFileView = (file) => {
+    try {
+      FileService.viewFile('consultations', file.filename);
+    } catch (error) {
+      console.error('Error viewing file:', error);
+      toast.error('Failed to view file');
+    }
+  };
+
+  const handleFileDownload = (file) => {
+    try {
+      FileService.downloadFile('consultations', file.filename, file.originalName);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Failed to download file');
+    }
+  };
+
+  const handleFileDelete = async (file) => {
+    try {
+      await FileService.deleteConsultationAttachment(id, file.id);
+      toast.success('File deleted successfully');
+      // Refresh consultation data to update attachments list
+      fetchConsultationData();
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -141,7 +172,7 @@ const ViewConsultation = () => {
               </div>
               <div className={styles.field}>
                 <label>Body Temperature:</label>
-                <span>{formatValue(vitals.bodyTemperature?.value, '°F')}</span>
+                <span>{formatValue(vitals.bodyTemperature?.value, '°C')}</span>
               </div>
               <div className={styles.field}>
                 <label>Respiratory Rate:</label>
@@ -165,11 +196,11 @@ const ViewConsultation = () => {
               </div>
               <div className={styles.field}>
                 <label>Weight:</label>
-                <span>{formatValue(vitals.weight?.value, 'lbs')}</span>
+                <span>{formatValue(vitals.weight?.value, 'kg')}</span>
               </div>
               <div className={styles.field}>
                 <label>Height:</label>
-                <span>{formatValue(vitals.height?.value, 'inches')}</span>
+                <span>{formatValue(vitals.height?.value, 'cm')}</span>
               </div>
             </div>
           </div>
@@ -186,12 +217,12 @@ const ViewConsultation = () => {
                 {medications.map((medication, index) => (
                   <div key={index} className={styles.recordItem}>
                     <div className={styles.recordHeader}>
-                      <h4>{medication.nameOfMedication || 'Unnamed Medication'}</h4>
+                      <h4>{medication.name || 'Unnamed Medication'}</h4>
                     </div>
                     <div className={styles.recordDetails}>
                       <div className={styles.field}>
                         <label>Dosage:</label>
-                        <span>{formatValue(medication.dosage)}</span>
+                        <span>{medication.dosage ? `${medication.dosage.value} ${medication.dosage.unit}` : 'N/A'}</span>
                       </div>
                       <div className={styles.field}>
                         <label>Frequency:</label>
@@ -341,6 +372,10 @@ const ViewConsultation = () => {
                       <h4>{hospital.hospitalName || 'Hospital Stay'}</h4>
                     </div>
                     <div className={styles.recordDetails}>
+                      <div className={styles.field}>
+                        <label>Hospital Name:</label>
+                        <span>{formatValue(hospital.hospitalName)}</span>
+                      </div>
                       <div className={styles.field}>
                         <label>Admission Date:</label>
                         <span>{formatDate(hospital.admissionDate)}</span>
@@ -510,7 +545,10 @@ const ViewConsultation = () => {
                 uploadDate: attachment.uploadDate || consultation.createdAt,
                 path: attachment.path
               }))}
-              canDelete={false}
+              onView={handleFileView}
+              onDownload={handleFileDownload}
+              onDelete={handleFileDelete}
+              canDelete={consultation.status === 'draft'} // Only allow deletion for draft consultations
               showActions={true}
               emptyMessage="No documents attached"
               className={styles.fileViewer}

@@ -181,6 +181,10 @@ const ViewPatient = () => {
           <span>{Array.isArray(patient.patientProfile?.currentMedications) ? 
             patient.patientProfile.currentMedications.map(med => med.name).filter(name => name && name.trim()).join(', ') || '-' : '-'}</span>
         </div>
+        <div className={styles.fullWidthField}>
+          <label>Supplements or vitamins:</label>
+          <span>{patient.patientProfile?.supplements || '-'}</span>
+        </div>
       </div>
 
       <h1 className={styles.title}>Allergies</h1>
@@ -196,15 +200,28 @@ const ViewPatient = () => {
       <div className={styles.card}>
         <div className={styles.fullWidthField}>
           <label>Smoking status:</label>
-          <span>{patient.patientProfile?.lifestyle?.smoking !== undefined ? (patient.patientProfile.lifestyle.smoking ? 'Yes' : 'No') : '-'}</span>
+          <span>{patient.patientProfile?.lifestyle?.smoking || '-'}</span>
         </div>
         <div className={styles.fullWidthField}>
           <label>Alcohol consumption:</label>
-          <span>{patient.patientProfile?.lifestyle?.alcohol !== undefined ? (patient.patientProfile.lifestyle.alcohol ? 'Yes' : 'No') : '-'}</span>
+          <span>{patient.patientProfile?.lifestyle?.alcohol || '-'}</span>
         </div>
         <div className={styles.fullWidthField}>
           <label>Exercise habits:</label>
           <span>{patient.patientProfile?.lifestyle?.exercise || '-'}</span>
+        </div>
+        <div className={styles.fullWidthField}>
+          <label>Dietary preferences:</label>
+          <span>{patient.patientProfile?.lifestyle?.dietaryPreferences || '-'}</span>
+        </div>
+      </div>
+
+      <h1 className={styles.title}>Immunization</h1>
+      <div className={styles.card}>
+        <div className={styles.fullWidthField}>
+          <label>Immunization history:</label>
+          <span>{Array.isArray(patient.patientProfile?.immunisationHistory) ? 
+            patient.patientProfile.immunisationHistory.filter(item => item && item.trim()).join(', ') || '-' : '-'}</span>
         </div>
       </div>
     </div>

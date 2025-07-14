@@ -133,9 +133,15 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+  grid-template-areas:
+    "info info"
+    "history emergency"
+    "lifestyle medications"
+    "immunization immunization"
+    "consultations consultations";
 }
 
-.infoCard, .medicalHistoryCard, .emergencyContactCard, .consultationsCard, .medicalRecordCard {
+.infoCard, .medicalHistoryCard, .emergencyContactCard, .consultationsCard, .medicalRecordCard, .lifestyleCard, .medicationsCard, .immunizationCard {
   background-color: white;
   border-radius: 8px;
   padding: 24px;
@@ -144,23 +150,31 @@
 }
 
 .infoCard {
-  grid-column: 1;
-  grid-row: 1;
+  grid-area: info;
 }
 
 .medicalHistoryCard {
-  grid-column: 2;
-  grid-row: 1;
+  grid-area: history;
 }
 
 .emergencyContactCard {
-  grid-column: 1;
-  grid-row: 2;
+  grid-area: emergency;
+}
+
+.lifestyleCard {
+  grid-area: lifestyle;
+}
+
+.medicationsCard {
+  grid-area: medications;
+}
+
+.immunizationCard {
+  grid-area: immunization;
 }
 
 .consultationsCard {
-  grid-column: 2;
-  grid-row: 2;
+  grid-area: consultations;
 }
 
 /* Patient info section */
@@ -168,7 +182,10 @@
 .medicalHistorySection h3, 
 .emergencyContactSection h3, 
 .consultationsSection h3,
-.vitalsSection h3 {
+.vitalsSection h3,
+.lifestyleSection h3,
+.medicationsSection h3,
+.immunizationSection h3 {
   font-size: 18px;
   font-weight: 600;
   color: #333;
@@ -260,6 +277,74 @@
   padding: 12px;
   border-radius: 4px;
   background-color: #f9f9f9;
+}
+
+/* Lifestyle section */
+.lifestyleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.lifestyleItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lifestyleLabel {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.lifestyleValue {
+  font-size: 14px;
+  color: #333;
+}
+
+/* Medications section */
+.medicationsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.medicationsItem h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.medicationsList {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.medicationsList li {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.supplementsText {
+  font-size: 14px;
+  color: #333;
+  margin: 0;
+}
+
+/* Immunization section */
+.immunizationList {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.immunizationList li {
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: #333;
 }
 
 .consultationHeader {

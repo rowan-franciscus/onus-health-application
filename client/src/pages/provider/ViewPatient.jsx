@@ -59,6 +59,7 @@ const ProviderViewPatient = () => {
       
       if (patientResponse && patientResponse.success && patientResponse.patient) {
         const patientData = patientResponse.patient;
+        const connectionInfo = patientResponse.connectionInfo;
         
         // Calculate age helper function
         const calculateAge = (dateOfBirth) => {
@@ -73,39 +74,62 @@ const ProviderViewPatient = () => {
           return age;
         };
         
-        // Transform the data to match our component's expected format
+        // Check if provider has full approved access
+        const hasFullAccess = connectionInfo && 
+                            connectionInfo.accessLevel === 'full' && 
+                            connectionInfo.fullAccessStatus === 'approved';
+        
+        // Format patient data based on access level
         const formattedPatient = {
           id: patientData._id,
           name: `${patientData.firstName} ${patientData.lastName}`,
-          gender: patientData.patientProfile?.gender || 'N/A',
-          dateOfBirth: patientData.patientProfile?.dateOfBirth ? 
-            new Date(patientData.patientProfile.dateOfBirth).toLocaleDateString() : 'N/A',
-          age: calculateAge(patientData.patientProfile?.dateOfBirth),
           email: patientData.email,
-          phone: patientData.phone || 'N/A',
-          address: patientData.patientProfile?.address ? 
-            `${patientData.patientProfile.address.street || ''}, ${patientData.patientProfile.address.city || ''}, ${patientData.patientProfile.address.state || ''}`.replace(/^,\s*|,\s*$/g, '') : 'N/A',
+          // Access level based on connection info
+          accessLevel: connectionInfo?.fullAccessStatus === 'pending' ? 'pending' : 
+                       (hasFullAccess ? 'full' : 'limited'),
+          // Profile data only available with full access
+          gender: hasFullAccess ? (patientData.patientProfile?.gender || 'N/A') : 'Not available',
+          dateOfBirth: hasFullAccess && patientData.patientProfile?.dateOfBirth ? 
+            new Date(patientData.patientProfile.dateOfBirth).toLocaleDateString() : 'Not available',
+          age: hasFullAccess ? calculateAge(patientData.patientProfile?.dateOfBirth) : 'Not available',
+          phone: hasFullAccess ? (patientData.phone || 'N/A') : 'Not available',
+          address: hasFullAccess && patientData.patientProfile?.address ? 
+            `${patientData.patientProfile.address.street || ''}, ${patientData.patientProfile.address.city || ''}, ${patientData.patientProfile.address.state || ''}`.replace(/^,\s*|,\s*$/g, '').replace(/,\s*,/g, ',') || 'N/A' : 'Not available',
           insurance: {
-            provider: patientData.patientProfile?.healthInsurance?.provider || 'N/A',
-            planType: patientData.patientProfile?.healthInsurance?.plan || 'N/A',
-            memberId: patientData.patientProfile?.healthInsurance?.insuranceNumber || 'N/A'
+            provider: hasFullAccess ? (patientData.patientProfile?.insurance?.provider || 'N/A') : 'Not available',
+            planType: hasFullAccess ? (patientData.patientProfile?.insurance?.plan || 'N/A') : 'Not available',
+            memberId: hasFullAccess ? (patientData.patientProfile?.insurance?.insuranceNumber || 'N/A') : 'Not available'
           },
           emergencyContact: {
-            name: patientData.patientProfile?.emergencyContact?.name || 'N/A',
-            relationship: patientData.patientProfile?.emergencyContact?.relationship || 'N/A',
-            phone: patientData.patientProfile?.emergencyContact?.phone || 'N/A'
+            name: hasFullAccess ? (patientData.patientProfile?.emergencyContact?.name || 'N/A') : 'Not available',
+            relationship: hasFullAccess ? (patientData.patientProfile?.emergencyContact?.relationship || 'N/A') : 'Not available',
+            phone: hasFullAccess ? (patientData.patientProfile?.emergencyContact?.phone || 'N/A') : 'Not available'
           },
-          accessLevel: 'full', // Since this is an approved connection
           medicalHistory: {
-            chronicConditions: patientData.patientProfile?.medicalHistory?.chronicConditions || [],
-            allergies: patientData.patientProfile?.allergies || [],
-            surgeries: patientData.patientProfile?.medicalHistory?.significantIllnesses || [],
-            familyHistory: patientData.patientProfile?.familyMedicalHistory || []
-          }
+            chronicConditions: hasFullAccess ? (patientData.patientProfile?.medicalHistory?.chronicConditions || []) : [],
+            allergies: hasFullAccess ? (patientData.patientProfile?.allergies || []) : [],
+            surgeries: hasFullAccess ? (patientData.patientProfile?.medicalHistory?.significantIllnesses || []) : [],
+            familyHistory: hasFullAccess ? (patientData.patientProfile?.familyMedicalHistory || []) : []
+          },
+          lifestyle: {
+            smoking: hasFullAccess ? (patientData.patientProfile?.lifestyle?.smoking || 'N/A') : 'Not available',
+            alcohol: hasFullAccess ? (patientData.patientProfile?.lifestyle?.alcohol || 'N/A') : 'Not available',
+            exercise: hasFullAccess ? (patientData.patientProfile?.lifestyle?.exercise || 'N/A') : 'Not available',
+            dietaryPreferences: hasFullAccess ? (patientData.patientProfile?.lifestyle?.dietaryPreferences || 'N/A') : 'Not available'
+          },
+          currentMedications: hasFullAccess ? (patientData.patientProfile?.currentMedications || []) : [],
+          supplements: hasFullAccess ? (patientData.patientProfile?.supplements || 'N/A') : 'Not available',
+          immunisationHistory: hasFullAccess ? (patientData.patientProfile?.immunisationHistory || []) : []
         };
         
         setPatient(formattedPatient);
-        setAccessRequestStatus(null);
+        
+        // Set access request status if pending
+        if (connectionInfo?.fullAccessStatus === 'pending') {
+          setAccessRequestStatus('pending');
+        } else {
+          setAccessRequestStatus(null);
+        }
         
         // Fetch consultations for this patient
         await fetchPatientConsultations(id);
@@ -470,36 +494,124 @@ const ProviderViewPatient = () => {
           <div className={styles.historyItem}>
             <h4>Chronic Conditions</h4>
             <ul className={styles.historyList}>
-              {patient.medicalHistory.chronicConditions.map((condition, index) => (
-                <li key={index}>{condition}</li>
-              ))}
+              {patient.medicalHistory.chronicConditions.length > 0 ? 
+                patient.medicalHistory.chronicConditions.map((condition, index) => (
+                  <li key={index}>{condition}</li>
+                ))
+              : <li>None reported</li>}
             </ul>
           </div>
           <div className={styles.historyItem}>
             <h4>Allergies</h4>
             <ul className={styles.historyList}>
-              {patient.medicalHistory.allergies.map((allergy, index) => (
-                <li key={index}>{allergy}</li>
-              ))}
+              {patient.medicalHistory.allergies.length > 0 ?
+                patient.medicalHistory.allergies.map((allergy, index) => (
+                  <li key={index}>{allergy}</li>
+                ))
+              : <li>None reported</li>}
             </ul>
           </div>
           <div className={styles.historyItem}>
-            <h4>Past Surgeries</h4>
+            <h4>Significant Illnesses/Surgeries</h4>
             <ul className={styles.historyList}>
-              {patient.medicalHistory.surgeries.map((surgery, index) => (
-                <li key={index}>{surgery}</li>
-              ))}
+              {patient.medicalHistory.surgeries.length > 0 ?
+                patient.medicalHistory.surgeries.map((surgery, index) => (
+                  <li key={index}>{surgery}</li>
+                ))
+              : <li>None reported</li>}
             </ul>
           </div>
           <div className={styles.historyItem}>
             <h4>Family Medical History</h4>
             <ul className={styles.historyList}>
-              {patient.medicalHistory.familyHistory.map((history, index) => (
-                <li key={index}>{history}</li>
-              ))}
+              {patient.medicalHistory.familyHistory.length > 0 ?
+                patient.medicalHistory.familyHistory.map((history, index) => (
+                  <li key={index}>{history}</li>
+                ))
+              : <li>None reported</li>}
             </ul>
           </div>
         </div>
+      </div>
+    );
+  };
+
+  // Render patient lifestyle information
+  const renderLifestyleInfo = () => {
+    if (!patient || !patient.lifestyle) return null;
+    
+    return (
+      <div className={styles.lifestyleSection}>
+        <h3>Lifestyle & Habits</h3>
+        <div className={styles.lifestyleGrid}>
+          <div className={styles.lifestyleItem}>
+            <span className={styles.lifestyleLabel}>Smoking:</span>
+            <span className={styles.lifestyleValue}>{patient.lifestyle.smoking}</span>
+          </div>
+          <div className={styles.lifestyleItem}>
+            <span className={styles.lifestyleLabel}>Alcohol:</span>
+            <span className={styles.lifestyleValue}>{patient.lifestyle.alcohol}</span>
+          </div>
+          <div className={styles.lifestyleItem}>
+            <span className={styles.lifestyleLabel}>Exercise:</span>
+            <span className={styles.lifestyleValue}>{patient.lifestyle.exercise}</span>
+          </div>
+          <div className={styles.lifestyleItem}>
+            <span className={styles.lifestyleLabel}>Dietary Preferences:</span>
+            <span className={styles.lifestyleValue}>{patient.lifestyle.dietaryPreferences}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render current medications and supplements
+  const renderCurrentMedications = () => {
+    if (!patient) return null;
+    
+    return (
+      <div className={styles.medicationsSection}>
+        <h3>Current Medications & Supplements</h3>
+        <div className={styles.medicationsGrid}>
+          <div className={styles.medicationsItem}>
+            <h4>Medications</h4>
+            <ul className={styles.medicationsList}>
+              {patient.currentMedications.length > 0 ?
+                patient.currentMedications.map((med, index) => (
+                  <li key={index}>
+                    <strong>{med.name}</strong>
+                    {med.dosage && ` - ${med.dosage}`}
+                    {med.frequency && ` - ${med.frequency}`}
+                  </li>
+                ))
+              : <li>No current medications</li>}
+            </ul>
+          </div>
+          <div className={styles.medicationsItem}>
+            <h4>Supplements</h4>
+            <p className={styles.supplementsText}>
+              {patient.supplements !== 'N/A' ? patient.supplements : 'No supplements reported'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render immunization history
+  const renderImmunizationHistory = () => {
+    if (!patient || !patient.immunisationHistory) return null;
+    
+    return (
+      <div className={styles.immunizationSection}>
+        <h3>Immunization History</h3>
+        <ul className={styles.immunizationList}>
+          {patient.immunisationHistory.length > 0 ?
+            patient.immunisationHistory.map((vaccine, index) => (
+              <li key={index}>{vaccine}</li>
+            ))
+          : <li>No immunization records</li>}
+        </ul>
       </div>
     );
   };
@@ -995,21 +1107,74 @@ const ProviderViewPatient = () => {
       case 'overview':
         return (
           <div className={styles.overviewTab}>
-            <Card className={styles.infoCard}>
-              {renderPatientInfo()}
-            </Card>
-            
-            <Card className={styles.medicalHistoryCard}>
-              {renderMedicalHistory()}
-            </Card>
-            
-            <Card className={styles.emergencyContactCard}>
-              {renderEmergencyContact()}
-            </Card>
-            
-            <Card className={styles.consultationsCard}>
-              {renderRecentConsultations()}
-            </Card>
+            {patient?.accessLevel === 'pending' || patient?.accessLevel === 'limited' ? (
+              <Card className={styles.limitedAccessCard}>
+                <div className={styles.limitedAccessContent}>
+                  <h3>Limited Patient Information</h3>
+                  <p>You currently have {patient.accessLevel === 'pending' ? 'pending' : 'limited'} access to this patient's information.</p>
+                  
+                  <div className={styles.basicInfo}>
+                    <h4>Basic Information</h4>
+                    <p><strong>Name:</strong> {patient.name}</p>
+                    <p><strong>Email:</strong> {patient.email}</p>
+                  </div>
+                  
+                  {patient.accessLevel === 'pending' ? (
+                    <div className={styles.pendingMessage}>
+                      <p>Your request for full access is pending approval from the patient.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p>With limited access, you can:</p>
+                      <ul>
+                        <li>View and create consultations for this patient</li>
+                        <li>Access medical records from consultations you create</li>
+                      </ul>
+                      <p>To view the patient's complete medical history and profile information, you need to request full access.</p>
+                      {!accessRequestStatus && (
+                        <Button 
+                          variant="primary" 
+                          onClick={handleRequestAccess}
+                          className={styles.requestAccessBtn}
+                        >
+                          Request Full Access
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              <>
+                <Card className={styles.infoCard}>
+                  {renderPatientInfo()}
+                </Card>
+                
+                <Card className={styles.medicalHistoryCard}>
+                  {renderMedicalHistory()}
+                </Card>
+                
+                <Card className={styles.emergencyContactCard}>
+                  {renderEmergencyContact()}
+                </Card>
+                
+                <Card className={styles.lifestyleCard}>
+                  {renderLifestyleInfo()}
+                </Card>
+                
+                <Card className={styles.medicationsCard}>
+                  {renderCurrentMedications()}
+                </Card>
+                
+                <Card className={styles.immunizationCard}>
+                  {renderImmunizationHistory()}
+                </Card>
+                
+                <Card className={styles.consultationsCard}>
+                  {renderRecentConsultations()}
+                </Card>
+              </>
+            )}
           </div>
         );
       case 'consultations':

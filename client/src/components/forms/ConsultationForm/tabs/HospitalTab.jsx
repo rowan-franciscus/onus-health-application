@@ -10,6 +10,7 @@ const HospitalTab = ({
   setFieldValue
 }) => {
   const [newRecord, setNewRecord] = useState({
+    hospitalName: '',
     admissionDate: '',
     dischargeDate: '',
     reason: '',
@@ -23,6 +24,10 @@ const HospitalTab = ({
   
   const validateRecord = (record) => {
     const errors = {};
+    
+    if (!record.hospitalName.trim()) {
+      errors.hospitalName = 'Hospital name is required';
+    }
     
     if (!record.admissionDate) {
       errors.admissionDate = 'Admission date is required';
@@ -69,6 +74,7 @@ const HospitalTab = ({
     
     // Reset the form for the next record
     setNewRecord({
+      hospitalName: '',
       admissionDate: '',
       dischargeDate: '',
       reason: '',
@@ -99,7 +105,7 @@ const HospitalTab = ({
             <div key={index} className={styles.fieldGroup}>
               <div className={styles.fieldGroupHeader}>
                 <h3 className={styles.fieldGroupTitle}>
-                  Hospital Stay: {new Date(record.admissionDate).toLocaleDateString()}
+                  {record.hospitalName || 'Hospital Stay'}: {new Date(record.admissionDate).toLocaleDateString()}
                   {record.dischargeDate ? ` - ${new Date(record.dischargeDate).toLocaleDateString()}` : ' (Ongoing)'}
                 </h3>
                 <button
@@ -109,6 +115,11 @@ const HospitalTab = ({
                 >
                   Remove
                 </button>
+              </div>
+              
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Hospital Name</label>
+                <p className={styles.formValue}>{record.hospitalName}</p>
               </div>
               
               <div className={styles.formGrid}>
@@ -164,6 +175,27 @@ const HospitalTab = ({
       
       <div className={styles.fieldGroup}>
         <h3 className={styles.fieldGroupTitle}>Add New Hospital Record</h3>
+        
+        <div className={styles.formGroup}>
+          <label htmlFor="hospitalName" className={styles.formLabel}>
+            Hospital Name <span className={styles.required}>*</span>
+          </label>
+          <input
+            type="text"
+            id="hospitalName"
+            name="hospitalName"
+            value={newRecord.hospitalName}
+            onChange={handleInputChange}
+            placeholder="Enter hospital name"
+            className={classNames(
+              styles.formInput,
+              formErrors.hospitalName ? styles.inputError : ''
+            )}
+          />
+          {formErrors.hospitalName && (
+            <div className={styles.errorMessage}>{formErrors.hospitalName}</div>
+          )}
+        </div>
         
         <div className={styles.formGrid}>
           <div className={styles.formGroup}>
