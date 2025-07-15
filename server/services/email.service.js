@@ -326,7 +326,7 @@ const sendVerificationEmail = async (user, token, options = {}) => {
  * @returns {Promise<boolean>} Success status
  */
 const sendPasswordResetEmail = async (user, token, options = {}) => {
-  const resetUrl = `${config.frontendUrl}/reset-password?token=${token}`;
+  const resetUrl = `${config.frontendUrl}/reset-password/${token}`;
   
   return await sendTemplateEmail(
     user.email,
@@ -334,7 +334,8 @@ const sendPasswordResetEmail = async (user, token, options = {}) => {
     {
       firstName: user.firstName,
       resetUrl,
-      title: 'Reset Your Password - Onus Health'
+      title: 'Reset Your Password - Onus Health',
+      expiryTime: '1 hour'
     },
     {
       subject: 'Password Reset - Onus Health',

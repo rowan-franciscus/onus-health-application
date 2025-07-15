@@ -18,12 +18,13 @@ exports.getDashboard = async (req, res) => {
     
     // Get basic statistics
     const [
-      patientCount,
+      connections,
       consultationCount,
       recentConsultations
     ] = await Promise.all([
-      // Count patients with active connections to this provider
-      Connection.countDocuments({ provider: providerId }),
+      // Get all connections for this provider with populated patients
+      Connection.find({ provider: providerId })
+        .populate('patient', '_id'),
       
       // Count consultations created by this provider
       Consultation.countDocuments({ provider: providerId }),
@@ -34,6 +35,9 @@ exports.getDashboard = async (req, res) => {
         .limit(5)
         .populate('patient', 'firstName lastName')
     ]);
+    
+    // Count only connections with valid patients (non-null)
+    const patientCount = connections.filter(conn => conn.patient !== null).length;
 
     res.json({
       success: true,
@@ -61,16 +65,18 @@ exports.getPatients = async (req, res) => {
       provider: providerId
     }).populate('patient', 'firstName lastName email patientProfile.dateOfBirth patientProfile.gender');
     
-    // Extract patient data from connections
-    const patients = connections.map(conn => ({
-      ...conn.patient.toObject(),
-      connectionInfo: {
-        accessLevel: conn.accessLevel,
-        fullAccessStatus: conn.fullAccessStatus,
-        connectionId: conn._id,
-        initiatedAt: conn.initiatedAt
-      }
-    }));
+    // Extract patient data from connections, filtering out null patients
+    const patients = connections
+      .filter(conn => conn.patient !== null) // Filter out connections with null patients
+      .map(conn => ({
+        ...conn.patient.toObject(),
+        connectionInfo: {
+          accessLevel: conn.accessLevel,
+          fullAccessStatus: conn.fullAccessStatus,
+          connectionId: conn._id,
+          initiatedAt: conn.initiatedAt
+        }
+      }));
     
     res.json({
       success: true,

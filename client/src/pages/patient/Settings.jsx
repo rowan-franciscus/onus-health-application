@@ -37,7 +37,7 @@ const UserSettingsService = {
   // Change user password
   changePassword: async (passwordData) => {
     try {
-      const response = await ApiService.put('/user/change-password', passwordData);
+      const response = await ApiService.put('/users/change-password', passwordData);
       return response;
     } catch (error) {
       console.error('Error changing password:', error);

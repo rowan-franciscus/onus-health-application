@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
 const User = require('../models/User');
-const EmailQueue = require('../models/EmailQueue');
 const Connection = require('../models/Connection');
 const fs = require('fs');
 const path = require('path');
@@ -498,22 +497,28 @@ exports.createConsultation = async (req, res) => {
     // Handle post-transaction operations
     try {
       console.log('=== POST-TRANSACTION EMAIL QUEUE ===');
-      // Queue email notification to patient about new consultation
-      const emailQueue = new EmailQueue({
-        to: patientUser.email,
-        subject: 'New Medical Consultation',
-        template: 'newConsultation',
-        templateData: {
+      // Import email service
+      const emailService = require('../services/email.service');
+      
+      // Send email notification to patient about new consultation
+      await emailService.sendTemplateEmail(
+        patientUser.email,
+        'consultationNotification',
+        {
           patientName: `${patientUser.firstName} ${patientUser.lastName}`,
           providerName: `${req.user.firstName} ${req.user.lastName}`,
           consultationDate: new Date().toLocaleDateString(),
           consultationId: consultation._id
+        },
+        {
+          subject: 'New Medical Consultation',
+          userId: patientUser._id,
+          queue: true
         }
-      });
-      await emailQueue.save();
-      console.log('Post-transaction email queue created');
+      );
+      console.log('Post-transaction email notification sent');
     } catch (emailError) {
-      console.error('Error queuing email notification:', emailError);
+      console.error('Error sending email notification:', emailError);
       // Don't fail the whole operation if email fails
     }
     
@@ -798,18 +803,25 @@ exports.updateConsultation = async (req, res) => {
         const patient = await User.findById(consultation.patient);
         
         if (patient) {
-          const emailQueue = new EmailQueue({
-            to: patient.email,
-            subject: 'Consultation Completed',
-            template: 'consultationCompleted',
-            templateData: {
+          // Import email service
+          const emailService = require('../services/email.service');
+          
+          // Send consultation completed notification
+          await emailService.sendTemplateEmail(
+            patient.email,
+            'consultationCompleted',
+            {
               patientName: `${patient.firstName} ${patient.lastName}`,
               providerName: `${req.user.firstName} ${req.user.lastName}`,
               consultationDate: consultation.createdAt.toLocaleDateString(),
               consultationId: consultation._id
+            },
+            {
+              subject: 'Consultation Completed',
+              userId: patient._id,
+              queue: true
             }
-          });
-          await emailQueue.save();
+          );
         }
       }
     } catch (emailError) {

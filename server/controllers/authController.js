@@ -429,23 +429,13 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
 
-    // Send password reset email
-    const resetUrl = `${config.frontendUrl}/reset-password/${resetToken}`;
+    // Import email service
+    const emailService = require('../services/email.service');
     
-    // Use EmailQueue to queue the password reset email
-    const EmailQueue = require('../models/EmailQueue');
-    const emailQueue = new EmailQueue({
-      to: user.email,
-      subject: 'Password Reset Request',
-      template: 'passwordReset',
-      templateData: {
-        firstName: user.firstName,
-        resetUrl,
-        expiryTime: '1 hour',
-        frontendUrl: config.frontendUrl
-      }
+    // Send password reset email using the email service
+    await emailService.sendPasswordResetEmail(user, resetToken, {
+      queue: true // Queue the email
     });
-    await emailQueue.save();
 
     return res.status(200).json({ message: 'If the email exists, a password reset link will be sent' });
   } catch (error) {
@@ -486,18 +476,23 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    // Send confirmation email
-    const EmailQueue = require('../models/EmailQueue');
-    const emailQueue = new EmailQueue({
-      to: user.email,
-      subject: 'Password Reset Successful',
-      template: 'passwordResetSuccess',
-      templateData: {
+    // Import email service
+    const emailService = require('../services/email.service');
+    
+    // Send confirmation email using the email service
+    await emailService.sendTemplateEmail(
+      user.email,
+      'passwordResetSuccess',
+      {
         firstName: user.firstName,
         frontendUrl: config.frontendUrl
+      },
+      {
+        subject: 'Password Reset Successful',
+        userId: user._id,
+        queue: true
       }
-    });
-    await emailQueue.save();
+    );
 
     return res.status(200).json({ message: 'Password has been reset successfully' });
   } catch (error) {
