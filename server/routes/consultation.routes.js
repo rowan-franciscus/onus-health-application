@@ -84,7 +84,14 @@ router.get('/:id',
 
 // Create a new consultation (provider only)
 router.post('/', authenticateJWT, isProvider, 
-  body('patient').isMongoId().withMessage('Patient ID is required'),
+  body('patient').optional().isMongoId().withMessage('Patient ID must be a valid ID'),
+  body('patientEmail').optional().isEmail().withMessage('Patient email must be a valid email'),
+  body().custom((value) => {
+    if (!value.patient && !value.patientEmail) {
+      throw new Error('Either patient ID or patient email is required');
+    }
+    return true;
+  }),
   body('general.specialistName').notEmpty().withMessage('Specialist name is required'),
   body('general.specialty').notEmpty().withMessage('Specialty is required'),
   // Only require reasonForVisit for completed consultations
