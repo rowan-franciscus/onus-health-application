@@ -596,7 +596,10 @@ exports.completeProviderOnboarding = async (req, res) => {
       // Support & Communication
       supportPreferences: {
         technicalSupportPreference: String(providerData.supportCommunication?.technicalSupport || ''),
-        requiresTraining: String(providerData.supportCommunication?.training || ''),
+        requiresTraining: providerData.supportCommunication?.training ? 
+          // Parse the training field - handles both select values and text responses
+          /^(yes|y|true|1|require|need|would like|please)/i.test(String(providerData.supportCommunication?.training).trim()) :
+          false,
         updatePreference: String(providerData.supportCommunication?.updates || '')
       },
       

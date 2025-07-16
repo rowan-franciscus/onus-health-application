@@ -105,7 +105,9 @@ const Profile = () => {
           
           // Support preferences
           technicalSupport: providerProfile.supportPreferences?.technicalSupportPreference || '',
-          training: providerProfile.supportPreferences?.requiresTraining || '',
+          training: providerProfile.supportPreferences?.requiresTraining !== undefined 
+            ? (providerProfile.supportPreferences.requiresTraining ? 'Yes' : 'No') 
+            : '',
           updates: providerProfile.supportPreferences?.updatePreference || ''
         });
       }

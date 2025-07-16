@@ -53,12 +53,15 @@ const SupportCommunicationStep = ({ formData, onStepChange, next, previous, isSu
                 Would you require training on how to use the Onus platform?
               </label>
               <Field
-                type="text"
+                as="select"
                 id="supportCommunication.training"
                 name="supportCommunication.training"
-                className={styles.input}
-                placeholder="Describe any training needs or preferences"
-              />
+                className={styles.select}
+              >
+                <option value="">Please select</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </Field>
               <ErrorMessage name="supportCommunication.training" component="div" className={styles.error} />
             </div>
 

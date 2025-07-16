@@ -267,7 +267,9 @@ const ViewProviderRequest = () => {
             <div className={styles.infoItem}>
               <span className={styles.label}>Would you require training on how to use the Onus platform?</span>
               <span className={styles.value}>
-                {provider.providerProfile?.supportPreferences?.requiresTraining || '-'}
+                {provider.providerProfile?.supportPreferences?.requiresTraining !== undefined
+                  ? (provider.providerProfile.supportPreferences.requiresTraining ? 'Yes' : 'No')
+                  : '-'}
               </span>
             </div>
             <div className={styles.infoItem}>
