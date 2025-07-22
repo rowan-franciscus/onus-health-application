@@ -4,8 +4,6 @@ import styles from './Connections.module.css';
 // Component imports
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
-import SearchBox from '../../components/common/SearchBox';
-import ProviderSearch from '../../components/patient/ProviderSearch';
 import { toast } from 'react-toastify';
 import ConnectionService from '../../services/connection.service';
 
@@ -16,9 +14,6 @@ import { RiUserSettingsLine } from 'react-icons/ri';
 const PatientConnections = () => {
   const [connectionRequests, setConnectionRequests] = useState([]);
   const [connectedProviders, setConnectedProviders] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredRequests, setFilteredRequests] = useState([]);
-  const [filteredProviders, setFilteredProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({ id: null, action: null });
 
@@ -38,17 +33,13 @@ const PatientConnections = () => {
       const connectionsArray = Array.isArray(allConnections) ? allConnections : [];
       
       setConnectionRequests(pendingArray);
-      setFilteredRequests(pendingArray);
       setConnectedProviders(connectionsArray);
-      setFilteredProviders(connectionsArray);
     } catch (error) {
       console.error('Error fetching connections data:', error);
       toast.error('Failed to load connection data. Please refresh the page.');
       // Set empty arrays to prevent undefined errors
       setConnectionRequests([]);
-      setFilteredRequests([]);
       setConnectedProviders([]);
-      setFilteredProviders([]);
     } finally {
       setIsLoading(false);
     }
@@ -57,54 +48,6 @@ const PatientConnections = () => {
   useEffect(() => {
     fetchConnectionsData();
   }, []);
-
-  // Handle search input
-  const handleSearch = (value) => {
-    setSearchTerm(value);
-    
-    if (!value.trim()) {
-      setFilteredRequests(connectionRequests || []);
-      setFilteredProviders(connectedProviders || []);
-      return;
-    }
-    
-    const lowercasedTerm = value.toLowerCase();
-    
-    // Filter connection requests - safely handle potentially undefined values
-    const filteredReqs = Array.isArray(connectionRequests) ? connectionRequests.filter(
-      (request) => {
-        if (!request) return false;
-        
-        const name = request.name || '';
-        const specialty = request.specialty || '';
-        const practice = request.practice || '';
-        
-        return name.toLowerCase().includes(lowercasedTerm) ||
-               specialty.toLowerCase().includes(lowercasedTerm) ||
-               practice.toLowerCase().includes(lowercasedTerm);
-      }
-    ) : [];
-    
-    // Filter connected providers - safely handle potentially undefined values
-    const filteredProvs = Array.isArray(connectedProviders) ? connectedProviders.filter(
-      (connection) => {
-        if (!connection || !connection.provider) return false;
-        
-        const firstName = connection.provider.firstName || '';
-        const lastName = connection.provider.lastName || '';
-        const specialty = connection.provider.providerProfile?.specialty || '';
-        const practiceName = connection.provider.providerProfile?.practiceInfo?.name || '';
-        
-        return firstName.toLowerCase().includes(lowercasedTerm) ||
-               lastName.toLowerCase().includes(lowercasedTerm) ||
-               specialty.toLowerCase().includes(lowercasedTerm) ||
-               practiceName.toLowerCase().includes(lowercasedTerm);
-      }
-    ) : [];
-    
-    setFilteredRequests(filteredReqs);
-    setFilteredProviders(filteredProvs);
-  };
 
   // Handle approve full access request
   const handleApproveRequest = async (requestId) => {
@@ -252,18 +195,6 @@ const PatientConnections = () => {
           <p>Manage your healthcare provider connections and access requests</p>
         </div>
         
-        <div className={styles.searchContainer}>
-          <SearchBox
-            placeholder="Search providers by name, specialty, or practice..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className={styles.searchBox}
-          />
-        </div>
-        
-        {/* Provider Search Section */}
-        <ProviderSearch />
-        
         {/* Full Access Requests */}
         <Card className={styles.connectionsSection}>
           <h2>Full Access Requests</h2>
@@ -273,9 +204,9 @@ const PatientConnections = () => {
           
           {isLoading ? (
             <div className={styles.loading}>Loading access requests...</div>
-          ) : Array.isArray(filteredRequests) && filteredRequests.length > 0 ? (
+          ) : Array.isArray(connectionRequests) && connectionRequests.length > 0 ? (
             <div className={styles.connectionsList}>
-              {filteredRequests.map((request) => (
+              {connectionRequests.map((request) => (
                 request && request.id ? (
                   <div key={request.id} className={styles.connectionItem}>
                     <div className={styles.providerInfo}>
@@ -327,9 +258,9 @@ const PatientConnections = () => {
           
           {isLoading ? (
             <div className={styles.loading}>Loading connected providers...</div>
-          ) : Array.isArray(filteredProviders) && filteredProviders.length > 0 ? (
+          ) : Array.isArray(connectedProviders) && connectedProviders.length > 0 ? (
             <div className={styles.connectionsList}>
-              {filteredProviders.map((connection) => (
+              {connectedProviders.map((connection) => (
                 connection && connection._id ? (
                   <div key={connection._id} className={styles.connectionItem}>
                     <div className={styles.providerInfo}>
@@ -345,7 +276,7 @@ const PatientConnections = () => {
                       <p>Email: {connection.provider?.email || 'Not available'}</p>
                       {connection.notes && <p>Notes: {connection.notes}</p>}
                     </div>
-                                          <div className={styles.connectionActions}>
+                    <div className={styles.connectionActions}>
                         {connection.accessLevel === 'full' ? (
                           <Button
                             onClick={() => handleRevokeToLimited(connection._id)}
