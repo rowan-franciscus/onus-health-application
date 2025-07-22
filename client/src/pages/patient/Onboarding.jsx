@@ -16,6 +16,7 @@ import CurrentMedicationStep from './onboarding/CurrentMedicationStep';
 import AllergiesStep from './onboarding/AllergiesStep';
 import LifestyleStep from './onboarding/LifestyleStep';
 import ImmunizationStep from './onboarding/ImmunizationStep';
+import TermsAndConditionsStep from '../shared/TermsAndConditionsStep';
 import ReviewStep from './onboarding/ReviewStep';
 
 const PatientOnboarding = () => {
@@ -56,6 +57,10 @@ const PatientOnboarding = () => {
     {
       title: 'Immunization',
       component: ImmunizationStep,
+    },
+    {
+      title: 'Terms & Conditions',
+      component: TermsAndConditionsStep,
     },
     {
       title: 'Review',
@@ -128,7 +133,10 @@ const PatientOnboarding = () => {
         },
         
         // Map immunizations - fix field name
-        immunisationHistory: formData.immunization?.immunizationHistory ? [formData.immunization.immunizationHistory] : []
+        immunisationHistory: formData.immunization?.immunizationHistory ? [formData.immunization.immunizationHistory] : [],
+        
+        // Add terms acceptance
+        termsAccepted: formData.termsAccepted || false
       };
 
       // Submit onboarding data to API

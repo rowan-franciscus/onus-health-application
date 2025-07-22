@@ -14,6 +14,7 @@ import PatientManagementStep from './onboarding/PatientManagementStep';
 import DataAccessStep from './onboarding/DataAccessStep';
 import DataSharingStep from './onboarding/DataSharingStep';
 import SupportCommunicationStep from './onboarding/SupportCommunicationStep';
+import TermsAndConditionsStep from '../shared/TermsAndConditionsStep';
 import ReviewStep from './onboarding/ReviewStep';
 
 const ProviderOnboarding = () => {
@@ -48,6 +49,10 @@ const ProviderOnboarding = () => {
       component: SupportCommunicationStep,
     },
     {
+      title: 'Terms & Conditions',
+      component: TermsAndConditionsStep,
+    },
+    {
       title: 'Review',
       component: ReviewStep,
     }
@@ -64,9 +69,13 @@ const ProviderOnboarding = () => {
       // Add all form data except files
       data.append('role', 'provider');
       data.append('isProfileCompleted', 'true');
+      data.append('termsAccepted', formData.termsAccepted ? 'true' : 'false');
       
       // Handle nested objects by stringifying them
       for (const key in formData) {
+        // Skip termsAccepted since we already added it
+        if (key === 'termsAccepted') continue;
+        
         // Special handling for the license file
         if (key === 'professionalInfo' && formData[key].practiceLicense) {
           // If it's a File object, add it directly to FormData

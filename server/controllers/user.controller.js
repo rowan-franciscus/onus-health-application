@@ -560,6 +560,11 @@ exports.completeProviderOnboarding = async (req, res) => {
       user.providerProfile = {};
     }
     
+    // Update basic user fields from professionalInfo
+    if (providerData.professionalInfo?.title) {
+      user.title = providerData.professionalInfo.title;
+    }
+    
     // Update the provider profile, making sure to use the exact field structure from the User model
     // and exactly match what the admin verification view is looking for
     user.providerProfile = {
@@ -604,7 +609,10 @@ exports.completeProviderOnboarding = async (req, res) => {
       },
       
       // Verification status (always false initially)
-      isVerified: false
+      isVerified: false,
+      
+      // Terms and conditions acceptance
+      termsAccepted: providerData.termsAccepted === 'true' || providerData.termsAccepted === true
     };
     
     // For debugging - log the final provider profile that will be saved

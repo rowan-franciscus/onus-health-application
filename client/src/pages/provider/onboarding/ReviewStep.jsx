@@ -60,6 +60,30 @@ const ReviewStep = ({ formData, onStepChange, previous, onSubmit, isSubmitting, 
         {renderSection('Data Sharing & Privacy Practices', formData.dataSharing, 4)}
         {renderSection('Support & Communication', formData.supportCommunication, 5)}
 
+        {/* Terms and Conditions Acceptance */}
+        {formData.termsAccepted && (
+          <div className={styles.reviewSection}>
+            <div className={styles.reviewSectionHeader}>
+              <h3 className={styles.reviewSectionTitle}>Terms & Conditions</h3>
+              <button
+                type="button"
+                onClick={() => goToStep(6)}
+                className={styles.editButton}
+              >
+                Edit
+              </button>
+            </div>
+            <div className={styles.reviewSectionContent}>
+              <div className={styles.reviewItem}>
+                <span className={styles.reviewItemLabel}>Acceptance Status:</span>
+                <span className={styles.reviewItemValue}>
+                  ✓ Terms and Conditions Accepted
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={styles.privacyConsent}>
           <p>
             By submitting this form, you confirm that all the information provided is accurate to the best of your knowledge.

@@ -122,7 +122,11 @@ const UserSchema = new mongoose.Schema({
       exercise: String,
       dietaryPreferences: String
     },
-    immunisationHistory: [String]
+    immunisationHistory: [String],
+    termsAccepted: {
+      type: Boolean,
+      default: false
+    }
   },
   
   // Provider-specific fields
@@ -157,6 +161,10 @@ const UserSchema = new mongoose.Schema({
       updatePreference: String
     },
     isVerified: {
+      type: Boolean,
+      default: false
+    },
+    termsAccepted: {
       type: Boolean,
       default: false
     }
