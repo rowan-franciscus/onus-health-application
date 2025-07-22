@@ -534,6 +534,95 @@ exports.revokeConnection = async (req, res) => {
 };
 
 /**
+ * Directly grant full access to a provider (patient action)
+ * This bypasses the pending request flow and immediately grants full access
+ */
+exports.grantFullAccess = async (req, res) => {
+  try {
+    const { connectionId } = req.params;
+    const patientId = req.user.id;
+    
+    // Validate ID
+    if (!mongoose.Types.ObjectId.isValid(connectionId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid connection ID'
+      });
+    }
+    
+    // Find the connection
+    const connection = await Connection.findOne({
+      _id: connectionId,
+      patient: patientId
+    }).populate('provider', 'firstName lastName email');
+    
+    if (!connection) {
+      return res.status(404).json({
+        success: false,
+        message: 'Connection not found'
+      });
+    }
+    
+    // Check if already has full access
+    if (connection.accessLevel === 'full') {
+      return res.status(400).json({
+        success: false,
+        message: 'Provider already has full access'
+      });
+    }
+    
+    // Grant full access directly
+    await connection.approveFullAccess();
+    
+    // Send email notification to provider
+    try {
+      await EmailQueue.create({
+        to: connection.provider.email,
+        from: config.emailFrom || 'noreply@onushealth.com',
+        subject: 'Full Access Granted',
+        html: `<h1>Full Access Granted</h1>
+               <p>Hello ${connection.provider.firstName} ${connection.provider.lastName},</p>
+               <p><strong>${req.user.firstName} ${req.user.lastName}</strong> has granted you full access to their medical records on Onus Health.</p>
+               <div style="background-color: #d4edda; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #155724;">
+                 <h3 style="margin: 0 0 10px 0; color: #155724;">Full Access Granted</h3>
+                 <p style="margin: 5px 0;">You now have full access to this patient's medical records.</p>
+                 <p style="margin: 5px 0;">You can view all consultations, medical records, and patient profile information.</p>
+               </div>
+               <p>Please log in to your Onus Health provider account to access the patient's records.</p>
+               <p>Best regards,<br>The Onus Health Team</p>
+               <hr style="margin: 30px 0; border: none; border-top: 1px solid #dee2e6;">
+               <p style="font-size: 12px; color: #6c757d;">This is an automated notification from Onus Health.</p>`,
+        template: 'fullAccessGranted',
+        templateData: {
+          patientName: `${req.user.firstName} ${req.user.lastName}`,
+          providerName: `${connection.provider.firstName} ${connection.provider.lastName}`
+        },
+        userId: connection.provider._id
+      });
+    } catch (emailError) {
+      console.error('Error sending email notification:', emailError);
+      // Don't fail the request if email fails, just log it
+    }
+    
+    return res.json({
+      success: true,
+      message: 'Full access granted successfully',
+      connection: {
+        id: connection._id,
+        accessLevel: connection.accessLevel,
+        fullAccessStatus: connection.fullAccessStatus
+      }
+    });
+  } catch (error) {
+    console.error('Error granting full access:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to grant full access'
+    });
+  }
+};
+
+/**
  * Delete a connection completely
  */
 exports.deleteConnection = async (req, res) => {

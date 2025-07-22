@@ -167,6 +167,42 @@
   background: #522ba6;
 }
 
+.allowFullAccessButton {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.allowFullAccessButton:hover:not(:disabled) {
+  background: #218838;
+}
+
+.revokeToLimitedButton {
+  background: #ffc107;
+  color: #856404;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.revokeToLimitedButton:hover:not(:disabled) {
+  background: #e0a800;
+}
+
 .removeButton {
   background: #dc3545;
   color: white;
@@ -188,6 +224,8 @@
 .acceptButton:disabled,
 .rejectButton:disabled,
 .permissionsButton:disabled,
+.allowFullAccessButton:disabled,
+.revokeToLimitedButton:disabled,
 .removeButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;

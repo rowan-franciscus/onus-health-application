@@ -6,7 +6,6 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import SearchBox from '../../components/common/SearchBox';
 import ProviderSearch from '../../components/patient/ProviderSearch';
-import ProviderPermissions from '../../components/patient/ProviderPermissions';
 import { toast } from 'react-toastify';
 import ConnectionService from '../../services/connection.service';
 
@@ -22,9 +21,6 @@ const PatientConnections = () => {
   const [filteredProviders, setFilteredProviders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({ id: null, action: null });
-  const [selectedConnection, setSelectedConnection] = useState(null);
-  const [showPermissionsModal, setShowPermissionsModal] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(false);
 
   // Fetch connections data
   const fetchConnectionsData = async () => {
@@ -164,19 +160,60 @@ const PatientConnections = () => {
     }
   };
 
-  // Handle opening permissions modal
-  const handleManagePermissions = (connection) => {
-    if (!connection) return;
-    setSelectedConnection(connection);
-    setShowPermissionsModal(true);
-    setShowOverlay(true);
+  // Handle grant full access
+  const handleGrantFullAccess = async (connectionId) => {
+    setActionLoading({ id: connectionId, action: 'grant' });
+    
+    try {
+      await ConnectionService.grantFullAccess(connectionId);
+      
+      // Refresh connections data
+      await fetchConnectionsData();
+      toast.success('Full access granted to provider');
+    } catch (error) {
+      console.error('Error granting full access:', error);
+      toast.error('Failed to grant full access. Please try again.');
+    } finally {
+      setActionLoading({ id: null, action: null });
+    }
   };
 
-  // Handle closing permissions modal
-  const handleClosePermissionsModal = () => {
-    setShowPermissionsModal(false);
-    setShowOverlay(false);
-    setSelectedConnection(null);
+  // Handle revoke to limited access
+  const handleRevokeToLimited = async (connectionId) => {
+    setActionLoading({ id: connectionId, action: 'revokeToLimited' });
+    
+    try {
+      await ConnectionService.revokeConnection(connectionId);
+      
+      // Refresh connections data
+      await fetchConnectionsData();
+      toast.success('Provider access changed to limited');
+    } catch (error) {
+      console.error('Error changing access to limited:', error);
+      toast.error('Failed to change access. Please try again.');
+    } finally {
+      setActionLoading({ id: null, action: null });
+    }
+  };
+
+  // Handle remove provider (completely remove connection)
+  const handleRemoveProvider = async (connectionId) => {
+    setActionLoading({ id: connectionId, action: 'remove' });
+    
+    try {
+      // When the provider has limited access and we call revokeConnection,
+      // it will completely remove the connection
+      await ConnectionService.revokeConnection(connectionId);
+      
+      // Refresh connections data
+      await fetchConnectionsData();
+      toast.success('Provider removed successfully');
+    } catch (error) {
+      console.error('Error removing provider:', error);
+      toast.error('Failed to remove provider. Please try again.');
+    } finally {
+      setActionLoading({ id: null, action: null });
+    }
   };
 
   // Format date to readable string
@@ -308,27 +345,45 @@ const PatientConnections = () => {
                       <p>Email: {connection.provider?.email || 'Not available'}</p>
                       {connection.notes && <p>Notes: {connection.notes}</p>}
                     </div>
-                    <div className={styles.connectionActions}>
-                      <Button
-                        onClick={() => handleManagePermissions(connection)}
-                        className={styles.permissionsButton}
-                        disabled={actionLoading.id === connection._id}
-                        icon={<RiUserSettingsLine />}
-                      >
-                        Manage Access
-                      </Button>
-                      <Button
-                        onClick={() => handleRevokeProvider(connection._id)}
-                        variant="danger"
-                        className={styles.removeButton}
-                        disabled={actionLoading.id === connection._id}
-                        icon={<IoCloseCircle />}
-                      >
-                        {actionLoading.id === connection._id && actionLoading.action === 'revoke'
-                          ? 'Revoking...'
-                          : 'Revoke Access'}
-                      </Button>
-                    </div>
+                                          <div className={styles.connectionActions}>
+                        {connection.accessLevel === 'full' ? (
+                          <Button
+                            onClick={() => handleRevokeToLimited(connection._id)}
+                            variant="secondary"
+                            className={styles.revokeToLimitedButton}
+                            disabled={actionLoading.id === connection._id}
+                            icon={<IoCloseCircle />}
+                          >
+                            {actionLoading.id === connection._id && actionLoading.action === 'revokeToLimited'
+                              ? 'Changing...'
+                              : 'Revoke to limited access'}
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              onClick={() => handleGrantFullAccess(connection._id)}
+                              className={styles.allowFullAccessButton}
+                              disabled={actionLoading.id === connection._id}
+                              icon={<IoCheckmarkCircle />}
+                            >
+                              {actionLoading.id === connection._id && actionLoading.action === 'grant'
+                                ? 'Granting...'
+                                : 'Allow full access'}
+                            </Button>
+                            <Button
+                              onClick={() => handleRemoveProvider(connection._id)}
+                              variant="danger"
+                              className={styles.removeButton}
+                              disabled={actionLoading.id === connection._id}
+                              icon={<IoCloseCircle />}
+                            >
+                              {actionLoading.id === connection._id && actionLoading.action === 'remove'
+                                ? 'Removing...'
+                                : 'Remove provider'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
                   </div>
                 ) : null
               ))}
@@ -338,18 +393,6 @@ const PatientConnections = () => {
           )}
         </Card>
       </div>
-      
-      {/* Permissions Modal */}
-      {showPermissionsModal && selectedConnection && (
-        <>
-          {showOverlay && <div className={styles.overlay} onClick={handleClosePermissionsModal} />}
-          <ProviderPermissions
-            connection={selectedConnection}
-            onClose={handleClosePermissionsModal}
-            onUpdate={fetchConnectionsData}
-          />
-        </>
-      )}
     </>
   );
 };

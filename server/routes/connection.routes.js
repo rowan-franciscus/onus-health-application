@@ -34,6 +34,15 @@ router.post('/patient/revoke/:connectionId', authenticateJWT, isPatient,
   connectionController.revokeConnection
 );
 
+// Grant full access directly (patient action)
+router.post('/patient/grant-full-access/:connectionId', authenticateJWT, isPatient,
+  [
+    param('connectionId').isMongoId().withMessage('Invalid connection ID'),
+  ],
+  validateRequest,
+  connectionController.grantFullAccess
+);
+
 // PROVIDER SPECIFIC ROUTES
 // ---------------------------------------------------------------
 

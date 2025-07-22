@@ -115,6 +115,37 @@ const ConnectionService = {
   },
 
   /**
+   * Grant full access directly to a provider (patient action)
+   * @param {string} connectionId - Connection ID
+   * @returns {Promise} - A promise that resolves when full access is granted
+   */
+  grantFullAccess: async (connectionId) => {
+    try {
+      const response = await api.post(`/connections/patient/grant-full-access/${connectionId}`);
+      return response || null;
+    } catch (error) {
+      console.error(`Error granting full access to connection ${connectionId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update connection (for updating permissions, etc.)
+   * @param {string} connectionId - Connection ID
+   * @param {object} updateData - Data to update
+   * @returns {Promise} - A promise that resolves to the updated connection
+   */
+  updateConnection: async (connectionId, updateData) => {
+    try {
+      const response = await api.put(`/connections/${connectionId}`, updateData);
+      return response || null;
+    } catch (error) {
+      console.error(`Error updating connection ${connectionId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Delete a connection completely
    * @param {string} id - Connection ID
    * @returns {Promise} - A promise that resolves when the connection is deleted
