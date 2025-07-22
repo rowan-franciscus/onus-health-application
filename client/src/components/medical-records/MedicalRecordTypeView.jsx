@@ -51,8 +51,8 @@ const MedicalRecordTypeView = ({
   }, [searchTerm, records, searchFields]);
 
   // Handle search change
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
   };
 
   return (
@@ -66,7 +66,7 @@ const MedicalRecordTypeView = ({
 
       <Card className={styles.searchCard}>
         <SearchBox
-          placeholder={`Search ${title.toLowerCase()}...`}
+          placeholder={`Search ${title.toLowerCase()} by provider or date...`}
           value={searchTerm}
           onChange={handleSearchChange}
           className={styles.searchBox}

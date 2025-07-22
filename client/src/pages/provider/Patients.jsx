@@ -112,18 +112,45 @@ const ProviderPatients = () => {
       return;
     }
     
+    // Apply search on all patients first (simpler approach)
+    const searchString = value.toLowerCase();
     const searchResults = patients.filter(patient => {
-      const searchString = value.toLowerCase();
-      return (
-        patient.name.toLowerCase().includes(searchString) ||
-        patient.email.toLowerCase().includes(searchString) ||
-        patient.phone.includes(searchString) ||
-        String(patient.age).includes(searchString) ||
-        patient.gender.toLowerCase().includes(searchString)
-      );
+      // Convert all fields to strings and check if they contain the search term
+      const searchableText = [
+        patient.name || '',
+        patient.email || '',
+        patient.phone || '',
+        String(patient.age || ''),
+        patient.gender || '',
+        patient.accessLevel || '',
+        getAccessLevelDisplay(patient) || ''
+      ].join(' ').toLowerCase();
+      
+      return searchableText.includes(searchString);
     });
     
-    setFilteredPatients(searchResults);
+    // Then apply category filter if not 'all'
+    let finalResults = searchResults;
+    if (activeCategory !== 'all') {
+      switch (activeCategory) {
+        case 'full-access':
+          finalResults = searchResults.filter(patient => patient.accessLevel === 'full');
+          break;
+        case 'limited-access':
+          finalResults = searchResults.filter(patient => patient.accessLevel === 'limited');
+          break;
+        case 'pending':
+          finalResults = searchResults.filter(patient => patient.fullAccessStatus === 'pending');
+          break;
+        case 'recent':
+          // For search within recent, we need to check if patient is in the first 3
+          const recentPatientIds = patients.slice(0, 3).map(p => p.id);
+          finalResults = searchResults.filter(patient => recentPatientIds.includes(patient.id));
+          break;
+      }
+    }
+    
+    setFilteredPatients(finalResults);
   };
 
   // Filter patients by category
@@ -236,7 +263,7 @@ const ProviderPatients = () => {
         <div className={styles.filterSection}>
           <div className={styles.searchContainer}>
             <SearchBox
-              placeholder="Search patients by name, email, phone..."
+              placeholder="Search patients by name, age, access level, phone, email..."
               value={searchTerm}
               onChange={handleSearch}
             />

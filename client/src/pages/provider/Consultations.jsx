@@ -83,7 +83,8 @@ const Consultations = () => {
   const filteredConsultations = consultations.filter(consultation =>
     consultation.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (consultation.reasonForVisit && consultation.reasonForVisit.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (consultation.status && consultation.status.toLowerCase().includes(searchTerm.toLowerCase()))
+    (consultation.status && consultation.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (consultation.date && consultation.date.includes(searchTerm))
   );
 
   // Table columns configuration
@@ -157,7 +158,7 @@ const Consultations = () => {
       <Card className={styles.filterCard}>
         <div className={styles.filters}>
           <SearchBox
-            placeholder="Search consultations by patient name, reason, or status (draft/completed)..."
+            placeholder="Search consultations by patient name, reason, date, or status (draft/completed)..."
             value={searchTerm}
             onChange={handleSearch}
           />
