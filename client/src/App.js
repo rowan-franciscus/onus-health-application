@@ -34,6 +34,8 @@ const PatientViewConsultation = lazy(() => import('./pages/patient/ViewConsultat
 const PatientConnections = lazy(() => import('./pages/patient/Connections'));
 const PatientMedicalRecords = lazy(() => import('./pages/patient/MedicalRecords'));
 const PatientVitals = lazy(() => import('./pages/patient/medical-records/Vitals'));
+const PatientAddVitals = lazy(() => import('./pages/patient/AddVitals'));
+const PatientViewVitals = lazy(() => import('./pages/patient/medical-records/ViewVitals'));
 const PatientMedications = lazy(() => import('./pages/patient/medical-records/Medications'));
 const PatientImmunizations = lazy(() => import('./pages/patient/medical-records/Immunizations'));
 const PatientLabResults = lazy(() => import('./pages/patient/medical-records/LabResults'));
@@ -52,6 +54,7 @@ const ProviderConsultations = lazy(() => import('./pages/provider/Consultations'
 const ProviderAddConsultation = lazy(() => import('./pages/provider/AddConsultation'));
 const ProviderViewConsultation = lazy(() => import('./pages/provider/ViewConsultation'));
 const ProviderMedicalRecords = lazy(() => import('./pages/provider/MedicalRecords'));
+const ProviderViewVitals = lazy(() => import('./pages/provider/ViewVitals'));
 const ProviderProfile = lazy(() => import('./pages/provider/Profile'));
 const ProviderSettings = lazy(() => import('./pages/provider/Settings'));
 
@@ -255,6 +258,26 @@ function App() {
               } 
             />
             <Route 
+              path="/patient/medical-records/vitals/add" 
+              element={
+                <ProtectedRoute 
+                  element={<PatientAddVitals />} 
+                  allowedRoles={['patient']} 
+                  requireOnboarding={true}
+                />
+              } 
+            />
+            <Route 
+              path="/patient/medical-records/vitals/:id" 
+              element={
+                <ProtectedRoute 
+                  element={<PatientViewVitals />} 
+                  allowedRoles={['patient']} 
+                  requireOnboarding={true}
+                />
+              } 
+            />
+            <Route 
               path="/patient/medical-records/medications" 
               element={
                 <ProtectedRoute 
@@ -443,6 +466,16 @@ function App() {
               element={
                 <ProtectedRoute 
                   element={<ProviderMedicalRecords />} 
+                  allowedRoles={['provider']} 
+                  requireOnboarding={true}
+                />
+              } 
+            />
+            <Route 
+              path="/provider/medical-records/vitals/:id" 
+              element={
+                <ProtectedRoute 
+                  element={<ProviderViewVitals />} 
                   allowedRoles={['provider']} 
                   requireOnboarding={true}
                 />

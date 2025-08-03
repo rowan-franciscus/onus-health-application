@@ -4,11 +4,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
 import ApiService from '../../services/api.service';
-import { logout } from '../../store/slices/authSlice';
+import FileService from '../../services/file.service';
+import { logout, updateUser } from '../../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 // Component imports
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import ProfilePictureUpload from '../../components/common/ProfilePictureUpload';
 
 // User settings service
 const UserSettingsService = {
@@ -70,13 +73,17 @@ const UserSettingsService = {
 
 const PatientSettings = () => {
   const dispatch = useDispatch();
-  const currentUser = useSelector(state => state.auth.user);
+  const user = useSelector((state) => state.auth.user);
+  const navigate = useNavigate();
+  
   const [isLoading, setIsLoading] = useState(true);
-
-  // Account Info states
   const [accountInfo, setAccountInfo] = useState({
     name: '',
-    email: ''
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '',
+    profileImage: null
   });
   const [editingAccountInfo, setEditingAccountInfo] = useState(false);
   const [updatedAccountInfo, setUpdatedAccountInfo] = useState({ ...accountInfo });
@@ -115,13 +122,21 @@ const PatientSettings = () => {
         // Set account info from user data
         setAccountInfo({
           name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-          email: userData.email || ''
+          email: userData.email || '',
+          phone: userData.phone || '',
+          dateOfBirth: userData.dateOfBirth || '',
+          gender: userData.gender || '',
+          profileImage: userData.profileImage || null
         });
         
         // Set updated info as well for editing
         setUpdatedAccountInfo({
           name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
-          email: userData.email || ''
+          email: userData.email || '',
+          phone: userData.phone || '',
+          dateOfBirth: userData.dateOfBirth || '',
+          gender: userData.gender || '',
+          profileImage: userData.profileImage || null
         });
         
         // Set notification preferences if available from API
@@ -134,18 +149,28 @@ const PatientSettings = () => {
           });
         }
         
+
+        
       } catch (error) {
         console.error('Error fetching user data:', error);
         
         // Fallback to Redux data if API call fails
-        if (currentUser) {
+        if (user) {
           setAccountInfo({
-            name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
-            email: currentUser.email || ''
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            email: user.email || '',
+            phone: user.phone || '',
+            dateOfBirth: user.dateOfBirth || '',
+            gender: user.gender || '',
+            profileImage: user.profileImage || null
           });
           setUpdatedAccountInfo({
-            name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim(),
-            email: currentUser.email || ''
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            email: user.email || '',
+            phone: user.phone || '',
+            dateOfBirth: user.dateOfBirth || '',
+            gender: user.gender || '',
+            profileImage: user.profileImage || null
           });
         }
         
@@ -156,7 +181,7 @@ const PatientSettings = () => {
     };
     
     fetchUserData();
-  }, [currentUser]);
+  }, [user]);
 
   // Handle account info change
   const handleAccountInfoChange = (e) => {
@@ -178,7 +203,10 @@ const PatientSettings = () => {
       const updateData = {
         firstName,
         lastName,
-        email: updatedAccountInfo.email
+        email: updatedAccountInfo.email,
+        phone: updatedAccountInfo.phone,
+        dateOfBirth: updatedAccountInfo.dateOfBirth,
+        gender: updatedAccountInfo.gender
       };
       
       // Call API to update profile
@@ -305,6 +333,43 @@ const PatientSettings = () => {
     }
   };
 
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (file) => {
+    try {
+      const response = await FileService.uploadProfilePicture(file);
+      
+      // Update local state
+      const newProfileImage = response.profileImage;
+      setAccountInfo(prev => ({ ...prev, profileImage: newProfileImage }));
+      setUpdatedAccountInfo(prev => ({ ...prev, profileImage: newProfileImage }));
+      
+      // Update Redux store
+      dispatch(updateUser({ profileImage: newProfileImage }));
+      
+      return response;
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      throw error;
+    }
+  };
+
+  // Handle profile picture removal
+  const handleProfilePictureRemove = async () => {
+    try {
+      await FileService.deleteProfilePicture();
+      
+      // Update local state
+      setAccountInfo(prev => ({ ...prev, profileImage: null }));
+      setUpdatedAccountInfo(prev => ({ ...prev, profileImage: null }));
+      
+      // Update Redux store
+      dispatch(updateUser({ profileImage: null }));
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      throw error;
+    }
+  };
+
   if (isLoading) {
     return <div className={styles.loading}>Loading settings...</div>;
   }
@@ -345,6 +410,56 @@ const PatientSettings = () => {
                 className={styles.input}
               />
             </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="phone">Phone Number</label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={updatedAccountInfo.phone}
+                onChange={handleAccountInfoChange}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="dateOfBirth">Date of Birth</label>
+              <input
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
+                value={updatedAccountInfo.dateOfBirth}
+                onChange={handleAccountInfoChange}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="gender">Gender</label>
+              <select
+                id="gender"
+                name="gender"
+                value={updatedAccountInfo.gender}
+                onChange={handleAccountInfoChange}
+                className={styles.input}
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label>Profile Picture</label>
+              <ProfilePictureUpload
+                currentImage={accountInfo.profileImage ? FileService.getProfilePictureUrl(accountInfo.profileImage, user?._id || user?.id) : null}
+                onUpload={handleProfilePictureUpload}
+                onDelete={handleProfilePictureRemove}
+                size="large"
+              />
+            </div>
             
             <div className={styles.formActions}>
               <Button
@@ -377,6 +492,34 @@ const PatientSettings = () => {
             <div className={styles.infoGroup}>
               <div className={styles.infoLabel}>Email Address</div>
               <div className={styles.infoValue}>{accountInfo.email}</div>
+            </div>
+
+            <div className={styles.infoGroup}>
+              <div className={styles.infoLabel}>Phone Number</div>
+              <div className={styles.infoValue}>{accountInfo.phone || 'N/A'}</div>
+            </div>
+
+            <div className={styles.infoGroup}>
+              <div className={styles.infoLabel}>Date of Birth</div>
+              <div className={styles.infoValue}>{accountInfo.dateOfBirth || 'N/A'}</div>
+            </div>
+
+            <div className={styles.infoGroup}>
+              <div className={styles.infoLabel}>Gender</div>
+              <div className={styles.infoValue}>{accountInfo.gender || 'N/A'}</div>
+            </div>
+
+            <div className={styles.infoGroup}>
+              <div className={styles.infoLabel}>Profile Picture</div>
+              <div className={styles.profileImageContainer}>
+                <ProfilePictureUpload
+                  currentImage={accountInfo.profileImage ? FileService.getProfilePictureUrl(accountInfo.profileImage, user?._id || user?.id) : null}
+                  onUpload={handleProfilePictureUpload}
+                  onDelete={handleProfilePictureRemove}
+                  size="medium"
+                  disabled={false}
+                />
+              </div>
             </div>
             
             <Button

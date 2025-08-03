@@ -14,7 +14,8 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await AuthService.login(credentials);
       if (response.success) {
-        return AuthService.getCurrentUser();
+        // Return the user data from response which includes profileImage
+        return response.user;
       }
       return rejectWithValue(response.message || 'Login failed');
     } catch (error) {
@@ -29,7 +30,8 @@ export const loginAdmin = createAsyncThunk(
     try {
       const response = await AuthService.adminLogin(credentials);
       if (response.success) {
-        return AuthService.getCurrentUser();
+        // Return the user data from response which includes profileImage
+        return response.user;
       }
       return rejectWithValue(response.message || 'Admin login failed');
     } catch (error) {
@@ -76,7 +78,8 @@ export const processSocialCallback = createAsyncThunk(
     try {
       const response = await AuthService.processSocialCallback(provider, queryParams);
       if (response.success) {
-        return AuthService.getCurrentUser();
+        // Return the user data from response which includes profileImage
+        return response.user;
       }
       return rejectWithValue(response.message || 'Social login callback failed');
     } catch (error) {

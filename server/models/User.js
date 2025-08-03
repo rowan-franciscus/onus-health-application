@@ -62,6 +62,11 @@ const UserSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
+  // Profile image field
+  profileImage: {
+    type: String,
+    default: null
+  },
   // Social login fields
   googleId: {
     type: String

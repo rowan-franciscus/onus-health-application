@@ -14,6 +14,12 @@ class MedicalRecordsService {
     try {
       console.log(`Fetching ${type} records for patient`);
       
+      // For vitals, fetch directly from medical records API
+      if (type === 'vitals') {
+        const response = await api.get(`/medical-records/vitals`);
+        return response;
+      }
+      
       // Fetch all completed consultations for the patient
       const response = await api.get('/consultations', {
         status: 'completed'
@@ -30,27 +36,6 @@ class MedicalRecordsService {
           
           // Extract records based on type
           switch (type) {
-            case 'vitals':
-              if (consultation.vitals && Object.keys(consultation.vitals).length > 0) {
-                records.push({
-                  _id: `${consultation._id}-vitals`,
-                  consultationId: consultation._id,
-                  date: consultation.date || consultation.createdAt,
-                  provider: provider,
-                  heartRate: consultation.vitals.heartRate || {},
-                  bloodPressure: consultation.vitals.bloodPressure || {},
-                  bodyTemperature: consultation.vitals.bodyTemperature || {},
-                  bloodGlucose: consultation.vitals.bloodGlucose || {},
-                  respiratoryRate: consultation.vitals.respiratoryRate || {},
-                  bloodOxygenSaturation: consultation.vitals.bloodOxygenSaturation || {},
-                  weight: consultation.vitals.weight || {},
-                  height: consultation.vitals.height || {},
-                  bmi: consultation.vitals.bmi || {},
-                  bodyFatPercentage: consultation.vitals.bodyFatPercentage || {}
-                });
-              }
-              break;
-              
             case 'medications':
               if (consultation.medications && consultation.medications.length > 0) {
                 consultation.medications.forEach((medication, index) => {
@@ -216,6 +201,36 @@ class MedicalRecordsService {
    */
   async getVitalsRecords(params = {}) {
     return this.getRecordsByType('vitals', params);
+  }
+
+  /**
+   * Get a single vitals record by ID
+   * @param {string} id - The vitals record ID
+   * @returns {Promise} Promise with the response data
+   */
+  async getVitalsRecordById(id) {
+    try {
+      const response = await api.get(`/medical-records/vitals/${id}`);
+      return response;
+    } catch (error) {
+      console.error('Error fetching vitals record:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create patient vitals record
+   * @param {Object} vitalsData - The vitals data to create
+   * @returns {Promise} Promise with the response data
+   */
+  async createPatientVitals(vitalsData) {
+    try {
+      const response = await api.post('/medical-records/patient/vitals', vitalsData);
+      return response;
+    } catch (error) {
+      console.error('Error creating patient vitals:', error);
+      throw error;
+    }
   }
 
   /**

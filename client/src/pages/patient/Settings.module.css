@@ -160,6 +160,16 @@
   cursor: not-allowed;
 }
 
+.deleteButton:hover {
+  background-color: #ff0000;
+  transform: scale(1.05);
+}
+
+/* Profile Picture Styles */
+.profileImageContainer {
+  margin-top: 10px;
+}
+
 /* Password Requirements */
 .passwordRequirements {
   background-color: #f9f7fe;
@@ -291,5 +301,9 @@
   
   .confirmationActions button {
     width: 100%;
+  }
+
+  .settingsContainer {
+    padding: 10px;
   }
 } 

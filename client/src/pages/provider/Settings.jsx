@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import styles from './Settings.module.css';
 
@@ -10,10 +10,25 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import Modal from '../../components/common/Modal';
 import Alert from '../../components/common/Alert';
+import ProfilePictureUpload from '../../components/common/ProfilePictureUpload';
+
+// Service imports
+import FileService from '../../services/file.service';
+import ApiService from '../../services/api.service';
+import { updateUser } from '../../store/slices/authSlice';
 
 const Settings = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const user = useSelector((state) => state.auth.user);
+  
+  // Profile state
+  const [profileData, setProfileData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    profileImage: null
+  });
   
   // Password change state
   const [passwordData, setPasswordData] = useState({
@@ -39,6 +54,17 @@ const Settings = () => {
     emailConsultationUpdates: true,
     emailPatientRequests: true
   });
+  
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        profileImage: user.profileImage
+      });
+    }
+  }, [user]);
   
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
@@ -93,11 +119,8 @@ const Settings = () => {
     }
     
     try {
-      // Import API service at the top
-      const ApiService = await import('../../services/api.service');
-      
       // Call API to change password
-      await ApiService.default.put('/provider/change-password', {
+      await ApiService.put('/users/change-password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
@@ -117,6 +140,41 @@ const Settings = () => {
       } else {
         toast.error('Failed to change password. Please try again.');
       }
+    }
+  };
+  
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (file) => {
+    try {
+      const response = await FileService.uploadProfilePicture(file);
+      
+      // Update local state
+      const newProfileImage = response.profileImage;
+      setProfileData(prev => ({ ...prev, profileImage: newProfileImage }));
+      
+      // Update Redux store
+      dispatch(updateUser({ profileImage: newProfileImage }));
+      
+      return response;
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      throw error;
+    }
+  };
+
+  // Handle profile picture removal
+  const handleProfilePictureRemove = async () => {
+    try {
+      await FileService.deleteProfilePicture();
+      
+      // Update local state
+      setProfileData(prev => ({ ...prev, profileImage: null }));
+      
+      // Update Redux store
+      dispatch(updateUser({ profileImage: null }));
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      throw error;
     }
   };
   
@@ -173,6 +231,37 @@ const Settings = () => {
           <p>Manage your account preferences and security</p>
         </div>
       </div>
+      
+      {/* Profile Information Card */}
+      <Card className={styles.profileCard}>
+        <div className={styles.cardHeader}>
+          <h2>Profile Information</h2>
+          <p>Update your profile picture and basic information</p>
+        </div>
+        
+        <div className={styles.profileSection}>
+          <div className={styles.profilePictureSection}>
+            <ProfilePictureUpload
+              currentImage={profileData.profileImage ? FileService.getProfilePictureUrl(profileData.profileImage, user?._id || user?.id) : null}
+              onUpload={handleProfilePictureUpload}
+              onDelete={handleProfilePictureRemove}
+              size="large"
+            />
+          </div>
+          
+          <div className={styles.profileInfo}>
+            <div className={styles.infoItem}>
+              <strong>Name:</strong> {profileData.firstName} {profileData.lastName}
+            </div>
+            <div className={styles.infoItem}>
+              <strong>Email:</strong> {profileData.email}
+            </div>
+            <div className={styles.infoItem}>
+              <strong>Role:</strong> Healthcare Provider
+            </div>
+          </div>
+        </div>
+      </Card>
       
       <Card className={styles.changePasswordCard}>
         <div className={styles.cardHeader}>
@@ -299,6 +388,7 @@ const Settings = () => {
           <p>Please type <strong>DELETE</strong> to confirm:</p>
           
           <Input
+            name="deleteConfirmation"
             value={deleteConfirmation}
             onChange={(e) => setDeleteConfirmation(e.target.value)}
             placeholder="Type DELETE to confirm"

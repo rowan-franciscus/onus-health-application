@@ -308,12 +308,34 @@ exports.getProviderVitals = async (req, res) => {
     const { patientId, limit = 10 } = req.query;
     const providerId = req.user._id;
     
-    // IMPORTANT: Filter by provider to ensure data security
-    const query = { provider: providerId };
+    let query = {};
     
-    // If patientId is specified, filter by that patient as well
+    // If patientId is specified, check provider's access level
     if (patientId) {
-      query.patient = mongoose.Types.ObjectId(patientId);
+      const Connection = require('../models/Connection');
+      const connection = await Connection.findOne({
+        provider: providerId,
+        patient: new mongoose.Types.ObjectId(patientId)
+      });
+      
+      if (!connection) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'No connection to this patient' 
+        });
+      }
+      
+      // If provider has full approved access, they can see all vitals for this patient
+      if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
+        query.patient = new mongoose.Types.ObjectId(patientId);
+      } else {
+        // Limited access - only see vitals they created for this patient
+        query.patient = new mongoose.Types.ObjectId(patientId);
+        query.provider = providerId;
+      }
+    } else {
+      // If no patient specified, show all vitals created by this provider
+      query.provider = providerId;
     }
     
     console.log('Provider vitals query:', query);
@@ -325,7 +347,7 @@ exports.getProviderVitals = async (req, res) => {
       .sort({ date: -1 })
       .limit(parseInt(limit));
     
-    console.log(`Found ${vitals.length} vitals records for provider ${providerId}`);
+    console.log(`Found ${vitals.length} vitals records`);
     
     return res.json({
       success: true,

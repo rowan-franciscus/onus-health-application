@@ -97,6 +97,11 @@ const VitalsSchema = new Schema({
       type: String,
       default: 'breaths/min'
     }
+  },
+  // Flag to indicate if the vitals record was created by the patient
+  createdByPatient: {
+    type: Boolean,
+    default: false
   }
 });
 

@@ -82,6 +82,15 @@ if (config.env === 'development') {
 
 app.use(cors(corsOptions));
 
+// Add CORS headers specifically for file routes before other middleware
+app.use('/api/files', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
+
 logger.info(`Frontend URL configured as: ${config.frontendUrl}`);
 logger.info(`Current environment: ${config.env}`);
 
@@ -109,8 +118,27 @@ if (config.env !== 'production') {
   });
 }
 
-// Security middleware
-app.use(helmet());
+// Security middleware with proper configuration for images
+// Skip helmet entirely for file routes to avoid CORS issues
+app.use((req, res, next) => {
+  // Skip helmet for all file routes
+  if (req.path.startsWith('/api/files/')) {
+    return next();
+  }
+  
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Allow images to be loaded cross-origin
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "blob:", "*"], // Allow images from any source
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        connectSrc: ["'self'", config.frontendUrl, "http://localhost:3000", "http://localhost:5001"]
+      }
+    }
+  })(req, res, next);
+});
 
 // Logging middleware
 app.use(morgan('dev', { stream: logger.stream }));
@@ -121,8 +149,12 @@ app.use(passport.initialize());
 // Session timeout middleware
 app.use(sessionTimeout);
 
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files with CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
 
 // Health check endpoint (before auth middleware)
 app.get('/health', (req, res) => {

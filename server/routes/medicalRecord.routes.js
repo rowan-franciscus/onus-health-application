@@ -28,6 +28,14 @@ router.get('/test', (req, res) => {
 // Patient vitals route
 router.get('/patient/vitals/recent', authenticateJWT, isPatient, medicalRecordController.getPatientRecentVitals);
 
+// Patient create vitals route
+router.post('/patient/vitals', authenticateJWT, isPatient, 
+  require('../controllers/medicalRecords/vitals.controller').createPatientVitals
+);
+
+// Get single vitals record by ID
+router.get('/vitals/:id', authenticateJWT, require('../controllers/medicalRecords/vitals.controller').getVitalsById);
+
 // Provider routes
 router.get('/provider/vitals', authenticateJWT, isProvider, 
   [

@@ -49,6 +49,37 @@
   margin-top: 1.5rem;
 }
 
+/* Profile Card Styles */
+.profileCard {
+  margin-bottom: 20px;
+}
+
+.profileSection {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.profilePictureSection {
+  flex-shrink: 0;
+}
+
+.profileInfo {
+  flex: 1;
+}
+
+.infoItem {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: #333;
+}
+
+.infoItem strong {
+  color: #555;
+  margin-right: 10px;
+}
+
 /* Card Styles */
 .changePasswordCard,
 .notificationsCard,
@@ -169,5 +200,30 @@
   .formActions button,
   .modalActions button {
     width: 100%;
+  }
+} 
+
+.deleteModalContent .modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .profileSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  
+  .profilePictureSection {
+    align-self: center;
+  }
+  
+  .profileInfo {
+    width: 100%;
+    text-align: center;
   }
 } 

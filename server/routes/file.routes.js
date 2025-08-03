@@ -7,6 +7,16 @@ const Consultation = require('../models/Consultation');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 
+// Determine base upload directory based on environment
+const getBaseUploadDir = () => {
+  // Check if running on Render with persistent storage
+  if (process.env.RENDER && fs.existsSync('/mnt/data')) {
+    return path.join('/mnt/data', 'uploads');
+  }
+  // Fall back to local uploads directory
+  return path.join(__dirname, '../uploads');
+};
+
 // Security: Sanitize query params for logging to avoid exposing tokens
 const sanitizeQueryForLogging = (query) => {
   const sanitized = { ...query };
@@ -17,12 +27,93 @@ const sanitizeQueryForLogging = (query) => {
 };
 
 /**
+ * Handle OPTIONS requests for public profile images
+ */
+router.options('/public/profile/:userId', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.sendStatus(200);
+});
+
+/**
+ * Public endpoint for profile images
+ * Uses the user ID in the path instead of authentication tokens
+ * This avoids CORS issues with token-based URLs
+ */
+router.get('/public/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Override helmet's headers for this route
+    res.removeHeader('Cross-Origin-Resource-Policy');
+    res.removeHeader('Cross-Origin-Opener-Policy');
+    
+    // Set CORS headers immediately
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
+    
+    // Find the user
+    const user = await User.findById(userId).select('profileImage');
+    if (!user || !user.profileImage) {
+      // Return 404 with proper headers for CORS
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({ message: 'Profile image not found' });
+    }
+    
+    // Extract filename from the stored path
+    const filename = path.basename(user.profileImage);
+    const filePath = path.join(getBaseUploadDir(), 'profile-images', filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({ message: 'Profile image file not found' });
+    }
+    
+    // Get mime type
+    const mimeType = getMimeType(filename);
+    
+    // Prepare all headers
+    const headers = {
+      'Content-Type': mimeType,
+      'Cache-Control': 'public, max-age=3600',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Cross-Origin-Resource-Policy': 'cross-origin'
+    };
+    
+    // Write headers using writeHead to ensure they're sent
+    res.writeHead(200, headers);
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+    
+  } catch (error) {
+    logger.error('Error serving public profile image:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
  * Get file info without downloading
  */
 router.get('/:type/:filename/info', authenticateJWT, async (req, res) => {
   try {
     const { type, filename } = req.params;
-    const filePath = path.join(__dirname, '../uploads', type, filename);
+    const filePath = path.join(getBaseUploadDir(), type, filename);
     
     // Check if file exists
     if (!fs.existsSync(filePath)) {
@@ -80,7 +171,7 @@ router.get('/:type/:filename', async (req, res, next) => {
       
       try {
         const { type, filename } = req.params;
-        const filePath = path.join(__dirname, '../uploads', type, filename);
+        const filePath = path.join(getBaseUploadDir(), type, filename);
         
         // Check if file exists
         if (!fs.existsSync(filePath)) {
@@ -99,6 +190,12 @@ router.get('/:type/:filename', async (req, res, next) => {
         
         // Set appropriate headers
         res.setHeader('Content-Type', mimeType);
+        
+        // Set CORS headers for images to prevent browser blocking
+        if (mimeType.startsWith('image/')) {
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        }
         
         if (isInline && (mimeType.startsWith('image/') || mimeType === 'application/pdf')) {
           res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -131,7 +228,7 @@ router.get('/:type/:filename', async (req, res, next) => {
 router.delete('/:type/:filename', authenticateJWT, async (req, res) => {
   try {
     const { type, filename } = req.params;
-    const filePath = path.join(__dirname, '../uploads', type, filename);
+    const filePath = path.join(getBaseUploadDir(), type, filename);
     
     // Check if file exists
     if (!fs.existsSync(filePath)) {
@@ -238,7 +335,11 @@ async function checkFilePermission(user, fileType, filename) {
       case 'profile-images':
         // Users can access their own profile images
         const profileUser = await User.findById(user.id);
-        return profileUser?.profileImage?.includes(filename);
+        if (!profileUser || !profileUser.profileImage) return false;
+        
+        // Extract filename from the stored path
+        const storedFilename = path.basename(profileUser.profileImage);
+        return storedFilename === filename;
         
       default:
         return false;
@@ -281,7 +382,11 @@ async function checkDeletePermission(user, fileType, filename) {
       case 'profile-images':
         // Users can delete their own profile images
         const profileUser = await User.findById(user.id);
-        return profileUser?.profileImage?.includes(filename);
+        if (!profileUser || !profileUser.profileImage) return false;
+        
+        // Extract filename from the stored path
+        const storedFilename = path.basename(profileUser.profileImage);
+        return storedFilename === filename;
         
       default:
         return false;

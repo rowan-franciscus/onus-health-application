@@ -1,0 +1,226 @@
+/* ProfilePictureUpload Component Styles */
+
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+.imageWrapper {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 3px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.imageWrapper:hover {
+  border-color: #d1d5db;
+}
+
+.container.disabled .imageWrapper {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Size variations */
+.small .imageWrapper {
+  width: 80px;
+  height: 80px;
+}
+
+.medium .imageWrapper {
+  width: 120px;
+  height: 120px;
+}
+
+.large .imageWrapper {
+  width: 180px;
+  height: 180px;
+}
+
+/* Shape variations */
+.round .imageWrapper {
+  border-radius: 50%;
+}
+
+.square .imageWrapper {
+  border-radius: 12px;
+}
+
+/* Overlay */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.imageWrapper:hover .overlay {
+  opacity: 1;
+}
+
+.overlayContent {
+  text-align: center;
+  color: white;
+}
+
+.cameraIcon {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.overlayText {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Loading state */
+.loadingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6b46c1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Delete button */
+.deleteButton {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  background-color: #ef4444;
+  border: 2px solid white;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.deleteButton:hover {
+  background-color: #dc2626;
+  transform: scale(1.1);
+}
+
+.deleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.deleteButton svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+/* File input (hidden) */
+.fileInput {
+  display: none;
+}
+
+/* Placeholder styles */
+.placeholderContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+}
+
+.placeholderIcon {
+  width: 40%;
+  height: 40%;
+  max-width: 48px;
+  max-height: 48px;
+  margin-bottom: 8px;
+  color: #d1d5db;
+}
+
+.placeholderText {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+/* Small size adjustments */
+.small .placeholderIcon {
+  max-width: 32px;
+  max-height: 32px;
+  margin-bottom: 4px;
+}
+
+.small .placeholderText {
+  font-size: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .small .imageWrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .medium .imageWrapper {
+    width: 100px;
+    height: 100px;
+  }
+
+  .large .imageWrapper {
+    width: 140px;
+    height: 140px;
+  }
+
+  .cameraIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .overlayText {
+    font-size: 12px;
+  }
+} 

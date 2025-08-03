@@ -134,9 +134,14 @@ const PatientDashboard = () => {
         <Card className={styles.vitalsCard}>
           <div className={styles.cardHeader}>
             <h2>Recent Vitals</h2>
-            <Link to="/patient/medical-records/vitals" className={styles.viewAllLink}>
-              View All
-            </Link>
+            <div className={styles.cardActions}>
+              <Link to="/patient/medical-records/vitals/add" className={styles.addButton}>
+                Add Vitals
+              </Link>
+              <Link to="/patient/medical-records/vitals" className={styles.viewAllLink}>
+                View All
+              </Link>
+            </div>
           </div>
           
           {isLoading ? (

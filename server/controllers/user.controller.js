@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Get current user profile
@@ -418,6 +420,113 @@ exports.deleteAccount = async (req, res) => {
 };
 
 /**
+ * Upload profile picture
+ */
+exports.uploadProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    
+    // Get current user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Delete old profile picture if exists
+    if (user.profileImage) {
+      const oldImagePath = path.join(
+        process.env.RENDER && fs.existsSync('/mnt/data') 
+          ? '/mnt/data/uploads' 
+          : path.join(__dirname, '../uploads'),
+        'profile-images',
+        path.basename(user.profileImage)
+      );
+      
+      if (fs.existsSync(oldImagePath)) {
+        try {
+          fs.unlinkSync(oldImagePath);
+        } catch (error) {
+          logger.error('Error deleting old profile picture:', error);
+        }
+      }
+    }
+    
+    // Update user with new profile image path
+    const profileImagePath = `/api/files/profile-images/${req.file.filename}`;
+    user.profileImage = profileImagePath;
+    await user.save();
+    
+    return res.json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      profileImage: profileImagePath
+    });
+  } catch (error) {
+    logger.error('Error uploading profile picture:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error uploading profile picture'
+    });
+  }
+};
+
+/**
+ * Delete profile picture
+ */
+exports.deleteProfilePicture = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get current user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if user has a profile picture
+    if (!user.profileImage) {
+      return res.status(400).json({ message: 'No profile picture to delete' });
+    }
+    
+    // Delete the profile picture file
+    const imagePath = path.join(
+      process.env.RENDER && fs.existsSync('/mnt/data') 
+        ? '/mnt/data/uploads' 
+        : path.join(__dirname, '../uploads'),
+      'profile-images',
+      path.basename(user.profileImage)
+    );
+    
+    if (fs.existsSync(imagePath)) {
+      try {
+        fs.unlinkSync(imagePath);
+      } catch (error) {
+        logger.error('Error deleting profile picture file:', error);
+      }
+    }
+    
+    // Remove profile image from user
+    user.profileImage = null;
+    await user.save();
+    
+    return res.json({
+      success: true,
+      message: 'Profile picture deleted successfully'
+    });
+  } catch (error) {
+    logger.error('Error deleting profile picture:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error deleting profile picture'
+    });
+  }
+};
+
+/**
  * Complete user onboarding process
  */
 exports.completeOnboarding = async (req, res) => {
@@ -482,36 +591,6 @@ exports.completeOnboarding = async (req, res) => {
       message: 'Server error', 
       error: error.message 
     });
-  }
-};
-
-/**
- * Upload and update profile image
- */
-exports.uploadProfileImage = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    if (!req.file) {
-      return res.status(400).json({ message: 'No image file provided' });
-    }
-    
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    // Update user's profile image path
-    user.profileImage = `/uploads/profile/${req.file.filename}`;
-    await user.save();
-    
-    return res.json({ 
-      message: 'Profile image updated successfully',
-      profileImage: user.profileImage
-    });
-  } catch (error) {
-    console.error('Error uploading profile image:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

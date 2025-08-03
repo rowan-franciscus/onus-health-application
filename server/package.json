@@ -17,7 +17,8 @@
     "test": "jest --runInBand",
     "test:db": "node scripts/test/testDatabaseConnection.js",
     "test:login": "node scripts/test/testLoginEndpoint.js",
-    "check:users": "node check-users.js"
+    "check:users": "node check-users.js",
+    "cleanup:orphaned": "node scripts/cleanupOrphanedData.js"
   },
   "dependencies": {
     "@sendgrid/mail": "^7.7.0",

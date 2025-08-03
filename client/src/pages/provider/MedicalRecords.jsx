@@ -89,6 +89,9 @@ const MedicalRecords = () => {
           patientName: record.patient ? 
             `${record.patient.firstName} ${record.patient.lastName}` : 'Unknown Patient',
           date: record.date || record.createdAt,
+          createdByPatient: record.createdByPatient || false,
+          providerName: record.createdByPatient ? 'Patient (Self)' : 
+            (record.provider ? `${record.provider.firstName} ${record.provider.lastName}` : 'Unknown Provider'),
           // Add type-specific properties based on recordType
           ...(recordType === 'vitals' && {
             heartRate: record.heartRate?.value || 'N/A',
@@ -186,6 +189,10 @@ const MedicalRecords = () => {
     navigate(`/provider/patients/${patientId}`);
   };
 
+  const handleViewVitals = (recordId) => {
+    navigate(`/provider/medical-records/vitals/${recordId}`);
+  };
+
   // Filter records based on search term
   const filteredRecords = records.filter(record => 
     record.patientName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -213,13 +220,23 @@ const MedicalRecords = () => {
       sortable: false,
       render: (value, row) => (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="primary" 
-            size="small" 
-            onClick={() => handleViewConsultation(row.consultationId, activeTab)}
-          >
-            View Consultation
-          </Button>
+          {row.consultationId ? (
+            <Button 
+              variant="primary" 
+              size="small" 
+              onClick={() => handleViewConsultation(row.consultationId, activeTab)}
+            >
+              View Consultation
+            </Button>
+          ) : (
+            <Button 
+              variant="primary" 
+              size="small" 
+              onClick={() => handleViewVitals(row.id)}
+            >
+              View Record
+            </Button>
+          )}
           <Button 
             variant="tertiary" 
             size="small" 
@@ -237,6 +254,7 @@ const MedicalRecords = () => {
     switch (activeTab) {
       case 'vitals':
         specificColumns = [
+          { header: 'Created By', accessor: 'providerName', sortable: true },
           { header: 'Heart Rate', accessor: 'heartRate', sortable: true },
           { header: 'Blood Pressure', accessor: 'bloodPressure', sortable: true },
           { header: 'Temperature', accessor: 'temperature', sortable: true }

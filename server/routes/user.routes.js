@@ -58,10 +58,20 @@ router.delete('/account', authenticateJWT, userController.deleteAccount);
 // Search providers (for patients to connect with)
 router.get('/providers/search', authenticateJWT, isPatient, userController.searchProviders);
 
+// Determine base upload directory based on environment
+const getBaseUploadDir = () => {
+  // Check if running on Render with persistent storage
+  if (process.env.RENDER && fs.existsSync('/mnt/data')) {
+    return path.join('/mnt/data', 'uploads');
+  }
+  // Fall back to local uploads directory
+  return path.join(__dirname, '../uploads');
+};
+
 // Set up storage for license files
 const licenseStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads/licenses');
+    const uploadDir = path.join(getBaseUploadDir(), 'licenses');
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -93,6 +103,55 @@ const licenseUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: licenseFilter
 });
+
+// Set up storage for profile pictures
+const profilePictureStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(getBaseUploadDir(), 'profile-images');
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'profile-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// File filter for profile pictures
+const profilePictureFilter = (req, file, cb) => {
+  // Accept only image files
+  if (file.mimetype === 'image/png' || 
+      file.mimetype === 'image/jpeg' || 
+      file.mimetype === 'image/jpg' ||
+      file.mimetype === 'image/gif') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PNG, JPG, JPEG and GIF image files are allowed!'), false);
+  }
+};
+
+// Create the upload middleware for profile pictures
+const profilePictureUpload = multer({ 
+  storage: profilePictureStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit for profile pictures
+  fileFilter: profilePictureFilter
+});
+
+// Upload profile picture endpoint
+router.post('/profile-picture', 
+  authenticateJWT, 
+  profilePictureUpload.single('profilePicture'),
+  userController.uploadProfilePicture
+);
+
+// Delete profile picture endpoint
+router.delete('/profile-picture', 
+  authenticateJWT, 
+  userController.deleteProfilePicture
+);
 
 // Provider Onboarding with file upload support
 router.post(

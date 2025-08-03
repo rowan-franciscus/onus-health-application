@@ -17,12 +17,12 @@ const MedicalRecordSchema = new Schema({
   provider: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false  // Made optional for patient-created records
   },
   consultation: {
     type: Schema.Types.ObjectId,
     ref: 'Consultation',
-    required: true
+    required: false  // Made optional for patient-created records
   },
   date: {
     type: Date,

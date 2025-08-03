@@ -115,17 +115,40 @@ export const AuthProvider = ({ children }) => {
   
   // Get user data on initial load if authenticated
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       if (isAuthenticated && !user) {
-        const currentUser = AuthService.getCurrentUser();
-        if (currentUser) {
-          dispatch(authSuccess(currentUser));
+        try {
+          // Fetch fresh user data from server instead of using JWT
+          const response = await fetch(`${window.location.protocol}//${window.location.host}/api/users/me`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('onus_auth_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const userData = await response.json();
+            dispatch(authSuccess(userData));
+          } else {
+            // Fallback to JWT data if API call fails
+            const currentUser = AuthService.getCurrentUser();
+            if (currentUser) {
+              dispatch(authSuccess(currentUser));
+            }
+          }
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          // Fallback to JWT data
+          const currentUser = AuthService.getCurrentUser();
+          if (currentUser) {
+            dispatch(authSuccess(currentUser));
+          }
         }
       }
     };
     
     loadUser();
-  }, [dispatch, isAuthenticated, user]);
+  }, [dispatch, isAuthenticated]); // Remove user from dependencies to prevent infinite loop
   
   // Handle session timeout
   useEffect(() => {

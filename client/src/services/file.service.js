@@ -64,23 +64,69 @@ class FileService {
 
   /**
    * Generate secure file URLs
-   * @param {string} fileType - Type of file (licenses, consultations, profile-images)
+   * @param {string} type - The file type (consultations, licenses, etc.)
    * @param {string} filename - The filename
-   * @returns {Object} - Object with viewUrl and downloadUrl
+   * @returns {Object} - URLs for viewing and downloading
    */
-  static getFileUrls(fileType, filename) {
-    // Use full API URL to avoid React Router intercepting the request
-    const baseUrl = config.apiUrl.replace(/\/api$/, ''); // Remove /api suffix if present
-    const fileBaseUrl = `${baseUrl}/api/files/${fileType}/${filename}`;
-    
-    // Get JWT token from localStorage
-    const token = localStorage.getItem(config.tokenKey || 'onus_auth_token');
-    const tokenParam = token ? `token=${encodeURIComponent(token)}` : '';
+  static getFileUrls(type, filename) {
+    const token = localStorage.getItem(config.tokenKey);
+    const baseUrl = `${config.apiUrl}/files/${type}/${filename}`;
     
     return {
-      viewUrl: `${fileBaseUrl}?inline=true${tokenParam ? '&' + tokenParam : ''}`,
-      downloadUrl: `${fileBaseUrl}${tokenParam ? '?' + tokenParam : ''}`
+      viewUrl: `${baseUrl}?inline=true&token=${token}`,
+      downloadUrl: `${baseUrl}?token=${token}`
     };
+  }
+
+  /**
+   * Upload profile picture
+   * @param {File} file - The image file to upload
+   * @returns {Promise} - Response data with profile image URL
+   */
+  static async uploadProfilePicture(file) {
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    
+    return ApiService.upload('/users/profile-picture', formData);
+  }
+
+  /**
+   * Delete profile picture
+   * @returns {Promise} - Response data
+   */
+  static async deleteProfilePicture() {
+    return ApiService.delete('/users/profile-picture');
+  }
+
+  /**
+   * Get profile picture URL with authentication
+   * @param {string} profileImagePath - The profile image path from user object
+   * @param {string} userId - The user ID (optional, for public access)
+   * @returns {string} - URL for profile picture
+   */
+  static getProfilePictureUrl(profileImagePath, userId) {
+    if (!profileImagePath) return null;
+    
+    // If userId is provided, use the public endpoint to avoid CORS issues
+    if (userId) {
+      return `${config.apiUrl}/files/public/profile/${userId}`;
+    }
+    
+    // Fallback to token-based URL (might have CORS issues)
+    const token = localStorage.getItem(config.tokenKey);
+    
+    // If it's already a full URL with token, return as is
+    if (profileImagePath.includes('token=')) {
+      return profileImagePath;
+    }
+    
+    // If it's a relative path, build the full URL
+    if (profileImagePath.startsWith('/api/')) {
+      const url = `${config.apiUrl}${profileImagePath.replace('/api', '')}?inline=true&token=${token}`;
+      return url;
+    }
+    
+    return profileImagePath;
   }
 
   /**

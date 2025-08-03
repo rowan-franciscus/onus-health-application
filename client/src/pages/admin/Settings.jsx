@@ -3,7 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { updateUser } from '../../store/slices/authSlice';
 import adminService from '../../services/admin.service';
+import FileService from '../../services/file.service';
 import styles from './Settings.module.css';
+import ProfilePictureUpload from '../../components/common/ProfilePictureUpload';
 
 const SettingsSection = ({ title, children }) => (
   <div className={styles.settingsSection}>
@@ -19,7 +21,8 @@ const Settings = () => {
   const [profileForm, setProfileForm] = useState({
     firstName: '',
     lastName: '',
-    email: ''
+    email: '',
+    profileImage: null
   });
   
   const [passwordForm, setPasswordForm] = useState({
@@ -36,7 +39,8 @@ const Settings = () => {
       setProfileForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
-        email: user.email || ''
+        email: user.email || '',
+        profileImage: user.profileImage || null
       });
     }
   }, [user]);
@@ -113,6 +117,41 @@ const Settings = () => {
     }
   };
   
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (file) => {
+    try {
+      const response = await FileService.uploadProfilePicture(file);
+      
+      // Update local state
+      const newProfileImage = response.profileImage;
+      setProfileForm(prev => ({ ...prev, profileImage: newProfileImage }));
+      
+      // Update Redux store
+      dispatch(updateUser({ profileImage: newProfileImage }));
+      
+      return response;
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      throw error;
+    }
+  };
+
+  // Handle profile picture removal
+  const handleProfilePictureRemove = async () => {
+    try {
+      await FileService.deleteProfilePicture();
+      
+      // Update local state
+      setProfileForm(prev => ({ ...prev, profileImage: null }));
+      
+      // Update Redux store
+      dispatch(updateUser({ profileImage: null }));
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      throw error;
+    }
+  };
+  
   return (
     <div className={styles.settingsContainer}>
       <h1>Settings</h1>
@@ -155,6 +194,16 @@ const Settings = () => {
               onChange={handleProfileChange}
               className={styles.input}
               required
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label>Profile Picture</label>
+            <ProfilePictureUpload
+              currentImage={profileForm.profileImage ? FileService.getProfilePictureUrl(profileForm.profileImage, user?._id || user?.id) : null}
+              onUpload={handleProfilePictureUpload}
+              onDelete={handleProfilePictureRemove}
+              size="large"
             />
           </div>
           

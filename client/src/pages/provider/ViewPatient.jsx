@@ -170,6 +170,9 @@ const ProviderViewPatient = () => {
         
         // Extract medical records from consultations
         extractMedicalRecords(response);
+        
+        // Also fetch vitals directly from medical records API to include patient-created vitals
+        await fetchVitalsRecords(patientId);
       } else {
         setConsultations([]);
         setMedicalRecords({
@@ -186,6 +189,52 @@ const ProviderViewPatient = () => {
       console.error('Error fetching consultations:', error);
       setConsultations([]);
     }
+  };
+
+  // Fetch vitals records directly from API (includes patient-created vitals)
+  const fetchVitalsRecords = async (patientId) => {
+    try {
+      const response = await ApiService.get('/medical-records/provider/vitals', {
+        patientId: patientId,
+        limit: 100
+      });
+      
+      if (response && response.records) {
+        const formattedVitals = response.records.map(record => ({
+          id: record._id,
+          date: record.date ? new Date(record.date).toLocaleDateString() : 'N/A',
+          provider: record.createdByPatient ? 'Patient (Self)' : (record.provider?.firstName + ' ' + record.provider?.lastName || 'Unknown Provider'),
+          heartRate: formatVitalValue(record.heartRate),
+          bloodPressure: record.bloodPressure ? 
+            `${record.bloodPressure.systolic || 'N/A'}/${record.bloodPressure.diastolic || 'N/A'}` : 'N/A',
+          bodyTemperature: formatVitalValue(record.bodyTemperature),
+          respiratoryRate: formatVitalValue(record.respiratoryRate),
+          bloodOxygenSaturation: formatVitalValue(record.bloodOxygenSaturation),
+          weight: formatVitalValue(record.weight),
+          height: formatVitalValue(record.height),
+          bmi: formatVitalValue(record.bmi),
+          bloodGlucose: formatVitalValue(record.bloodGlucose),
+          bodyFatPercentage: formatVitalValue(record.bodyFatPercentage),
+          createdByPatient: record.createdByPatient || false
+        }));
+        
+        setMedicalRecords(prev => ({
+          ...prev,
+          vitals: formattedVitals
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching vitals records:', error);
+    }
+  };
+
+  // Helper function to format vital values
+  const formatVitalValue = (vital) => {
+    if (!vital) return 'N/A';
+    if (typeof vital === 'object' && vital.value !== undefined) {
+      return vital.unit ? `${vital.value} ${vital.unit}` : vital.value;
+    }
+    return vital;
   };
 
   // Extract medical records from consultations

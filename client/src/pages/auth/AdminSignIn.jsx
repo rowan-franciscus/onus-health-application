@@ -26,7 +26,7 @@ const AdminSignIn = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+  const { loading, error, isAuthenticated, user } = useSelector(state => state.auth);
   
   // Check for session timeout message
   const searchParams = new URLSearchParams(location.search);
@@ -34,13 +34,10 @@ const AdminSignIn = () => {
 
   useEffect(() => {
     // If admin is authenticated, redirect to admin dashboard
-    if (isAuthenticated) {
-      const user = AuthService.getCurrentUser();
-      if (user && user.role === 'admin') {
-        navigate('/admin/dashboard');
-      }
+    if (isAuthenticated && user && user.role === 'admin') {
+      navigate('/admin/dashboard');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,7 +95,8 @@ const AdminSignIn = () => {
       console.log('Login response:', response);
       
       if (response.success) {
-        dispatch(authSuccess(AuthService.getCurrentUser()));
+        // Use the user data from the response which includes profileImage
+        dispatch(authSuccess(response.user));
         navigate('/admin/dashboard');
       } else {
         console.error('Authentication failed:', response);
@@ -198,6 +196,16 @@ const AdminSignIn = () => {
       }
     }
   };
+
+  // Show loading while checking authentication state
+  if (isAuthenticated && !user) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.adminAuthCard}>

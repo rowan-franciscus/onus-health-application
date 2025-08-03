@@ -160,7 +160,8 @@ exports.login = async (req, res) => {
       lastName: user.lastName,
       role: user.role,
       isProfileCompleted: user.isProfileCompleted,
-      onboardingCompleted: user.isProfileCompleted // Include this for frontend compatibility
+      onboardingCompleted: user.isProfileCompleted, // Include this for frontend compatibility
+      profileImage: user.profileImage // Include profile image
     };
 
     // Add isVerified flag for providers
@@ -391,7 +392,8 @@ exports.adminLogin = async (req, res) => {
         lastName: user.lastName,
         role: user.role,
         isProfileCompleted: user.isProfileCompleted,
-        onboardingCompleted: user.isProfileCompleted // Include this for frontend compatibility
+        onboardingCompleted: user.isProfileCompleted, // Include this for frontend compatibility
+        profileImage: user.profileImage // Include profile image
       },
       tokens: {
         authToken,

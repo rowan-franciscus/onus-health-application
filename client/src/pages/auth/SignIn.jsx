@@ -23,7 +23,7 @@ const SignIn = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  const { loading, error, isAuthenticated } = useSelector(state => state.auth);
+  const { loading, error, isAuthenticated, user } = useSelector(state => state.auth);
   const { from } = location.state || { from: { pathname: '/' } };
   
   // Check for session timeout message
@@ -32,20 +32,17 @@ const SignIn = () => {
 
   useEffect(() => {
     // If user is authenticated, redirect based on role
-    if (isAuthenticated) {
-      const user = AuthService.getCurrentUser();
-      if (user) {
-        const role = user.role;
-        if (role === 'patient') {
-          navigate('/patient/dashboard');
-        } else if (role === 'provider') {
-          navigate('/provider/dashboard');
-        } else if (role === 'admin') {
-          navigate('/admin/dashboard');
-        }
+    if (isAuthenticated && user) {
+      const role = user.role;
+      if (role === 'patient') {
+        navigate('/patient/dashboard');
+      } else if (role === 'provider') {
+        navigate('/provider/dashboard');
+      } else if (role === 'admin') {
+        navigate('/admin/dashboard');
       }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,9 +95,10 @@ const SignIn = () => {
       const response = await AuthService.login(userData);
       
       if (response.success) {
-        dispatch(authSuccess(AuthService.getCurrentUser()));
+        // Use the user data from the response which includes profileImage
+        dispatch(authSuccess(response.user));
         // Navigate based on user role
-        const user = AuthService.getCurrentUser();
+        const user = response.user;
         if (user) {
           const role = user.role;
           if (role === 'patient') {
@@ -142,6 +140,16 @@ const SignIn = () => {
     console.log(`Login with ${provider} as ${selectedRole}`);
     // Implementation will connect to backend OAuth routes
   };
+
+  // Show loading while checking authentication state
+  if (isAuthenticated && !user) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.adminAuthCard}>

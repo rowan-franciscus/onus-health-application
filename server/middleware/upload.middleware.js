@@ -9,8 +9,18 @@ const fs = require('fs');
 const { ApiError } = require('./error.middleware');
 const config = require('../config/environment');
 
+// Determine base upload directory based on environment
+const getBaseUploadDir = () => {
+  // Check if running on Render with persistent storage
+  if (process.env.RENDER && fs.existsSync('/mnt/data')) {
+    return path.join('/mnt/data', 'uploads');
+  }
+  // Fall back to local uploads directory
+  return path.join(__dirname, '../uploads');
+};
+
 // Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads');
+const uploadDir = getBaseUploadDir();
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

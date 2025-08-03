@@ -53,6 +53,27 @@
   text-decoration: underline;
 }
 
+.cardActions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.addButton {
+  background-color: #6039cc;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.addButton:hover {
+  background-color: #4b2ea3;
+}
+
 /* Vitals Card */
 .vitalsCard {
   grid-column: 1 / 2;

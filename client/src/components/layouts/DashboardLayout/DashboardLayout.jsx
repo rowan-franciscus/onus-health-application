@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import Sidebar from '../Sidebar';
 import Header from '../Header';
 import styles from './DashboardLayout.module.css';
+import FileService from '../../../services/file.service';
 
 // Import logo
 import logoWhite from '../../../assets/logos/logo-white.png';
@@ -143,7 +144,8 @@ const DashboardLayout = ({ role }) => {
       name: displayName,
       firstName: firstName,
       lastName: lastName,
-      profileUrl: profileUrlMap[role] || '#'
+      profileUrl: profileUrlMap[role] || '#',
+      avatarUrl: user?.profileImage ? FileService.getProfilePictureUrl(user.profileImage, user?._id || user?.id) : null
     };
   };
 
