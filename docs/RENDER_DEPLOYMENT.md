@@ -14,8 +14,8 @@ This guide will help you deploy the Onus Health Application to Render and config
 Before deploying, you need to update the URLs in `render.yaml` to match your actual Render service names:
 
 1. In `render.yaml`, update these URLs:
-   - `FRONTEND_URL`: Replace `https://onus-health-frontend.onrender.com` with your actual frontend service URL
-   - `REACT_APP_API_URL`: Replace `https://onus-health-backend.onrender.com/api` with your actual backend service URL
+   - `FRONTEND_URL`: Replace `https://onus-frontend.onrender.com` with your actual frontend service URL
+   - `REACT_APP_API_URL`: Replace `https://onus-backend.onrender.com/api` with your actual backend service URL
 
 ## Step 2: Deploy to Render
 

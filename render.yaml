@@ -1,7 +1,7 @@
 services:
   # Backend service
   - type: web
-    name: onus-health-backend
+    name: onus-backend
     runtime: node
     region: fra # Frankfurt region (closest to Namibia for lowest latency)
     buildCommand: cd server && npm install
@@ -32,13 +32,13 @@ services:
       - key: SESSION_TIMEOUT
         value: "30"
       - key: FRONTEND_URL
-        value: https://onus-health-frontend.onrender.com # Update with actual frontend URL
+        value: https://onus-frontend.onrender.com
       - key: MAX_FILE_SIZE
         value: "5242880" # 5MB in bytes
 
   # Frontend service
   - type: web
-    name: onus-health-frontend
+    name: onus-frontend
     runtime: static
     region: fra # Frankfurt region
     buildCommand: cd client && npm install && npm run build
@@ -56,7 +56,7 @@ services:
         destination: /index.html
     envVars:
       - key: REACT_APP_API_URL
-        value: https://onus-health-backend.onrender.com/api # Update with actual backend URL
+        value: https://onus-backend.onrender.com/api
       - key: REACT_APP_SESSION_TIMEOUT
         value: "1800000"
       - key: NODE_ENV

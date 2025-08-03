@@ -118,24 +118,12 @@ export const AuthProvider = ({ children }) => {
     const loadUser = async () => {
       if (isAuthenticated && !user) {
         try {
-          // Fetch fresh user data from server instead of using JWT
-          const response = await fetch(`${window.location.protocol}//${window.location.host}/api/users/me`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('onus_auth_token')}`,
-              'Content-Type': 'application/json'
-            }
-          });
+          // Import UserProfileService to fetch user data properly
+          const { default: UserProfileService } = await import('../services/userProfile.service');
           
-          if (response.ok) {
-            const userData = await response.json();
-            dispatch(authSuccess(userData));
-          } else {
-            // Fallback to JWT data if API call fails
-            const currentUser = AuthService.getCurrentUser();
-            if (currentUser) {
-              dispatch(authSuccess(currentUser));
-            }
-          }
+          // Fetch fresh user data from server using the API service
+          const userData = await UserProfileService.getCurrentUser();
+          dispatch(authSuccess(userData));
         } catch (error) {
           console.error('Error loading user data:', error);
           // Fallback to JWT data

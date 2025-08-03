@@ -4,7 +4,7 @@
 This guide provides step-by-step instructions for testing all features in the Onus Health application. The application has three main user roles: **Patient**, **Health Provider**, and **Admin**.
 
 ## Quick Start
-- **Application URL:** https://onus-health-frontend.onrender.com/
+- **Application URL:** https://onus-frontend.onrender.com/
 - **Test Accounts:** Pre-configured accounts with sample data are available
 - **Session Timeout:** 30 minutes (you'll be prompted to continue or log out)
 

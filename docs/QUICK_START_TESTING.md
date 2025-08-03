@@ -3,7 +3,7 @@
 ## 🚀 Getting Started
 
 ### Application URL
-https://onus-health-frontend.onrender.com/
+https://onus-frontend.onrender.com/
 
 ### Test Accounts (Pre-configured)
 ```
@@ -19,7 +19,7 @@ Health Provider: provider.test@email.com  / password@123
 
 ### Scenario 1: Admin Workflow
 1. **Login as Admin**
-   - Go to `https://onus-health-frontend.onrender.com/admin/sign-in`
+   - Go to `https://onus-frontend.onrender.com/admin/sign-in`
    - Use admin credentials
    - View analytics dashboard
 
