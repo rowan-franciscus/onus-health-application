@@ -284,9 +284,20 @@ exports.verifyEmail = async (req, res) => {
       
       // For GET requests, redirect to app
       if (req.method === 'GET') {
-        const redirectUrl = user.isProfileCompleted ? 
-          `${config.frontendUrl}/dashboard` : 
-          `${config.frontendUrl}/onboarding?role=${user.role}`;
+        let redirectUrl;
+        if (user.isProfileCompleted) {
+          // Redirect to role-specific dashboard
+          redirectUrl = user.role === 'patient' 
+            ? `${config.frontendUrl}/patient/dashboard`
+            : user.role === 'provider'
+            ? `${config.frontendUrl}/provider/dashboard`
+            : `${config.frontendUrl}/sign-in`;
+        } else {
+          // Redirect to role-specific onboarding
+          redirectUrl = user.role === 'patient' 
+            ? `${config.frontendUrl}/patient/onboarding`
+            : `${config.frontendUrl}/provider/onboarding`;
+        }
         
         return res.redirect(redirectUrl);
       }
@@ -313,9 +324,11 @@ exports.verifyEmail = async (req, res) => {
     // Generate new token for auto-login
     const authToken = user.generateAuthToken();
     
-    // For GET requests, redirect to onboarding
+    // For GET requests, redirect to onboarding with proper role path
     if (req.method === 'GET') {
-      const redirectUrl = `${config.frontendUrl}/onboarding?role=${user.role}&token=${authToken}`;
+      const redirectUrl = user.role === 'patient' 
+        ? `${config.frontendUrl}/patient/onboarding?token=${authToken}`
+        : `${config.frontendUrl}/provider/onboarding?token=${authToken}`;
       return res.redirect(redirectUrl);
     }
     

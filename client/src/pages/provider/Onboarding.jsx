@@ -30,7 +30,6 @@ const ProviderOnboarding = () => {
     const handleTokenFromUrl = async () => {
       const urlParams = new URLSearchParams(location.search);
       const token = urlParams.get('token');
-      const role = urlParams.get('role');
       
       if (token) {
         try {

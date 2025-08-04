@@ -4,33 +4,39 @@
 When users clicked on email verification links, they were being redirected to the sign-in page instead of the onboarding page after successful verification.
 
 ## Root Cause
-The verification URLs in emails were pointing to the frontend route (`/verify-email/{token}`) instead of the backend API endpoint (`/api/auth/verify/{token}`). This prevented the backend from properly handling the redirect with authentication tokens.
+The backend was not redirecting to the correct role-specific onboarding pages after email verification.
 
 ## Solution
 
-### 1. Updated Email Service
-Modified `server/services/email.service.js` to construct verification URLs that point to the backend API:
+### 1. Email Service Configuration
+The email service uses frontend routes for verification links:
 ```javascript
-const apiBaseUrl = config.frontendUrl.replace(/\/$/, '') + '/api';
-const verificationUrl = `${apiBaseUrl}/auth/verify/${token}`;
+const verificationUrl = `${config.frontendUrl}/verify-email/${token}`;
 ```
 
-### 2. Updated Onboarding Pages
+### 2. Updated Backend Redirect Logic
+Modified `server/controllers/authController.js` to redirect users to role-specific pages after verification:
+- New users → role-specific onboarding pages with auth token
+- Already verified users → role-specific dashboards
+
+### 3. Updated Onboarding Pages
 Added token handling to both patient and provider onboarding pages to:
 - Extract authentication token from URL parameters
 - Authenticate the user automatically
 - Update Redux store with user data
 - Remove token from URL for security
 
-### 3. Updated API Response
+### 4. Updated API Response
 Modified the `/auth/me` endpoint to include a `success` flag in the response for consistency.
 
 ## How It Works Now
 
 1. User signs up and receives verification email
-2. Email contains link to: `https://your-app.com/api/auth/verify/{token}`
-3. When clicked, backend verifies the email and redirects to: `/onboarding?role={role}&token={authToken}`
-4. Onboarding page extracts the token, authenticates the user, and removes it from URL
+2. Email contains link to: `https://your-app.com/verify-email/{token}`
+3. React app loads and makes POST request to verify the email
+4. Backend verifies email and either:
+   - Returns success for POST requests (from React app)
+   - Redirects to role-specific onboarding with token for GET requests (direct link clicks)
 5. User can complete onboarding while authenticated
 
 ## Testing
