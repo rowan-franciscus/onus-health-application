@@ -73,12 +73,8 @@ const ProtectedRoute = ({
 
   // If onboarding is required but not completed, redirect to onboarding
   if (requireOnboarding && user) {
-    // TEMPORARY FIX: Force onboarding to be considered complete to bypass the redirect
-    // Remove this in production or when onboarding is properly implemented
-    const forceOnboardingComplete = true;
-    
     // Check both onboardingCompleted and isProfileCompleted fields
-    const hasCompletedOnboarding = forceOnboardingComplete || user.onboardingCompleted || user.isProfileCompleted;
+    const hasCompletedOnboarding = user.onboardingCompleted || user.isProfileCompleted;
     
     if (!hasCompletedOnboarding) {
       if (user.role === 'patient') {

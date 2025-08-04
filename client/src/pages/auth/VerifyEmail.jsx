@@ -63,7 +63,7 @@ const VerifyEmail = () => {
             setRedirecting(true);
             
             // Determine redirect URL
-            const needsOnboarding = !response.user.onboardingCompleted && !response.user.isProfileCompleted;
+            const needsOnboarding = !response.user.onboardingCompleted || !response.user.isProfileCompleted;
             console.log('Needs onboarding?', needsOnboarding);
             
             // If successful, redirect to appropriate page after a delay
