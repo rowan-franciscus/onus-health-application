@@ -77,7 +77,7 @@ const VerificationPending = () => {
             <li>An email has been sent to our admin team to review your application</li>
             <li>You will receive an email notification when your account is verified</li>
             <li>After verification, you can sign in using your credentials</li>
-            <li>If you have not received an update after 2 business days, please contact support</li>
+            <li>If you have not received an update after 2 business days, please contact support@onus.health</li>
           </ul>
         </div>
         <div className={styles.buttonContainer}>
