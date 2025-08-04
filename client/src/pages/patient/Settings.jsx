@@ -203,7 +203,7 @@ const PatientSettings = () => {
       const updateData = {
         firstName,
         lastName,
-        email: updatedAccountInfo.email,
+        // Email removed - cannot be updated
         phone: updatedAccountInfo.phone,
         dateOfBirth: updatedAccountInfo.dateOfBirth,
         gender: updatedAccountInfo.gender
@@ -406,9 +406,12 @@ const PatientSettings = () => {
                 name="email"
                 type="email"
                 value={updatedAccountInfo.email}
-                onChange={handleAccountInfoChange}
                 className={styles.input}
+                disabled={true}
+                readOnly={true}
+                title="Email cannot be changed"
               />
+              <small className={styles.fieldHint}>Email addresses cannot be changed for security reasons</small>
             </div>
 
             <div className={styles.formGroup}>

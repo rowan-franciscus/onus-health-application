@@ -62,6 +62,19 @@
   border-color: #6236ff;
 }
 
+.input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+
 .saveButton {
   background-color: #6236ff;
   color: white;

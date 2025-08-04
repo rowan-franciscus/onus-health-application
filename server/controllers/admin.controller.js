@@ -776,13 +776,13 @@ const changePassword = async (req, res) => {
 const updateProfile = async (req, res, next) => {
   try {
     const adminId = req.user.id;
-    const { firstName, lastName, email } = req.body;
+    const { firstName, lastName } = req.body; // Removed email
     
     // Don't allow certain fields to be updated
     const updateData = {};
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
-    if (email) updateData.email = email;
+    // Removed email update logic
     
     const updatedAdmin = await User.findByIdAndUpdate(
       adminId,

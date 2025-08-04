@@ -63,15 +63,20 @@ const Settings = () => {
   
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    
-    if (!profileForm.firstName || !profileForm.lastName || !profileForm.email) {
-      toast.error('All profile fields are required');
+
+    if (!profileForm.firstName || !profileForm.lastName) {
+      toast.error('First name and last name are required');
       return;
     }
     
     try {
       setSaving(true);
-      const updatedProfile = await adminService.updateProfile(profileForm);
+      // Only send firstName and lastName, not email
+      const updateData = {
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName
+      };
+      const updatedProfile = await adminService.updateProfile(updateData);
       dispatch(updateUser(updatedProfile));
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -191,10 +196,12 @@ const Settings = () => {
               id="email"
               name="email"
               value={profileForm.email}
-              onChange={handleProfileChange}
               className={styles.input}
-              required
+              disabled={true}
+              readOnly={true}
+              title="Email cannot be changed"
             />
+            <small className={styles.fieldHint}>Email addresses cannot be changed for security reasons</small>
           </div>
           
           <div className={styles.formGroup}>

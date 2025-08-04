@@ -90,6 +90,7 @@ exports.updateUserProfile = async (req, res) => {
     
     // Don't allow certain fields to be updated through this endpoint
     delete updateData.password;
+    delete updateData.email; // Prevent email updates
     delete updateData.role;
     delete updateData.isEmailVerified;
     delete updateData.resetPasswordToken;

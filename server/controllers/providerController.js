@@ -401,6 +401,7 @@ exports.updateProfile = async (req, res) => {
     
     // Remove sensitive fields that shouldn't be updated via this endpoint
     delete updateData.password;
+    delete updateData.email; // Prevent email updates
     delete updateData.role;
     delete updateData.isEmailVerified;
     
