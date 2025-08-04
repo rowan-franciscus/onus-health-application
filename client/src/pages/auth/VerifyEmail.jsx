@@ -45,16 +45,16 @@ const VerifyEmail = () => {
             // Update Redux store with user data
             await dispatch(authSuccess(response.user));
             
-            // Log for debugging
-            console.log('Email verified successfully', {
-              user: response.user,
-              onboardingCompleted: response.user.onboardingCompleted,
-              isProfileCompleted: response.user.isProfileCompleted,
-              role: response.user.role,
-              hasToken: !!AuthService.getToken(),
-              tokenFromStorage: localStorage.getItem('onus_auth_token') ? 'exists' : 'missing',
-              refreshTokenFromStorage: localStorage.getItem('onus_refresh_token') ? 'exists' : 'missing'
-            });
+            // Enhanced debugging
+            console.log('=== Email Verification Response ===');
+            console.log('Full response:', response);
+            console.log('User object:', response.user);
+            console.log('onboardingCompleted value:', response.user.onboardingCompleted);
+            console.log('isProfileCompleted value:', response.user.isProfileCompleted);
+            console.log('Type of onboardingCompleted:', typeof response.user.onboardingCompleted);
+            console.log('Type of isProfileCompleted:', typeof response.user.isProfileCompleted);
+            console.log('Role:', response.user.role);
+            console.log('Token stored:', !!AuthService.getToken());
             
             // Force a small delay to ensure all state updates propagate
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -62,11 +62,30 @@ const VerifyEmail = () => {
             // Set redirecting state
             setRedirecting(true);
             
+            // Determine redirect URL
+            const needsOnboarding = !response.user.onboardingCompleted && !response.user.isProfileCompleted;
+            console.log('Needs onboarding?', needsOnboarding);
+            
             // If successful, redirect to appropriate page after a delay
             setTimeout(() => {
               if (response.user && response.user.role) {
                 // Redirect based on role and onboarding status
-                if (response.user.onboardingCompleted || response.user.isProfileCompleted) {
+                if (needsOnboarding) {
+                  // User needs onboarding - use window.location to force a full page load
+                  // This ensures the app reinitializes with the authenticated state
+                  if (response.user.role === 'patient') {
+                    console.log('==> Redirecting to patient onboarding');
+                    window.location.href = '/patient/onboarding';
+                  } else if (response.user.role === 'provider') {
+                    console.log('==> Redirecting to provider onboarding');
+                    window.location.href = '/provider/onboarding';
+                  } else {
+                    console.log('==> Unknown role, redirecting to sign-in');
+                    window.location.href = '/sign-in';
+                  }
+                } else {
+                  // User has completed onboarding, go to dashboard
+                  console.log('==> User has completed onboarding, going to dashboard');
                   if (response.user.role === 'patient') {
                     window.location.href = '/patient/dashboard';
                   } else if (response.user.role === 'provider') {
@@ -74,20 +93,9 @@ const VerifyEmail = () => {
                   } else {
                     window.location.href = '/sign-in';
                   }
-                } else {
-                  // User needs onboarding - use window.location to force a full page load
-                  // This ensures the app reinitializes with the authenticated state
-                  if (response.user.role === 'patient') {
-                    console.log('Redirecting to patient onboarding');
-                    window.location.href = '/patient/onboarding';
-                  } else if (response.user.role === 'provider') {
-                    console.log('Redirecting to provider onboarding');
-                    window.location.href = '/provider/onboarding';
-                  } else {
-                    window.location.href = '/sign-in';
-                  }
                 }
               } else {
+                console.log('==> No user or role, redirecting to sign-in');
                 window.location.href = '/sign-in';
               }
             }, 2400); // Slightly less to account for the 500ms wait
