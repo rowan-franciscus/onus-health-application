@@ -42,6 +42,13 @@ setupErrorHandling();
 // Initialize Express app
 const app = express();
 
+// Trust proxy - Essential for cloud deployments (Render, Heroku, etc.)
+// This ensures Express correctly reads the client's real IP from X-Forwarded-For header
+if (config.env === 'production') {
+  app.set('trust proxy', true);
+  logger.info('Trust proxy enabled for production environment');
+}
+
 // Disable ETag headers (avoid 304 with empty body for frontend API calls)
 app.disable('etag');
 

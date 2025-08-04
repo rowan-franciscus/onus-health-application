@@ -34,13 +34,25 @@ const authRateLimiter = rateLimit({
  */
 const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // limit each IP to 3 requests per windowMs
+  max: 5, // limit each IP to 5 requests per windowMs (increased from 3)
   message: {
     success: false,
     message: 'Too many password reset attempts, please try again after an hour'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Log when rate limit is hit
+  handler: (req, res) => {
+    logger.warn(`Password reset rate limit exceeded for IP: ${req.ip}`);
+    res.status(429).json({
+      success: false,
+      message: 'Too many password reset attempts, please try again after an hour'
+    });
+  },
+  skip: (req) => {
+    // Skip rate limiting in development for easier testing
+    return config.env === 'development';
+  }
 });
 
 /**

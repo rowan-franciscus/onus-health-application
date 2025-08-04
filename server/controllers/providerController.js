@@ -63,7 +63,7 @@ exports.getPatients = async (req, res) => {
     // Find all connections for this provider
     const connections = await Connection.find({ 
       provider: providerId
-    }).populate('patient', 'firstName lastName email patientProfile.dateOfBirth patientProfile.gender');
+    }).populate('patient', 'firstName lastName email profileImage patientProfile');
     
     // Extract patient data from connections, filtering out null patients
     const patients = connections

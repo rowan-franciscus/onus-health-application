@@ -509,11 +509,39 @@ const ViewConsultation = () => {
       {/* Patient Information Bar */}
       {consultation.patient && (
         <div className={styles.patientInfo}>
-          <div className={styles.patientAvatar}></div>
+          <div className={styles.patientAvatar}>
+            {consultation.patient.profileImage ? (
+              <img 
+                src={FileService.getProfilePictureUrl(consultation.patient.profileImage, consultation.patient._id)} 
+                alt={`${consultation.patient.firstName} ${consultation.patient.lastName}`}
+                className={styles.patientAvatarImage}
+              />
+            ) : (
+              <div className={styles.patientAvatarPlaceholder}>
+                <svg className={styles.avatarIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="8" r="3" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M16 14C16 12.8954 14.6569 12 13 12H11C9.34315 12 8 12.8954 8 14V18C8 19.1046 8.89543 20 10 20H14C15.1046 20 16 19.1046 16 18V14Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+            )}
+          </div>
           <div className={styles.patientDetails}>
             <h2>{consultation.patient.firstName} {consultation.patient.lastName}</h2>
             <div className={styles.patientMetadata}>
               <span>Email: {consultation.patient.email || 'N/A'}</span>
+              <span>Gender: {consultation.patient.patientProfile?.gender || 'N/A'}</span>
+              <span>Age: {consultation.patient.patientProfile?.dateOfBirth ? 
+                (() => {
+                  const today = new Date();
+                  const birthDate = new Date(consultation.patient.patientProfile.dateOfBirth);
+                  let age = today.getFullYear() - birthDate.getFullYear();
+                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                  }
+                  return age;
+                })() : 'N/A'}</span>
+              <span>Insurance: {consultation.patient.patientProfile?.insurance?.provider || 'N/A'}</span>
               <span>Status: <span className={styles[`status-${consultation.status}`]}>{consultation.status}</span></span>
             </div>
           </div>

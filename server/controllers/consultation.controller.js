@@ -81,7 +81,7 @@ exports.getAllConsultations = async (req, res) => {
     
     // Get consultations with populated patient/provider and medical records
     const consultations = await Consultation.find(query)
-      .populate('patient', 'firstName lastName email')
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
@@ -113,7 +113,7 @@ exports.getConsultationById = async (req, res) => {
     
     // Find consultation with populated patient/provider and medical records
     const consultation = await Consultation.findById(id)
-      .populate('patient', 'firstName lastName email')
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
@@ -525,7 +525,7 @@ exports.createConsultation = async (req, res) => {
     console.log('=== CONSULTATION POPULATION ===');
     // Populate the consultation before sending response
     const populatedConsultation = await Consultation.findById(consultation._id)
-      .populate('patient', 'firstName lastName email')
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
@@ -831,7 +831,7 @@ exports.updateConsultation = async (req, res) => {
     
     // Populate the consultation before sending response
     const populatedConsultation = await Consultation.findById(consultation._id)
-      .populate('patient', 'firstName lastName email')
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')

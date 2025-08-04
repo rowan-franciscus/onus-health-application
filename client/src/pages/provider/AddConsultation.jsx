@@ -14,6 +14,7 @@ import PatientService from '../../services/patient.service';
 import ConsultationService from '../../services/consultation.service';
 import ApiService from '../../services/api.service';
 import FileService from '../../services/file.service';
+import Modal from '../../components/common/Modal';
 
 const AddConsultation = () => {
   const { patientId: paramPatientId, id: consultationId } = useParams();
@@ -211,8 +212,9 @@ const AddConsultation = () => {
           gender: patientData.patientProfile?.gender || 'Unknown',
           age: patientData.patientProfile?.dateOfBirth ? 
             calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
-          insurance: patientData.patientProfile?.healthInsurance?.provider || 'Unknown',
-          email: patientData.email
+          insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
+          email: patientData.email,
+          profileImage: patientData.profileImage
         });
         console.log('Patient state set successfully');
         setIsLoading(false);
@@ -597,7 +599,22 @@ const AddConsultation = () => {
       
       {patient && (
         <div className={styles.patientInfo}>
-          <div className={styles.patientAvatar}></div>
+          <div className={styles.patientAvatar}>
+            {patient.profileImage ? (
+              <img 
+                src={FileService.getProfilePictureUrl(patient.profileImage, patient.id)} 
+                alt={patient.name}
+                className={styles.patientAvatarImage}
+              />
+            ) : (
+              <div className={styles.patientAvatarPlaceholder}>
+                <svg className={styles.avatarIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="8" r="3" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M16 14C16 12.8954 14.6569 12 13 12H11C9.34315 12 8 12.8954 8 14V18C8 19.1046 8.89543 20 10 20H14C15.1046 20 16 19.1046 16 18V14Z" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+              </div>
+            )}
+          </div>
           <div className={styles.patientDetails}>
             <h2>{patient.name}</h2>
             <div className={styles.patientMetadata}>
