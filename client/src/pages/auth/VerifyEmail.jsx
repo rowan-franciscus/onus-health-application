@@ -17,6 +17,7 @@ const VerifyEmail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const verifyEmailToken = async () => {
@@ -51,11 +52,15 @@ const VerifyEmail = () => {
               isProfileCompleted: response.user.isProfileCompleted,
               role: response.user.role,
               hasToken: !!AuthService.getToken(),
-              authState: 'will check after dispatch'
+              tokenFromStorage: localStorage.getItem('onus_auth_token') ? 'exists' : 'missing',
+              refreshTokenFromStorage: localStorage.getItem('onus_refresh_token') ? 'exists' : 'missing'
             });
             
-            // Wait for next tick to ensure Redux state is updated
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Force a small delay to ensure all state updates propagate
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Set redirecting state
+            setRedirecting(true);
             
             // If successful, redirect to appropriate page after a delay
             setTimeout(() => {
@@ -63,28 +68,29 @@ const VerifyEmail = () => {
                 // Redirect based on role and onboarding status
                 if (response.user.onboardingCompleted || response.user.isProfileCompleted) {
                   if (response.user.role === 'patient') {
-                    navigate('/patient/dashboard');
+                    window.location.href = '/patient/dashboard';
                   } else if (response.user.role === 'provider') {
-                    navigate('/provider/dashboard');
+                    window.location.href = '/provider/dashboard';
                   } else {
-                    navigate('/sign-in');
+                    window.location.href = '/sign-in';
                   }
                 } else {
-                  // User needs onboarding
+                  // User needs onboarding - use window.location to force a full page load
+                  // This ensures the app reinitializes with the authenticated state
                   if (response.user.role === 'patient') {
                     console.log('Redirecting to patient onboarding');
-                    navigate('/patient/onboarding');
+                    window.location.href = '/patient/onboarding';
                   } else if (response.user.role === 'provider') {
                     console.log('Redirecting to provider onboarding');
-                    navigate('/provider/onboarding');
+                    window.location.href = '/provider/onboarding';
                   } else {
-                    navigate('/sign-in');
+                    window.location.href = '/sign-in';
                   }
                 }
               } else {
-                navigate('/sign-in');
+                window.location.href = '/sign-in';
               }
-            }, 2900); // Slightly less than 3 seconds to account for the 100ms wait
+            }, 2400); // Slightly less to account for the 500ms wait
           } else {
             // No token or user in response
             setError('Verification succeeded but no authentication data received');
@@ -126,7 +132,7 @@ const VerifyEmail = () => {
           <p className={styles.verificationText}>
             Your email has been successfully verified.
             <br /><br />
-            You will be redirected to the next step shortly.
+            {redirecting ? 'Redirecting...' : 'You will be redirected to the next step shortly.'}
           </p>
         </div>
       ) : (

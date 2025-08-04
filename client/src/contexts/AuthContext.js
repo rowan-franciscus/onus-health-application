@@ -116,7 +116,17 @@ export const AuthProvider = ({ children }) => {
   // Get user data on initial load if authenticated
   useEffect(() => {
     const loadUser = async () => {
+      // Only load user data if authenticated and no user data exists
+      // Skip if we already have user data (e.g., from email verification)
       if (isAuthenticated && !user) {
+        // First check if we have user data from the token
+        const currentUser = AuthService.getCurrentUser();
+        if (currentUser) {
+          dispatch(authSuccess(currentUser));
+          return;
+        }
+        
+        // Only fetch from server if we don't have any user data
         try {
           // Import UserProfileService to fetch user data properly
           const { default: UserProfileService } = await import('../services/userProfile.service');
@@ -126,11 +136,8 @@ export const AuthProvider = ({ children }) => {
           dispatch(authSuccess(userData));
         } catch (error) {
           console.error('Error loading user data:', error);
-          // Fallback to JWT data
-          const currentUser = AuthService.getCurrentUser();
-          if (currentUser) {
-            dispatch(authSuccess(currentUser));
-          }
+          // Don't logout on error, just log it
+          // The user might be in the middle of email verification
         }
       }
     };
