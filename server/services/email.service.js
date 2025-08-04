@@ -298,7 +298,9 @@ const sendTemplateEmail = async (to, templateName, templateData, options = {}) =
  * @returns {Promise<boolean>} Success status
  */
 const sendVerificationEmail = async (user, token, options = {}) => {
-  const verificationUrl = `${config.frontendUrl}/verify-email/${token}`;
+      // Construct the backend API URL from frontend URL
+    const apiBaseUrl = config.frontendUrl.replace(/\/$/, '') + '/api';
+    const verificationUrl = `${apiBaseUrl}/auth/verify/${token}`;
   
   return await sendTemplateEmail(
     user.email,

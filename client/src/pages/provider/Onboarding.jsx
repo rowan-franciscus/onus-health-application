@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useDispatch } from 'react-redux';
-import { updateUser } from '../../store/slices/authSlice';
+import { updateUser, authSuccess } from '../../store/slices/authSlice';
 import api from '../../services/api.service';
+import AuthService from '../../services/auth.service';
 import MultiStepForm from '../../components/forms/MultiStepForm/MultiStepForm';
 import styles from './Onboarding.module.css';
 
@@ -20,7 +21,42 @@ import ReviewStep from './onboarding/ReviewStep';
 const ProviderOnboarding = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Handle authentication token from URL parameters after email verification
+  useEffect(() => {
+    const handleTokenFromUrl = async () => {
+      const urlParams = new URLSearchParams(location.search);
+      const token = urlParams.get('token');
+      const role = urlParams.get('role');
+      
+      if (token) {
+        try {
+          // Store the token
+          AuthService.setToken(token);
+          
+          // Get user info with the token
+          const response = await api.get('/auth/me');
+          
+          if (response.success && response.user) {
+            // Update Redux store with user data
+            dispatch(authSuccess(response.user));
+            
+            // Remove token from URL for security
+            window.history.replaceState({}, document.title, location.pathname);
+          }
+        } catch (error) {
+          console.error('Failed to authenticate with token from URL:', error);
+          // If token is invalid, redirect to sign in
+          navigate('/sign-in');
+        }
+      }
+    };
+    
+    handleTokenFromUrl();
+  }, [location, navigate, dispatch]);
 
   // Define steps for the multi-step form
   const steps = [
