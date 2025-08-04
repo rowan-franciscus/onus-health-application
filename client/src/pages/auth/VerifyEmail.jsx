@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { authSuccess } from '../../store/slices/authSlice';
 import AuthService from '../../services/auth.service';
 import styles from './Auth.module.css';
 
@@ -10,6 +12,7 @@ import { ReactComponent as MedicalPattern } from '../../assets/patterns/medical-
 const VerifyEmail = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,31 +33,63 @@ const VerifyEmail = () => {
         if (response.success) {
           setSuccess(true);
           
-          // If successful, redirect to appropriate page after a delay
-          setTimeout(() => {
-            if (response.user && response.user.role) {
-              // Redirect based on role and onboarding status
-              if (response.user.onboardingCompleted) {
-                if (response.user.role === 'patient') {
-                  navigate('/patient/dashboard');
-                } else if (response.user.role === 'provider') {
-                  navigate('/provider/dashboard');
+          // Store the authentication token and update Redux store
+          if (response.token && response.user) {
+            // Set tokens in localStorage
+            AuthService.setToken(response.token);
+            if (response.refreshToken) {
+              AuthService.setRefreshToken(response.refreshToken);
+            }
+            
+            // Update Redux store with user data
+            await dispatch(authSuccess(response.user));
+            
+            // Log for debugging
+            console.log('Email verified successfully', {
+              user: response.user,
+              onboardingCompleted: response.user.onboardingCompleted,
+              isProfileCompleted: response.user.isProfileCompleted,
+              role: response.user.role,
+              hasToken: !!AuthService.getToken(),
+              authState: 'will check after dispatch'
+            });
+            
+            // Wait for next tick to ensure Redux state is updated
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // If successful, redirect to appropriate page after a delay
+            setTimeout(() => {
+              if (response.user && response.user.role) {
+                // Redirect based on role and onboarding status
+                if (response.user.onboardingCompleted || response.user.isProfileCompleted) {
+                  if (response.user.role === 'patient') {
+                    navigate('/patient/dashboard');
+                  } else if (response.user.role === 'provider') {
+                    navigate('/provider/dashboard');
+                  } else {
+                    navigate('/sign-in');
+                  }
                 } else {
-                  navigate('/sign-in');
+                  // User needs onboarding
+                  if (response.user.role === 'patient') {
+                    console.log('Redirecting to patient onboarding');
+                    navigate('/patient/onboarding');
+                  } else if (response.user.role === 'provider') {
+                    console.log('Redirecting to provider onboarding');
+                    navigate('/provider/onboarding');
+                  } else {
+                    navigate('/sign-in');
+                  }
                 }
               } else {
-                if (response.user.role === 'patient') {
-                  navigate('/patient/onboarding');
-                } else if (response.user.role === 'provider') {
-                  navigate('/provider/onboarding');
-                } else {
-                  navigate('/sign-in');
-                }
+                navigate('/sign-in');
               }
-            } else {
-              navigate('/sign-in');
-            }
-          }, 3000);
+            }, 2900); // Slightly less than 3 seconds to account for the 100ms wait
+          } else {
+            // No token or user in response
+            setError('Verification succeeded but no authentication data received');
+            setTimeout(() => navigate('/sign-in'), 3000);
+          }
         } else {
           setError(response.message || 'Email verification failed');
         }

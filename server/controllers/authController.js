@@ -321,8 +321,9 @@ exports.verifyEmail = async (req, res) => {
 
     logger.info(`Email verified successfully for user: ${user.email}`);
     
-    // Generate new token for auto-login
+    // Generate new tokens for auto-login
     const authToken = user.generateAuthToken();
+    const refreshToken = user.generateRefreshToken();
     
     // For GET requests, redirect to onboarding with proper role path
     if (req.method === 'GET') {
@@ -342,9 +343,12 @@ exports.verifyEmail = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        onboardingCompleted: user.isProfileCompleted
+        onboardingCompleted: user.isProfileCompleted,
+        isEmailVerified: true,
+        isProfileCompleted: user.isProfileCompleted
       },
-      token: authToken
+      token: authToken,
+      refreshToken: refreshToken
     });
   } catch (error) {
     logger.error('Email verification error:', error);
