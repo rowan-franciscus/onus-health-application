@@ -57,3 +57,36 @@ If users are deleted in the future and orphaned data needs to be cleaned:
 - The script connects to MongoDB Atlas using the [[memory:3196676]] database configured in the `.env` file
 - The script maintains referential integrity by cleaning up all related records when orphaned data is found
 - Always backup your database before running cleanup operations in production 
+
+---
+
+## Date: January 23, 2025
+
+### Context
+Additional users were deleted from the MongoDB Atlas database through the web interface, leaving orphaned data that needed to be cleaned up.
+
+### Cleanup Script Used
+The existing `server/scripts/cleanupOrphanedData.js` script was used to identify and remove orphaned data.
+
+### Data Cleaned
+
+#### Summary of Deleted Records:
+- **1 orphaned connection** - Patient-provider relationship where patient ID 6890b4ebfb0569886a684b2f no longer existed
+- **1 orphaned consultation** - Medical consultation linked to the deleted patient
+- **6 orphaned medical records** - Various medical record types associated with the orphaned consultation:
+  - 1 medication record
+  - 1 immunization record
+  - 1 lab result record
+  - 1 radiology report
+  - 1 hospital record
+  - 1 surgery record
+
+#### Database Statistics After Cleanup:
+- Total users: 6
+- Total connections: 2
+- Total consultations: 20
+- All remaining connections have valid user references
+- All remaining consultations have valid user references
+
+### Verification
+The script verified data integrity after cleanup, confirming that all remaining connections and consultations have valid user references, and no orphaned medical records remain in the database. 
