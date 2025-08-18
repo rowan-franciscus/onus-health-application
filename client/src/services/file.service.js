@@ -102,14 +102,23 @@ class FileService {
    * Get profile picture URL with authentication
    * @param {string} profileImagePath - The profile image path from user object
    * @param {string} userId - The user ID (optional, for public access)
+   * @param {boolean} bustCache - Whether to add cache busting parameter (default: false)
    * @returns {string} - URL for profile picture
    */
-  static getProfilePictureUrl(profileImagePath, userId) {
+  static getProfilePictureUrl(profileImagePath, userId, bustCache = false) {
     if (!profileImagePath) return null;
+    
+    // Extract filename to use as version identifier
+    // This ensures cache is busted when image changes but stays stable otherwise
+    const filename = profileImagePath.split('/').pop();
+    const version = filename ? filename.split('-').pop()?.split('.')[0] : '';
+    
+    // Add cache busting parameter if requested or if no version in filename
+    const cacheBuster = bustCache || !version ? `t=${Date.now()}` : `v=${version}`;
     
     // If userId is provided, use the public endpoint to avoid CORS issues
     if (userId) {
-      return `${config.apiUrl}/files/public/profile/${userId}`;
+      return `${config.apiUrl}/files/public/profile/${userId}?${cacheBuster}`;
     }
     
     // Fallback to token-based URL (might have CORS issues)
@@ -122,7 +131,7 @@ class FileService {
     
     // If it's a relative path, build the full URL
     if (profileImagePath.startsWith('/api/')) {
-      const url = `${config.apiUrl}${profileImagePath.replace('/api', '')}?inline=true&token=${token}`;
+      const url = `${config.apiUrl}${profileImagePath.replace('/api', '')}?inline=true&token=${token}&${cacheBuster}`;
       return url;
     }
     

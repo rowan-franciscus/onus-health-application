@@ -145,7 +145,7 @@ const DashboardLayout = ({ role }) => {
       firstName: firstName,
       lastName: lastName,
       profileUrl: profileUrlMap[role] || '#',
-      avatarUrl: user?.profileImage ? FileService.getProfilePictureUrl(user.profileImage, user?._id || user?.id) : null
+      avatarUrl: user?.profileImage ? FileService.getProfilePictureUrl(user.profileImage, user?._id || user?.id, true) : null
     };
   };
 

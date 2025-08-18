@@ -464,7 +464,7 @@ const PatientSettings = () => {
             <div className={styles.formGroup}>
               <label>Profile Picture</label>
               <ProfilePictureUpload
-                currentImage={accountInfo.profileImage ? FileService.getProfilePictureUrl(accountInfo.profileImage, user?._id || user?.id) : null}
+                currentImage={accountInfo.profileImage ? FileService.getProfilePictureUrl(accountInfo.profileImage, user?._id || user?.id, true) : null}
                 onUpload={handleProfilePictureUpload}
                 onDelete={handleProfilePictureRemove}
                 size="large"
@@ -523,7 +523,7 @@ const PatientSettings = () => {
               <div className={styles.infoLabel}>Profile Picture</div>
               <div className={styles.profileImageContainer}>
                 <ProfilePictureUpload
-                  currentImage={accountInfo.profileImage ? FileService.getProfilePictureUrl(accountInfo.profileImage, user?._id || user?.id) : null}
+                  currentImage={accountInfo.profileImage ? FileService.getProfilePictureUrl(accountInfo.profileImage, user?._id || user?.id, true) : null}
                   onUpload={handleProfilePictureUpload}
                   onDelete={handleProfilePictureRemove}
                   size="medium"

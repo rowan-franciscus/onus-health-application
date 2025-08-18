@@ -249,7 +249,7 @@ const Settings = () => {
         <div className={styles.profileSection}>
           <div className={styles.profilePictureSection}>
             <ProfilePictureUpload
-              currentImage={profileData.profileImage ? FileService.getProfilePictureUrl(profileData.profileImage, user?._id || user?.id) : null}
+              currentImage={profileData.profileImage ? FileService.getProfilePictureUrl(profileData.profileImage, user?._id || user?.id, true) : null}
               onUpload={handleProfilePictureUpload}
               onDelete={handleProfilePictureRemove}
               size="large"

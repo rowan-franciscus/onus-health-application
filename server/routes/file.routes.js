@@ -85,7 +85,9 @@ router.get('/public/profile/:userId', async (req, res) => {
     // Prepare all headers
     const headers = {
       'Content-Type': mimeType,
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'Content-Disposition': `inline; filename="${filename}"`,
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, OPTIONS',

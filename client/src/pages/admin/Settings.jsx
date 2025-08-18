@@ -214,7 +214,7 @@ const Settings = () => {
           <div className={styles.formGroup}>
             <label>Profile Picture</label>
             <ProfilePictureUpload
-              currentImage={profileForm.profileImage ? FileService.getProfilePictureUrl(profileForm.profileImage, user?._id || user?.id) : null}
+              currentImage={profileForm.profileImage ? FileService.getProfilePictureUrl(profileForm.profileImage, user?._id || user?.id, true) : null}
               onUpload={handleProfilePictureUpload}
               onDelete={handleProfilePictureRemove}
               size="large"
