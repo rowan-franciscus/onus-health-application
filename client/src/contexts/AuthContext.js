@@ -119,23 +119,22 @@ export const AuthProvider = ({ children }) => {
       // Only load user data if authenticated and no user data exists
       // Skip if we already have user data (e.g., from email verification)
       if (isAuthenticated && !user) {
-        // First check if we have user data from the token
-        const currentUser = AuthService.getCurrentUser();
-        if (currentUser) {
-          dispatch(authSuccess(currentUser));
-          return;
-        }
-        
-        // Only fetch from server if we don't have any user data
         try {
           // Import UserProfileService to fetch user data properly
           const { default: UserProfileService } = await import('../services/userProfile.service');
           
-          // Fetch fresh user data from server using the API service
+          // Always fetch fresh user data from server to get complete user object
+          // The JWT token doesn't contain all fields like profileImage
           const userData = await UserProfileService.getCurrentUser();
           dispatch(authSuccess(userData));
         } catch (error) {
           console.error('Error loading user data:', error);
+          
+          // Fallback to token data if server fetch fails
+          const currentUser = AuthService.getCurrentUser();
+          if (currentUser) {
+            dispatch(authSuccess(currentUser));
+          }
           // Don't logout on error, just log it
           // The user might be in the middle of email verification
         }
