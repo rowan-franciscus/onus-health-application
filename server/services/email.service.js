@@ -298,7 +298,38 @@ const sendTemplateEmail = async (to, templateName, templateData, options = {}) =
  * @returns {Promise<boolean>} Success status
  */
 const sendVerificationEmail = async (user, token, options = {}) => {
-      const verificationUrl = `${config.frontendUrl}/verify-email/${token}`;
+      // Use backend verification endpoint for proper redirect flow
+      let backendUrl = config.backendUrl;
+      
+      // If backendUrl is not configured, try to construct it
+      if (!backendUrl) {
+        if (config.env === 'production') {
+          // IMPORTANT: For Render deployments where frontend and backend are on different domains,
+          // you have two options:
+          // Option 1: Set BACKEND_URL environment variable to your backend URL (e.g., https://onus-backend.onrender.com)
+          // Option 2: Use the automatic detection below (if your backend is at onus-backend.onrender.com)
+          
+          // For Render deployment, try to use a known backend URL
+          if (config.frontendUrl && config.frontendUrl.includes('.onrender.com')) {
+            // Use the known Render backend URL
+            backendUrl = 'https://onus-backend.onrender.com';
+            logger.info('Using Render backend URL for email verification: ' + backendUrl);
+          } else if (config.frontendUrl) {
+            // For other production deployments, assume backend is at the same domain
+            backendUrl = config.frontendUrl;
+          } else {
+            // Fallback to a reasonable default
+            logger.warn('No backend URL configured for production. Email verification may not work correctly.');
+            logger.warn('Please set BACKEND_URL environment variable to your backend URL.');
+            backendUrl = 'https://onus-backend.onrender.com'; // Use known URL as last resort
+          }
+        } else {
+          // For development, replace port 3000 with 5000
+          backendUrl = (config.frontendUrl || 'http://localhost:3000').replace(':3000', ':5000');
+        }
+      }
+      
+      const verificationUrl = `${backendUrl}/api/auth/verify/${token}`;
   
   return await sendTemplateEmail(
     user.email,

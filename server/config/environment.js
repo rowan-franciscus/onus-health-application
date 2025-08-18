@@ -91,6 +91,7 @@ const environments = {
     supportEmail: process.env.SUPPORT_EMAIL || 'support@onus.health',
     supportPhone: process.env.SUPPORT_PHONE || '081 000 0000',
     frontendUrl: process.env.FRONTEND_URL || defaultConfig.frontendUrl,
+    backendUrl: process.env.BACKEND_URL || 'http://localhost:5000',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || defaultConfig.maxFileSize),
     logLevel: 'debug',
     mongoDbName: 'onus-health',
@@ -131,6 +132,7 @@ const environments = {
     jwtRefreshSecret: 'test_jwt_refresh_secret',
     jwtRefreshExpiresIn: '24h',
     frontendUrl: process.env.FRONTEND_URL || defaultConfig.frontendUrl,
+    backendUrl: process.env.BACKEND_URL || 'http://localhost:5000',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || defaultConfig.maxFileSize),
     logLevel: 'debug',
     mongoDbName: 'onus-health'
@@ -153,6 +155,7 @@ const environments = {
     supportEmail: process.env.SUPPORT_EMAIL || 'support@onus.health',
     supportPhone: process.env.SUPPORT_PHONE || '081 000 0000',
     frontendUrl: process.env.FRONTEND_URL,
+    backendUrl: process.env.BACKEND_URL,
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || defaultConfig.maxFileSize),
     logLevel: 'warn',
     mongoDbName: 'onus-health',

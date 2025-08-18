@@ -320,6 +320,7 @@ exports.verifyEmail = async (req, res) => {
     await user.save();
 
     logger.info(`Email verified successfully for user: ${user.email}`);
+    logger.info(`User profile status - isProfileCompleted: ${user.isProfileCompleted}, role: ${user.role}`);
     
     // Generate new tokens for auto-login
     const authToken = user.generateAuthToken();
@@ -327,9 +328,26 @@ exports.verifyEmail = async (req, res) => {
     
     // For GET requests, redirect to onboarding with proper role path
     if (req.method === 'GET') {
-      const redirectUrl = user.role === 'patient' 
-        ? `${config.frontendUrl}/patient/onboarding?token=${authToken}`
-        : `${config.frontendUrl}/provider/onboarding?token=${authToken}`;
+      // Always redirect new users to onboarding after email verification
+      // They should have isProfileCompleted = false at this point
+      let redirectUrl;
+      
+      if (!user.isProfileCompleted) {
+        // New user - needs onboarding
+        redirectUrl = user.role === 'patient' 
+          ? `${config.frontendUrl}/patient/onboarding?token=${authToken}`
+          : `${config.frontendUrl}/provider/onboarding?token=${authToken}`;
+        logger.info(`Redirecting new ${user.role} to onboarding: ${redirectUrl}`);
+      } else {
+        // Existing user who somehow is verifying email again
+        redirectUrl = user.role === 'patient' 
+          ? `${config.frontendUrl}/patient/dashboard`
+          : user.role === 'provider'
+          ? `${config.frontendUrl}/provider/dashboard`
+          : `${config.frontendUrl}/sign-in`;
+        logger.info(`Redirecting existing ${user.role} to dashboard: ${redirectUrl}`);
+      }
+      
       return res.redirect(redirectUrl);
     }
     
