@@ -15,7 +15,8 @@ import ProfilePictureUpload from '../../components/common/ProfilePictureUpload';
 // Service imports
 import FileService from '../../services/file.service';
 import ApiService from '../../services/api.service';
-import { updateUser } from '../../store/slices/authSlice';
+import UserProfileService from '../../services/userProfile.service';
+import { updateUser, authSuccess } from '../../store/slices/authSlice';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -148,12 +149,15 @@ const Settings = () => {
     try {
       const response = await FileService.uploadProfilePicture(file);
       
-      // Update local state
-      const newProfileImage = response.profileImage;
-      setProfileData(prev => ({ ...prev, profileImage: newProfileImage }));
+      // Fetch fresh user data from server to get updated profile info
+      const freshUserData = await UserProfileService.getCurrentUser();
       
-      // Update Redux store
-      dispatch(updateUser({ profileImage: newProfileImage }));
+      // Update Redux store with fresh user data
+      dispatch(authSuccess(freshUserData));
+      
+      // Update local state
+      const newProfileImage = freshUserData.profileImage;
+      setProfileData(prev => ({ ...prev, profileImage: newProfileImage }));
       
       return response;
     } catch (error) {
@@ -167,11 +171,14 @@ const Settings = () => {
     try {
       await FileService.deleteProfilePicture();
       
+      // Fetch fresh user data from server to get updated profile info
+      const freshUserData = await UserProfileService.getCurrentUser();
+      
+      // Update Redux store with fresh user data
+      dispatch(authSuccess(freshUserData));
+      
       // Update local state
       setProfileData(prev => ({ ...prev, profileImage: null }));
-      
-      // Update Redux store
-      dispatch(updateUser({ profileImage: null }));
     } catch (error) {
       console.error('Error removing profile picture:', error);
       throw error;

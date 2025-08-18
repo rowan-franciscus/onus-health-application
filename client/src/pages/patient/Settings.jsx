@@ -5,7 +5,8 @@ import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
 import ApiService from '../../services/api.service';
 import FileService from '../../services/file.service';
-import { logout, updateUser } from '../../store/slices/authSlice';
+import UserProfileService from '../../services/userProfile.service';
+import { logout, updateUser, authSuccess } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
 
 // Component imports
@@ -338,13 +339,16 @@ const PatientSettings = () => {
     try {
       const response = await FileService.uploadProfilePicture(file);
       
+      // Fetch fresh user data from server to get updated profile info
+      const freshUserData = await UserProfileService.getCurrentUser();
+      
+      // Update Redux store with fresh user data
+      dispatch(authSuccess(freshUserData));
+      
       // Update local state
-      const newProfileImage = response.profileImage;
+      const newProfileImage = freshUserData.profileImage;
       setAccountInfo(prev => ({ ...prev, profileImage: newProfileImage }));
       setUpdatedAccountInfo(prev => ({ ...prev, profileImage: newProfileImage }));
-      
-      // Update Redux store
-      dispatch(updateUser({ profileImage: newProfileImage }));
       
       return response;
     } catch (error) {
@@ -358,12 +362,15 @@ const PatientSettings = () => {
     try {
       await FileService.deleteProfilePicture();
       
+      // Fetch fresh user data from server to get updated profile info
+      const freshUserData = await UserProfileService.getCurrentUser();
+      
+      // Update Redux store with fresh user data
+      dispatch(authSuccess(freshUserData));
+      
       // Update local state
       setAccountInfo(prev => ({ ...prev, profileImage: null }));
       setUpdatedAccountInfo(prev => ({ ...prev, profileImage: null }));
-      
-      // Update Redux store
-      dispatch(updateUser({ profileImage: null }));
     } catch (error) {
       console.error('Error removing profile picture:', error);
       throw error;

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { updateUser } from '../../store/slices/authSlice';
+import { updateUser, authSuccess } from '../../store/slices/authSlice';
 import adminService from '../../services/admin.service';
 import FileService from '../../services/file.service';
+import UserProfileService from '../../services/userProfile.service';
 import styles from './Settings.module.css';
 import ProfilePictureUpload from '../../components/common/ProfilePictureUpload';
 
@@ -127,12 +128,15 @@ const Settings = () => {
     try {
       const response = await FileService.uploadProfilePicture(file);
       
-      // Update local state
-      const newProfileImage = response.profileImage;
-      setProfileForm(prev => ({ ...prev, profileImage: newProfileImage }));
+      // Fetch fresh user data from server to get updated profile info
+      const freshUserData = await UserProfileService.getCurrentUser();
       
-      // Update Redux store
-      dispatch(updateUser({ profileImage: newProfileImage }));
+      // Update Redux store with fresh user data
+      dispatch(authSuccess(freshUserData));
+      
+      // Update local state
+      const newProfileImage = freshUserData.profileImage;
+      setProfileForm(prev => ({ ...prev, profileImage: newProfileImage }));
       
       return response;
     } catch (error) {
@@ -146,11 +150,14 @@ const Settings = () => {
     try {
       await FileService.deleteProfilePicture();
       
+      // Fetch fresh user data from server to get updated profile info
+      const freshUserData = await UserProfileService.getCurrentUser();
+      
+      // Update Redux store with fresh user data
+      dispatch(authSuccess(freshUserData));
+      
       // Update local state
       setProfileForm(prev => ({ ...prev, profileImage: null }));
-      
-      // Update Redux store
-      dispatch(updateUser({ profileImage: null }));
     } catch (error) {
       console.error('Error removing profile picture:', error);
       throw error;
