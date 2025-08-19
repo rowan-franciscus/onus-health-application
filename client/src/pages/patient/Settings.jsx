@@ -19,7 +19,7 @@ const UserSettingsService = {
   // Get current user's profile
   getUserProfile: async () => {
     try {
-      const response = await ApiService.get('/users/me');
+      const response = await ApiService.get('/users/profile');
       return response;
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -30,7 +30,7 @@ const UserSettingsService = {
   // Update user profile
   updateUserProfile: async (profileData) => {
     try {
-      const response = await ApiService.put('/users/me', profileData);
+      const response = await ApiService.put('/users/profile', profileData);
       return response;
     } catch (error) {
       console.error('Error updating user profile:', error);
@@ -120,13 +120,40 @@ const PatientSettings = () => {
         // Try to get user data from API
         const userData = await UserSettingsService.getUserProfile();
         
+        // Format date for HTML date input (YYYY-MM-DD)
+        const formatDateForInput = (dateString) => {
+          if (!dateString) return '';
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return '';
+          return date.toISOString().split('T')[0];
+        };
+        
+        // Format date for display (MM/DD/YYYY)
+        const formatDateForDisplay = (dateString) => {
+          if (!dateString) return '';
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return '';
+          return date.toLocaleDateString('en-US');
+        };
+        
+        // Capitalize first letter of gender
+        const capitalizeGender = (gender) => {
+          if (!gender) return '';
+          return gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+        };
+        
         // Set account info from user data
+        const dateOfBirth = userData.patientProfile?.dateOfBirth || userData.dateOfBirth || '';
+        const gender = userData.patientProfile?.gender || userData.gender || '';
+        
         setAccountInfo({
           name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
           email: userData.email || '',
           phone: userData.phone || '',
-          dateOfBirth: userData.dateOfBirth || '',
-          gender: userData.gender || '',
+          dateOfBirth: formatDateForDisplay(dateOfBirth),
+          dateOfBirthRaw: dateOfBirth,  // Store raw date for editing
+          gender: capitalizeGender(gender),
+          genderRaw: gender,  // Store raw gender for editing
           profileImage: userData.profileImage || null
         });
         
@@ -135,8 +162,8 @@ const PatientSettings = () => {
           name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
           email: userData.email || '',
           phone: userData.phone || '',
-          dateOfBirth: userData.dateOfBirth || '',
-          gender: userData.gender || '',
+          dateOfBirth: formatDateForInput(dateOfBirth),
+          gender: gender,
           profileImage: userData.profileImage || null
         });
         
@@ -156,21 +183,48 @@ const PatientSettings = () => {
         console.error('Error fetching user data:', error);
         
         // Fallback to Redux data if API call fails
-        if (user) {
+                  if (user) {
+          // Format date for HTML date input (YYYY-MM-DD)
+          const formatDateForInput = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toISOString().split('T')[0];
+          };
+          
+          // Format date for display (MM/DD/YYYY)
+          const formatDateForDisplay = (dateString) => {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('en-US');
+          };
+          
+          // Capitalize first letter of gender
+          const capitalizeGender = (gender) => {
+            if (!gender) return '';
+            return gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+          };
+          
+          const dateOfBirth = user.patientProfile?.dateOfBirth || user.dateOfBirth || '';
+          const gender = user.patientProfile?.gender || user.gender || '';
+          
           setAccountInfo({
             name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
             email: user.email || '',
             phone: user.phone || '',
-            dateOfBirth: user.dateOfBirth || '',
-            gender: user.gender || '',
+            dateOfBirth: formatDateForDisplay(dateOfBirth),
+            dateOfBirthRaw: dateOfBirth,
+            gender: capitalizeGender(gender),
+            genderRaw: gender,
             profileImage: user.profileImage || null
           });
           setUpdatedAccountInfo({
             name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
             email: user.email || '',
             phone: user.phone || '',
-            dateOfBirth: user.dateOfBirth || '',
-            gender: user.gender || '',
+            dateOfBirth: formatDateForInput(dateOfBirth),
+            gender: gender,
             profileImage: user.profileImage || null
           });
         }
@@ -205,16 +259,46 @@ const PatientSettings = () => {
         firstName,
         lastName,
         // Email removed - cannot be updated
-        phone: updatedAccountInfo.phone,
-        dateOfBirth: updatedAccountInfo.dateOfBirth,
-        gender: updatedAccountInfo.gender
+        phone: updatedAccountInfo.phone
       };
+      
+      // For patient users, wrap dateOfBirth and gender in patientProfile
+      if (user && user.role === 'patient') {
+        updateData.patientProfile = {
+          dateOfBirth: updatedAccountInfo.dateOfBirth,
+          gender: updatedAccountInfo.gender
+        };
+      } else {
+        // For non-patient users, include at root level
+        updateData.dateOfBirth = updatedAccountInfo.dateOfBirth;
+        updateData.gender = updatedAccountInfo.gender;
+      }
       
       // Call API to update profile
       await UserSettingsService.updateUserProfile(updateData);
       
-      // Update local state
-      setAccountInfo(updatedAccountInfo);
+      // Format date for display
+      const formatDateForDisplay = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-US');
+      };
+      
+      // Capitalize first letter of gender
+      const capitalizeGender = (gender) => {
+        if (!gender) return '';
+        return gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+      };
+      
+      // Update local state with formatted display values
+      setAccountInfo({
+        ...updatedAccountInfo,
+        dateOfBirth: formatDateForDisplay(updatedAccountInfo.dateOfBirth),
+        dateOfBirthRaw: updatedAccountInfo.dateOfBirth,
+        gender: capitalizeGender(updatedAccountInfo.gender),
+        genderRaw: updatedAccountInfo.gender
+      });
       setEditingAccountInfo(false);
       toast.success('Account information updated successfully');
     } catch (error) {
@@ -455,9 +539,10 @@ const PatientSettings = () => {
                 className={styles.input}
               >
                 <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+                <option value="prefer not to say">Prefer not to say</option>
               </select>
             </div>
 
@@ -475,7 +560,19 @@ const PatientSettings = () => {
               <Button
                 onClick={() => {
                   setEditingAccountInfo(false);
-                  setUpdatedAccountInfo({ ...accountInfo });
+                  // Restore original values with proper formatting
+                  const formatDateForInput = (dateString) => {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) return '';
+                    return date.toISOString().split('T')[0];
+                  };
+                  
+                  setUpdatedAccountInfo({
+                    ...accountInfo,
+                    dateOfBirth: formatDateForInput(accountInfo.dateOfBirthRaw || ''),
+                    gender: accountInfo.genderRaw || ''
+                  });
                 }}
                 variant="secondary"
                 className={styles.cancelButton}
