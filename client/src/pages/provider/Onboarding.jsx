@@ -7,6 +7,7 @@ import api from '../../services/api.service';
 import AuthService from '../../services/auth.service';
 import MultiStepForm from '../../components/forms/MultiStepForm/MultiStepForm';
 import styles from './Onboarding.module.css';
+import onusLogo from '../../assets/logos/onus-logo.svg';
 
 // Import step components
 import ProfessionalInfoStep from './onboarding/ProfessionalInfoStep';
@@ -165,7 +166,7 @@ const ProviderOnboarding = () => {
     <div className={styles.onboardingContainer}>
       <div className={styles.header}>
         <div className={styles.logo}>
-          <img src="/assets/logos/onus-logo.png" alt="Onus Health" />
+                      <img src={onusLogo} alt="Onus Health" />
           <h1>Health Provider Onboarding</h1>
         </div>
       </div>

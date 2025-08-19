@@ -2,14 +2,16 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser, updateUser } from '../../store/slices/authSlice';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './VerificationPending.module.css';
-import AuthService from '../../services/auth.service';
 import api from '../../services/api.service';
+import onusLogo from '../../assets/logos/onus-logo.svg';
 
 const VerificationPending = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
+  const { logout } = useAuth();
 
   // Check verification status when the component loads
   useEffect(() => {
@@ -38,16 +40,15 @@ const VerificationPending = () => {
   }, [user, navigate, dispatch]);
 
   const handleSignOut = () => {
-    // Log the user out before redirecting
-    AuthService.logout();
-    navigate('/sign-in');
+    // Log the user out - this will also handle navigation to sign-in
+    logout();
   };
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.logo}>
-          <img src="/assets/logos/onus-logo.png" alt="Onus Health" />
+          <img src={onusLogo} alt="Onus Health" />
           <h1>Health Provider Onboarding</h1>
         </div>
       </div>
