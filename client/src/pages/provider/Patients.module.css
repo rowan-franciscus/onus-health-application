@@ -82,7 +82,7 @@
 
 .tableHeader {
   display: grid;
-  grid-template-columns: 3fr 1fr 1fr 2fr 2fr 3fr 2fr;
+  grid-template-columns: 3fr 1fr 1fr 2fr 3fr 2fr;
   gap: 1rem;
   padding: 1rem;
   background-color: #f9f7fe;
@@ -98,7 +98,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 3fr 1fr 1fr 2fr 2fr 3fr 2fr;
+  grid-template-columns: 3fr 1fr 1fr 2fr 3fr 2fr;
   gap: 1rem;
   padding: 1rem;
   border-bottom: 1px solid #f0f0f0;
@@ -117,7 +117,6 @@
 .colId,
 .colAge,
 .colAccess,
-.colPhone,
 .colEmail,
 .colActions {
   overflow: hidden;
@@ -245,10 +244,6 @@
   .tableHeader,
   .tableRow {
     grid-template-columns: 3fr 1fr 1fr 2fr 3fr 2fr;
-  }
-  
-  .colPhone {
-    display: none;
   }
 }
 

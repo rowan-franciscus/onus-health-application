@@ -79,7 +79,6 @@ const ProviderPatients = () => {
           gender: patient.patientProfile?.gender || 'N/A',
           lastRecord: 'N/A', // This would need to be populated from consultations
           email: patient.email,
-          phone: patient.phone || 'N/A',
           accessLevel: connection ? connection.accessLevel : 'limited',
           fullAccessStatus: connection ? connection.fullAccessStatus : 'none',
           connectionId: connection ? connection._id : null,
@@ -119,7 +118,6 @@ const ProviderPatients = () => {
       const searchableText = [
         patient.name || '',
         patient.email || '',
-        patient.phone || '',
         String(patient.age || ''),
         patient.gender || '',
         patient.accessLevel || '',
@@ -263,7 +261,7 @@ const ProviderPatients = () => {
         <div className={styles.filterSection}>
           <div className={styles.searchContainer}>
             <SearchBox
-              placeholder="Search patients by name, age, access level, phone, email..."
+              placeholder="Search patients by name, age, access level, email..."
               value={searchTerm}
               onChange={handleSearch}
             />
@@ -299,7 +297,6 @@ const ProviderPatients = () => {
               <div className={styles.colId}>ID</div>
               <div className={styles.colAge}>Age</div>
               <div className={styles.colAccess}>Access Level</div>
-              <div className={styles.colPhone}>Phone</div>
               <div className={styles.colEmail}>Email</div>
               <div className={styles.colActions}>Actions</div>
             </div>
@@ -318,7 +315,6 @@ const ProviderPatients = () => {
                       {getAccessLevelDisplay(patient)}
                     </span>
                   </div>
-                  <div className={styles.colPhone}>{patient.phone}</div>
                   <div className={styles.colEmail}>{patient.email}</div>
                   <div className={styles.colActions}>
                     <div className={styles.actionButtons}>

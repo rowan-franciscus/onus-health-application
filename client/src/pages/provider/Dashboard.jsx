@@ -60,7 +60,13 @@ const ProviderDashboard = () => {
                 id: patient._id,
                 name: `${patient.firstName} ${patient.lastName}`,
                 age: patient.dateOfBirth ? calculateAge(patient.dateOfBirth) : 'N/A',
-                lastRecord: 'N/A', // Would need another API endpoint to get last record date
+                lastRecord: patient.lastConsultationDate 
+                  ? new Date(patient.lastConsultationDate).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })
+                  : 'No consultations yet',
                 email: patient.email,
                 phone: patient.phone || 'N/A'
               }));

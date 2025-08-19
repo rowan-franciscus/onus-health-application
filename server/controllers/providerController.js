@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Consultation = require('../models/Consultation');
 const Connection = require('../models/Connection');
 const logger = require('../utils/logger');
+const mongoose = require('mongoose');
 
 /**
  * Get provider dashboard data
@@ -63,20 +64,56 @@ exports.getPatients = async (req, res) => {
     // Find all connections for this provider
     const connections = await Connection.find({ 
       provider: providerId
-    }).populate('patient', 'firstName lastName email profileImage patientProfile');
+    }).populate('patient', 'firstName lastName email phone profileImage patientProfile');
     
     // Extract patient data from connections, filtering out null patients
-    const patients = connections
-      .filter(conn => conn.patient !== null) // Filter out connections with null patients
-      .map(conn => ({
-        ...conn.patient.toObject(),
+    const validConnections = connections.filter(conn => conn.patient !== null);
+    
+    // Get last consultation date for each patient
+    const patientIds = validConnections.map(conn => conn.patient._id);
+    const lastConsultations = await Consultation.aggregate([
+      {
+        $match: {
+          patient: { $in: patientIds },
+          provider: new mongoose.Types.ObjectId(providerId)
+        }
+      },
+      {
+        $sort: { date: -1, createdAt: -1 }
+      },
+      {
+        $group: {
+          _id: '$patient',
+          lastConsultationDate: { $first: { $ifNull: ['$date', '$createdAt'] } }
+        }
+      }
+    ]);
+    
+    // Create a map of patient ID to last consultation date
+    const lastConsultationMap = lastConsultations.reduce((map, item) => {
+      map[item._id.toString()] = item.lastConsultationDate;
+      return map;
+    }, {});
+    
+    // Build patient data with all necessary fields
+    const patients = validConnections.map(conn => {
+      const patientData = conn.patient.toObject();
+      const patientId = patientData._id.toString();
+      
+      return {
+        ...patientData,
+        // Include dateOfBirth from patientProfile for age calculation
+        dateOfBirth: patientData.patientProfile?.dateOfBirth,
+        // Include last consultation date
+        lastConsultationDate: lastConsultationMap[patientId] || null,
         connectionInfo: {
           accessLevel: conn.accessLevel,
           fullAccessStatus: conn.fullAccessStatus,
           connectionId: conn._id,
           initiatedAt: conn.initiatedAt
         }
-      }));
+      };
+    });
     
     res.json({
       success: true,
