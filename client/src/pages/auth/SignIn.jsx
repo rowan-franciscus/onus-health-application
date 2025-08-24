@@ -26,9 +26,19 @@ const SignIn = () => {
   const { loading, error, isAuthenticated, user } = useSelector(state => state.auth);
   const { from } = location.state || { from: { pathname: '/' } };
   
-  // Check for session timeout message
+  // Check for session timeout message and error messages
   const searchParams = new URLSearchParams(location.search);
   const sessionTimedOut = searchParams.get('timeout') === 'true';
+  const errorParam = searchParams.get('error');
+  
+  // Set error message based on error parameter
+  useEffect(() => {
+    if (errorParam === 'provider_not_verified') {
+      dispatch(authFail('Your provider account is pending verification by an administrator. Please wait for admin approval before attempting to sign in.'));
+    } else if (errorParam === 'auth_failed') {
+      dispatch(authFail('Authentication failed. Please try again.'));
+    }
+  }, [errorParam, dispatch]);
 
   useEffect(() => {
     // If user is authenticated, redirect based on role

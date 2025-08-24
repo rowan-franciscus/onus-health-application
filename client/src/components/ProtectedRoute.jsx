@@ -27,25 +27,36 @@ const ProtectedRoute = ({
   useEffect(() => {
     // Only run this check for provider routes when onboarding is complete
     if (user && user.role === 'provider' && (user.onboardingCompleted || user.isProfileCompleted)) {
+      // Skip this check if we're already on the verification-pending page
+      if (location.pathname === '/provider/verification-pending') {
+        return;
+      }
+      
       // Make a request to a protected endpoint to check if the provider is verified
       const checkVerification = async () => {
         try {
-          await fetch('/api/provider/status', {
+          const response = await fetch('/api/provider/status', {
             headers: {
               'Authorization': `Bearer ${AuthService.getToken()}`
             }
           });
-        } catch (error) {
-          if (error.response && error.response.data && error.response.data.code === 'PROVIDER_NOT_VERIFIED') {
-            // If provider is not verified, redirect to verification pending
-            navigate('/provider/verification-pending');
+          
+          // If response is not ok, check for verification error
+          if (!response.ok) {
+            const data = await response.json();
+            if (response.status === 403 && data.code === 'PROVIDER_NOT_VERIFIED') {
+              // If provider is not verified, redirect to verification pending
+              navigate('/provider/verification-pending');
+            }
           }
+        } catch (error) {
+          console.error('Error checking provider verification:', error);
         }
       };
       
       checkVerification();
     }
-  }, [user, navigate]);
+  }, [user, navigate, location.pathname]);
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
@@ -86,14 +97,17 @@ const ProtectedRoute = ({
     
     // For providers with completed onboarding, check verification status
     if (user.role === 'provider' && hasCompletedOnboarding) {
-      // Use the isVerified flag from the token first
-      const isVerified = user.isVerified === true;
-      
-      // If not verified, redirect to verification pending
-      if (!isVerified) {
-        // Make a status check request to verify with backend
-        // This is a fallback in case the token data is stale
-        return <Navigate to="/provider/verification-pending" replace />;
+      // Skip verification check if we're already on the verification-pending page
+      if (location.pathname !== '/provider/verification-pending') {
+        // Use the isVerified flag from the token first
+        const isVerified = user.isVerified === true;
+        
+        // If not verified, redirect to verification pending
+        if (!isVerified) {
+          // Make a status check request to verify with backend
+          // This is a fallback in case the token data is stale
+          return <Navigate to="/provider/verification-pending" replace />;
+        }
       }
     }
   }

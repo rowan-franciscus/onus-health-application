@@ -20,7 +20,8 @@ const VerificationPending = () => {
         // Try to access the provider status endpoint
         const response = await api.get('/provider/status');
         
-        if (response.success) {
+        // If we get a successful response, it means the provider is verified
+        if (response.success && response.isVerified) {
           console.log('Provider is verified, redirecting to dashboard');
           // Update user in redux store with verified status
           dispatch(updateUser({ isVerified: true }));
@@ -28,8 +29,13 @@ const VerificationPending = () => {
           navigate('/provider/dashboard');
         }
       } catch (error) {
-        // If error occurs, the provider is still not verified
-        console.log('Provider verification check failed, showing pending page');
+        // If we get a 403 error with PROVIDER_NOT_VERIFIED code, stay on this page
+        if (error.response && error.response.status === 403 && 
+            error.response.data && error.response.data.code === 'PROVIDER_NOT_VERIFIED') {
+          console.log('Provider is not verified, showing pending page');
+        } else {
+          console.error('Error checking verification status:', error);
+        }
       }
     };
     

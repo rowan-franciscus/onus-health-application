@@ -29,14 +29,30 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get('/google/callback', 
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
-  (req, res) => {
-    // Generate tokens after successful authentication
-    const authToken = req.user.generateAuthToken();
-    const refreshToken = req.user.generateRefreshToken();
-    
-    // Redirect to frontend with tokens
-    const redirectUrl = `${process.env.FRONTEND_URL}/auth/social-callback?authToken=${authToken}&refreshToken=${refreshToken}`;
-    res.redirect(redirectUrl);
+  async (req, res) => {
+    try {
+      const user = req.user;
+      
+      // Check if provider is verified by admin (for providers who have completed onboarding)
+      if (user.role === 'provider' && user.isProfileCompleted) {
+        const isVerified = user.providerProfile && user.providerProfile.isVerified;
+        if (!isVerified) {
+          // Redirect to sign-in with error message
+          return res.redirect(`${process.env.FRONTEND_URL}/sign-in?error=provider_not_verified`);
+        }
+      }
+      
+      // Generate tokens after successful authentication
+      const authToken = user.generateAuthToken();
+      const refreshToken = user.generateRefreshToken();
+      
+      // Redirect to frontend with tokens
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/social-callback?authToken=${authToken}&refreshToken=${refreshToken}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Google callback error:', error);
+      res.redirect(`${process.env.FRONTEND_URL}/sign-in?error=auth_failed`);
+    }
   }
 );
 
@@ -45,14 +61,30 @@ router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }))
 
 router.get('/facebook/callback', 
   passport.authenticate('facebook', { session: false, failureRedirect: '/login' }),
-  (req, res) => {
-    // Generate tokens after successful authentication
-    const authToken = req.user.generateAuthToken();
-    const refreshToken = req.user.generateRefreshToken();
-    
-    // Redirect to frontend with tokens
-    const redirectUrl = `${process.env.FRONTEND_URL}/auth/social-callback?authToken=${authToken}&refreshToken=${refreshToken}`;
-    res.redirect(redirectUrl);
+  async (req, res) => {
+    try {
+      const user = req.user;
+      
+      // Check if provider is verified by admin (for providers who have completed onboarding)
+      if (user.role === 'provider' && user.isProfileCompleted) {
+        const isVerified = user.providerProfile && user.providerProfile.isVerified;
+        if (!isVerified) {
+          // Redirect to sign-in with error message
+          return res.redirect(`${process.env.FRONTEND_URL}/sign-in?error=provider_not_verified`);
+        }
+      }
+      
+      // Generate tokens after successful authentication
+      const authToken = user.generateAuthToken();
+      const refreshToken = user.generateRefreshToken();
+      
+      // Redirect to frontend with tokens
+      const redirectUrl = `${process.env.FRONTEND_URL}/auth/social-callback?authToken=${authToken}&refreshToken=${refreshToken}`;
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Facebook callback error:', error);
+      res.redirect(`${process.env.FRONTEND_URL}/sign-in?error=auth_failed`);
+    }
   }
 );
 
