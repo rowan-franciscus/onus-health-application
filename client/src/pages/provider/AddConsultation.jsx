@@ -89,22 +89,22 @@ const AddConsultation = () => {
           endDate: med.endDate ? new Date(med.endDate).toISOString().substr(0, 10) : ''
         })) || [],
         immunization: consultationData.immunizations?.map(imm => ({
-          vaccineName: imm.vaccineName || '',
-          dateAdministered: imm.dateAdministered ? new Date(imm.dateAdministered).toISOString().substr(0, 10) : '',
+          name: imm.vaccineName || '',
+          date: imm.dateAdministered ? new Date(imm.dateAdministered).toISOString().substr(0, 10) : '',
           serialNumber: imm.vaccineSerialNumber || '',
           nextDueDate: imm.nextDueDate ? new Date(imm.nextDueDate).toISOString().substr(0, 10) : ''
         })) || [],
         labResults: consultationData.labResults?.map(lab => ({
           testName: lab.testName || '',
           labName: lab.labName || '',
-          dateOfTest: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().substr(0, 10) : '',
+          date: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().substr(0, 10) : '',
           results: lab.results || '',
           comments: lab.comments || ''
         })) || [],
         radiology: consultationData.radiologyReports?.map(rad => ({
           scanType: rad.typeOfScan || '',
           date: rad.date ? new Date(rad.date).toISOString().substr(0, 10) : '',
-          bodyPartExamined: rad.bodyPartExamined || '',
+          bodyPart: rad.bodyPartExamined || '',
           findings: rad.findings || '',
           recommendations: rad.recommendations || ''
         })) || [],
@@ -121,7 +121,7 @@ const AddConsultation = () => {
           investigations: Array.isArray(hosp.investigationsDone) ? hosp.investigationsDone.join(', ') : hosp.investigationsDone || ''
         })) || [],
         surgery: consultationData.surgeryRecords?.map(surg => ({
-          surgeryType: surg.typeOfSurgery || '',
+          type: surg.typeOfSurgery || '',
           date: surg.date ? new Date(surg.date).toISOString().substr(0, 10) : '',
           reason: surg.reason || '',
           complications: surg.complications || '',
@@ -217,8 +217,6 @@ const AddConsultation = () => {
       const response = await ApiService.get(`/consultations/${consultationId}`);
       
       if (response) {
-        console.log('Consultation data received:', response);
-        console.log('Attachments in consultation:', response.attachments);
         setConsultationData(response);
         
         // Set patient data from consultation
@@ -399,9 +397,13 @@ const AddConsultation = () => {
         radiology: transformedRadiology,
         hospital: transformedHospital,
         surgery: transformedSurgery,
-        attachments: [], // Empty initially, we'll upload files separately
         status: 'draft'
       };
+      
+      // Don't send attachments field when updating to avoid overwriting existing attachments
+      if (!isEditing) {
+        consultationData.attachments = [];
+      }
       
       // Remove practiceName from general as it's now mapped to practice
       delete consultationData.general.practiceName;
@@ -554,9 +556,13 @@ const AddConsultation = () => {
         radiology: transformedRadiology,
         hospital: transformedHospital,
         surgery: transformedSurgery,
-        attachments: [], // Empty initially, we'll upload files separately
         status: 'completed'
       };
+      
+      // Don't send attachments field when updating to avoid overwriting existing attachments
+      if (!isEditing) {
+        consultationData.attachments = [];
+      }
       
       // Remove practiceName from general as it's now mapped to practice
       delete consultationData.general.practiceName;

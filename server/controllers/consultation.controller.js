@@ -270,7 +270,8 @@ exports.createConsultation = async (req, res) => {
       patient: patientId,
       provider: providerId,
       ...consultationData,
-      status: consultationData.status || 'draft'
+      status: consultationData.status || 'draft',
+      attachments: [] // Explicitly initialize attachments array
     });
     
     console.log('Consultation object created, about to save...');
@@ -579,6 +580,11 @@ exports.updateConsultation = async (req, res) => {
     
     // Update basic consultation fields
     Object.keys(consultationData).forEach(key => {
+      // Don't overwrite attachments with an empty array
+      if (key === 'attachments' && Array.isArray(consultationData[key]) && consultationData[key].length === 0 && consultation.attachments && consultation.attachments.length > 0) {
+        console.log('Skipping attachments update to preserve existing attachments');
+        return;
+      }
       consultation[key] = consultationData[key];
     });
     
@@ -913,6 +919,11 @@ exports.addAttachment = async (req, res) => {
       size: req.file.size,
       path: req.file.path
     };
+    
+    // Ensure attachments array exists
+    if (!consultation.attachments) {
+      consultation.attachments = [];
+    }
     
     consultation.attachments.push(newAttachment);
     consultation.lastUpdated = Date.now();
