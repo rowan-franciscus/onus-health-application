@@ -217,17 +217,22 @@ const AddConsultation = () => {
       const response = await ApiService.get(`/consultations/${consultationId}`);
       
       if (response) {
+        console.log('Consultation data received:', response);
+        console.log('Attachments in consultation:', response.attachments);
         setConsultationData(response);
         
         // Set patient data from consultation
         if (response.patient) {
+          const patientData = response.patient;
           setPatient({
-            id: response.patient._id,
-            name: `${response.patient.firstName || ''} ${response.patient.lastName || ''}`.trim() || 'Unknown',
-            gender: 'Unknown', // You might want to get this from patient profile
-            age: 'Unknown',    // You might want to calculate this
-            insurance: 'Unknown',
-            email: response.patient.email
+            id: patientData._id,
+            name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || 'Unknown',
+            gender: patientData.patientProfile?.gender || 'Unknown',
+            age: patientData.patientProfile?.dateOfBirth ? 
+              calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
+            insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
+            email: patientData.email,
+            profileImage: patientData.profileImage
           });
         }
         
@@ -307,17 +312,18 @@ const AddConsultation = () => {
       const { date, ...generalWithoutDate } = formData.general;
       
       // Transform vitals data to match backend schema
+      // Always include value objects even for empty strings to ensure vitals are saved
       const transformedVitals = formData.vitals ? {
-        heartRate: formData.vitals.heartRate ? { value: formData.vitals.heartRate } : undefined,
-        bloodPressure: formData.vitals.bloodPressure,  // Already an object with systolic/diastolic
-        bodyTemperature: formData.vitals.bodyTemperature ? { value: formData.vitals.bodyTemperature } : undefined,
-        respiratoryRate: formData.vitals.respiratoryRate ? { value: formData.vitals.respiratoryRate } : undefined,
-        bloodGlucose: formData.vitals.bloodGlucose ? { value: formData.vitals.bloodGlucose } : undefined,
-        bloodOxygenSaturation: formData.vitals.bloodOxygenSaturation ? { value: formData.vitals.bloodOxygenSaturation } : undefined,
-        bmi: formData.vitals.bmi ? { value: formData.vitals.bmi } : undefined,
-        bodyFatPercentage: formData.vitals.bodyFatPercentage ? { value: formData.vitals.bodyFatPercentage } : undefined,
-        weight: formData.vitals.weight ? { value: formData.vitals.weight } : undefined,
-        height: formData.vitals.height ? { value: formData.vitals.height } : undefined
+        heartRate: { value: formData.vitals.heartRate || '' },
+        bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
+        bodyTemperature: { value: formData.vitals.bodyTemperature || '' },
+        respiratoryRate: { value: formData.vitals.respiratoryRate || '' },
+        bloodGlucose: { value: formData.vitals.bloodGlucose || '' },
+        bloodOxygenSaturation: { value: formData.vitals.bloodOxygenSaturation || '' },
+        bmi: { value: formData.vitals.bmi || '' },
+        bodyFatPercentage: { value: formData.vitals.bodyFatPercentage || '' },
+        weight: { value: formData.vitals.weight || '' },
+        height: { value: formData.vitals.height || '' }
       } : {};
       
       // Transform medication data to match backend schema
@@ -329,29 +335,28 @@ const AddConsultation = () => {
       
       // Transform immunization data to match backend schema
       const transformedImmunization = formData.immunization.map(imm => ({
-        ...imm,
-        vaccineName: imm.name,
-        dateAdministered: imm.date,
-        vaccineSerialNumber: imm.serialNumber,
-        name: undefined,
-        date: undefined,
-        serialNumber: undefined
+        vaccineName: imm.name || imm.vaccineName,
+        dateAdministered: imm.date || imm.dateAdministered,
+        vaccineSerialNumber: imm.serialNumber || imm.vaccineSerialNumber,
+        nextDueDate: imm.nextDueDate
       }));
       
       // Transform lab results data to match backend schema
       const transformedLabResults = formData.labResults.map(lab => ({
-        ...lab,
-        dateOfTest: lab.date,
-        date: undefined
+        testName: lab.testName,
+        labName: lab.labName,
+        dateOfTest: lab.date || lab.dateOfTest,
+        results: lab.results,
+        comments: lab.comments
       }));
       
       // Transform radiology data to match backend schema
       const transformedRadiology = formData.radiology.map(rad => ({
-        ...rad,
-        typeOfScan: rad.scanType,
-        bodyPartExamined: rad.bodyPart,
-        scanType: undefined,
-        bodyPart: undefined
+        typeOfScan: rad.scanType || rad.typeOfScan,
+        date: rad.date,
+        bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,
+        findings: rad.findings,
+        recommendations: rad.recommendations
       }));
       
       // Transform hospital data to match backend schema
@@ -369,9 +374,11 @@ const AddConsultation = () => {
       
       // Transform surgery data to match backend schema
       const transformedSurgery = formData.surgery.map(surg => ({
-        ...surg,
-        typeOfSurgery: surg.type,
-        type: undefined
+        typeOfSurgery: surg.type || surg.surgeryType || surg.typeOfSurgery,
+        date: surg.date,
+        reason: surg.reason,
+        complications: surg.complications,
+        recoveryNotes: surg.recoveryNotes
       }));
       
       // Store files separately - we'll upload them after consultation creation
@@ -460,17 +467,18 @@ const AddConsultation = () => {
       const { date, ...generalWithoutDate } = formData.general;
       
       // Transform vitals data to match backend schema
+      // Always include value objects even for empty strings to ensure vitals are saved
       const transformedVitals = formData.vitals ? {
-        heartRate: formData.vitals.heartRate ? { value: formData.vitals.heartRate } : undefined,
-        bloodPressure: formData.vitals.bloodPressure,  // Already an object with systolic/diastolic
-        bodyTemperature: formData.vitals.bodyTemperature ? { value: formData.vitals.bodyTemperature } : undefined,
-        respiratoryRate: formData.vitals.respiratoryRate ? { value: formData.vitals.respiratoryRate } : undefined,
-        bloodGlucose: formData.vitals.bloodGlucose ? { value: formData.vitals.bloodGlucose } : undefined,
-        bloodOxygenSaturation: formData.vitals.bloodOxygenSaturation ? { value: formData.vitals.bloodOxygenSaturation } : undefined,
-        bmi: formData.vitals.bmi ? { value: formData.vitals.bmi } : undefined,
-        bodyFatPercentage: formData.vitals.bodyFatPercentage ? { value: formData.vitals.bodyFatPercentage } : undefined,
-        weight: formData.vitals.weight ? { value: formData.vitals.weight } : undefined,
-        height: formData.vitals.height ? { value: formData.vitals.height } : undefined
+        heartRate: { value: formData.vitals.heartRate || '' },
+        bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
+        bodyTemperature: { value: formData.vitals.bodyTemperature || '' },
+        respiratoryRate: { value: formData.vitals.respiratoryRate || '' },
+        bloodGlucose: { value: formData.vitals.bloodGlucose || '' },
+        bloodOxygenSaturation: { value: formData.vitals.bloodOxygenSaturation || '' },
+        bmi: { value: formData.vitals.bmi || '' },
+        bodyFatPercentage: { value: formData.vitals.bodyFatPercentage || '' },
+        weight: { value: formData.vitals.weight || '' },
+        height: { value: formData.vitals.height || '' }
       } : {};
       
       // Transform medication data to match backend schema
@@ -482,29 +490,28 @@ const AddConsultation = () => {
       
       // Transform immunization data to match backend schema
       const transformedImmunization = formData.immunization.map(imm => ({
-        ...imm,
-        vaccineName: imm.name,
-        dateAdministered: imm.date,
-        vaccineSerialNumber: imm.serialNumber,
-        name: undefined,
-        date: undefined,
-        serialNumber: undefined
+        vaccineName: imm.name || imm.vaccineName,
+        dateAdministered: imm.date || imm.dateAdministered,
+        vaccineSerialNumber: imm.serialNumber || imm.vaccineSerialNumber,
+        nextDueDate: imm.nextDueDate
       }));
       
       // Transform lab results data to match backend schema
       const transformedLabResults = formData.labResults.map(lab => ({
-        ...lab,
-        dateOfTest: lab.date,
-        date: undefined
+        testName: lab.testName,
+        labName: lab.labName,
+        dateOfTest: lab.date || lab.dateOfTest,
+        results: lab.results,
+        comments: lab.comments
       }));
       
       // Transform radiology data to match backend schema
       const transformedRadiology = formData.radiology.map(rad => ({
-        ...rad,
-        typeOfScan: rad.scanType,
-        bodyPartExamined: rad.bodyPart,
-        scanType: undefined,
-        bodyPart: undefined
+        typeOfScan: rad.scanType || rad.typeOfScan,
+        date: rad.date,
+        bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,
+        findings: rad.findings,
+        recommendations: rad.recommendations
       }));
       
       // Transform hospital data to match backend schema
@@ -522,9 +529,11 @@ const AddConsultation = () => {
       
       // Transform surgery data to match backend schema
       const transformedSurgery = formData.surgery.map(surg => ({
-        ...surg,
-        typeOfSurgery: surg.type,
-        type: undefined
+        typeOfSurgery: surg.type || surg.surgeryType || surg.typeOfSurgery,
+        date: surg.date,
+        reason: surg.reason,
+        complications: surg.complications,
+        recoveryNotes: surg.recoveryNotes
       }));
       
       // Store files separately - we'll upload them after consultation creation

@@ -1,16 +1,43 @@
 # Consultation Draft Fix Documentation
 
+## Fix History
+- **Initial Fix:** January 2025 - Fixed initial draft issues
+- **Second Fix:** January 2025 - Fixed remaining issues with patient info, vitals persistence, field mappings, and attachments
+
 ## Issues Fixed
 
 This document outlines the fixes implemented to resolve issues with consultation draft functionality.
 
-### 1. Vitals Data Not Loading When Editing Drafts
+### 1. Patient Info Displaying "Unknown"
+
+**Problem:** When editing a draft consultation, patient info (Gender, Age, Insurance) displayed as "Unknown" at the top of the page.
+
+**Root Cause:** In `fetchConsultationData` function, patient data was hardcoded with 'Unknown' values instead of extracting from patient profile.
+
+**Fix:** Updated to properly extract patient profile data:
+```javascript
+setPatient({
+  id: patientData._id,
+  name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || 'Unknown',
+  gender: patientData.patientProfile?.gender || 'Unknown',
+  age: patientData.patientProfile?.dateOfBirth ? 
+    calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
+  insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
+  email: patientData.email,
+  profileImage: patientData.profileImage
+});
+```
+
+### 2. Vitals Data Not Persisting
 
 **Problem:** When editing a draft consultation, all vitals fields were empty despite having saved data.
 
-**Root Cause:** In `client/src/pages/provider/AddConsultation.jsx`, the `getInitialFormValues` function was initializing vitals fields with empty strings instead of populating from the saved consultation data.
+**Root Cause:** Two issues:
+1. In `getInitialFormValues`, vitals fields were initialized with empty strings instead of populating from saved data
+2. In `handleSaveDraft`, empty vitals values were transformed to `undefined`, preventing vitals record creation
 
-**Fix:** Updated the vitals initialization to properly extract values from the nested vitals object structure:
+**Fix:** 
+1. Updated vitals initialization to properly extract values:
 ```javascript
 vitals: {
   heartRate: consultationData.vitals?.heartRate?.value || '',
@@ -18,14 +45,27 @@ vitals: {
     systolic: consultationData.vitals?.bloodPressure?.systolic || '',
     diastolic: consultationData.vitals?.bloodPressure?.diastolic || ''
   },
-  bodyTemperature: consultationData.vitals?.bodyTemperature?.value || '',
   // ... other vitals fields
 }
 ```
 
-### 2. Medical Records Not Displaying Correctly
+2. Changed vitals transformation to always include value objects:
+```javascript
+const transformedVitals = formData.vitals ? {
+  heartRate: { value: formData.vitals.heartRate || '' },
+  bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
+  // ... ensures vitals record is created even with empty values
+} : {};
+```
 
-**Problem:** Various fields in medication, immunization, radiology, and surgery tabs were not displaying or showing "Not specified" when editing drafts.
+### 3. Medical Records Field Mapping Issues
+
+**Problem:** Various fields in medication, immunization, radiology, and surgery tabs were not displaying correctly when editing drafts:
+- Medication: 'Reason' field showed "Not specified"
+- Immunization: 'Vaccine Name' missing, 'Date Administered' showed "Invalid Date"
+- Lab Results: 'Test Date' showed "Invalid Date"
+- Radiology: 'Body Part Examined' missing
+- Surgery: 'Surgery Type' missing
 
 **Root Cause:** The MongoDB models use different field names and structures than what the client components expect. For example:
 - MedicationRecord uses `reasonForPrescription` but client expects `reason`
@@ -46,7 +86,7 @@ medication: consultationData.medications?.map(med => ({
 // Similar transformations for other medical record types
 ```
 
-### 3. Hospital Tab Crash (React Error 31)
+### 4. Hospital Tab Crash (React Error 31)
 
 **Problem:** Clicking on the Hospital tab caused the app to crash with React error 31 (Objects are not valid as React children).
 
@@ -63,14 +103,13 @@ hospital: consultationData.hospitalRecords?.map(hosp => ({
 })) || [],
 ```
 
-### 4. File Attachments
+### 5. File Attachments Not Displaying
 
-**Analysis:** The file attachment logic appears to be correctly implemented:
-- Files are uploaded after consultation is saved using `FileService.uploadConsultationFile`
-- Existing attachments are properly separated from new files in the ConsultationForm component
-- The backend correctly stores and retrieves attachments
+**Problem:** Uploaded files didn't display when editing draft consultations.
 
-**Note:** If attachments still don't appear when editing drafts, ensure the consultation is being fetched with populated attachments.
+**Root Cause:** In `server/controllers/consultation.controller.js`, the `getConsultationById` method incorrectly tried to populate attachments as if they were references, but attachments are embedded documents.
+
+**Fix:** Removed the incorrect `.populate('attachments')` call from the consultation query. Attachments are embedded documents and don't need population.
 
 ## Testing Instructions
 
@@ -110,7 +149,14 @@ To verify these fixes work correctly:
 ## Technical Details
 
 ### Files Modified:
-- `client/src/pages/provider/AddConsultation.jsx` - Fixed data initialization and transformation
+- `client/src/pages/provider/AddConsultation.jsx` - Fixed patient info loading, data initialization, field transformations, and vitals persistence
+- `server/controllers/consultation.controller.js` - Removed incorrect populate for attachments
+
+### Key Fixes in Detail:
+1. **Patient Info:** Updated `fetchConsultationData` to extract patient profile data
+2. **Vitals Persistence:** Changed transformation to always create value objects, even for empty fields
+3. **Field Transformations:** Updated all medical record transformations to handle both form field names and backend field names
+4. **Attachments:** Removed `.populate('attachments')` since attachments are embedded documents
 
 ### MongoDB Model Field Mappings:
 - `MedicationRecord.reasonForPrescription` → `reason` (client)

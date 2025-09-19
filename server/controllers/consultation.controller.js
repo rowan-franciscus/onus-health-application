@@ -121,8 +121,7 @@ exports.getConsultationById = async (req, res) => {
       .populate('labResults')
       .populate('radiologyReports')
       .populate('hospitalRecords')
-      .populate('surgeryRecords')
-      .populate('attachments');
+      .populate('surgeryRecords');
     
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation not found' });
