@@ -65,23 +65,68 @@ const AddConsultation = () => {
           notes: consultationData.general?.notes || ''
         },
         vitals: {
-          heartRate: '',
-          bloodPressure: { systolic: '', diastolic: '' },
-          bodyTemperature: '',
-          respiratoryRate: '',
-          bloodGlucose: '',
-          bloodOxygenSaturation: '',
-          bmi: '',
-          bodyFatPercentage: '',
-          weight: '',
-          height: ''
+          heartRate: consultationData.vitals?.heartRate?.value || '',
+          bloodPressure: {
+            systolic: consultationData.vitals?.bloodPressure?.systolic || '',
+            diastolic: consultationData.vitals?.bloodPressure?.diastolic || ''
+          },
+          bodyTemperature: consultationData.vitals?.bodyTemperature?.value || '',
+          respiratoryRate: consultationData.vitals?.respiratoryRate?.value || '',
+          bloodGlucose: consultationData.vitals?.bloodGlucose?.value || '',
+          bloodOxygenSaturation: consultationData.vitals?.bloodOxygenSaturation?.value || '',
+          bmi: consultationData.vitals?.bmi?.value || '',
+          bodyFatPercentage: consultationData.vitals?.bodyFatPercentage?.value || '',
+          weight: consultationData.vitals?.weight?.value || '',
+          height: consultationData.vitals?.height?.value || ''
         },
-        medication: consultationData.medications || [],
-        immunization: consultationData.immunizations || [],
-        labResults: consultationData.labResults || [],
-        radiology: consultationData.radiologyReports || [],
-        hospital: consultationData.hospitalRecords || [],
-        surgery: consultationData.surgeryRecords || [],
+        medication: consultationData.medications?.map(med => ({
+          name: med.name || '',
+          dosage: med.dosage?.value || '',
+          dosageUnit: med.dosage?.unit || '',
+          frequency: med.frequency || '',
+          reason: med.reasonForPrescription || '',
+          startDate: med.startDate ? new Date(med.startDate).toISOString().substr(0, 10) : '',
+          endDate: med.endDate ? new Date(med.endDate).toISOString().substr(0, 10) : ''
+        })) || [],
+        immunization: consultationData.immunizations?.map(imm => ({
+          vaccineName: imm.vaccineName || '',
+          dateAdministered: imm.dateAdministered ? new Date(imm.dateAdministered).toISOString().substr(0, 10) : '',
+          serialNumber: imm.vaccineSerialNumber || '',
+          nextDueDate: imm.nextDueDate ? new Date(imm.nextDueDate).toISOString().substr(0, 10) : ''
+        })) || [],
+        labResults: consultationData.labResults?.map(lab => ({
+          testName: lab.testName || '',
+          labName: lab.labName || '',
+          dateOfTest: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().substr(0, 10) : '',
+          results: lab.results || '',
+          comments: lab.comments || ''
+        })) || [],
+        radiology: consultationData.radiologyReports?.map(rad => ({
+          scanType: rad.typeOfScan || '',
+          date: rad.date ? new Date(rad.date).toISOString().substr(0, 10) : '',
+          bodyPartExamined: rad.bodyPartExamined || '',
+          findings: rad.findings || '',
+          recommendations: rad.recommendations || ''
+        })) || [],
+        hospital: consultationData.hospitalRecords?.map(hosp => ({
+          hospitalName: hosp.hospitalName || '',
+          admissionDate: hosp.admissionDate ? new Date(hosp.admissionDate).toISOString().substr(0, 10) : '',
+          dischargeDate: hosp.dischargeDate ? new Date(hosp.dischargeDate).toISOString().substr(0, 10) : '',
+          reason: hosp.reasonForHospitalization || '',
+          treatments: Array.isArray(hosp.treatmentsReceived) ? hosp.treatmentsReceived.join(', ') : hosp.treatmentsReceived || '',
+          attendingDoctors: Array.isArray(hosp.attendingDoctors) ? 
+            hosp.attendingDoctors.map(doc => doc.name || doc).join(', ') : 
+            hosp.attendingDoctors || '',
+          dischargeSummary: hosp.dischargeSummary || '',
+          investigations: Array.isArray(hosp.investigationsDone) ? hosp.investigationsDone.join(', ') : hosp.investigationsDone || ''
+        })) || [],
+        surgery: consultationData.surgeryRecords?.map(surg => ({
+          surgeryType: surg.typeOfSurgery || '',
+          date: surg.date ? new Date(surg.date).toISOString().substr(0, 10) : '',
+          reason: surg.reason || '',
+          complications: surg.complications || '',
+          recoveryNotes: surg.recoveryNotes || ''
+        })) || [],
         attachments: consultationData.attachments || []
       };
     } else {
