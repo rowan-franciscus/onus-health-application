@@ -307,7 +307,7 @@ const ProviderViewPatient = () => {
             id: medication._id || `${consultation._id}-med-${Math.random()}`,
             date: consultationDate,
             provider: provider,
-            name: formatFieldValue(medication.nameOfMedication) || 'Unknown Medication',
+            name: formatFieldValue(medication.name) || 'Unknown Medication',
             dosage: formatFieldValue(medication.dosage),
             frequency: formatFieldValue(medication.frequency),
             reason: formatFieldValue(medication.reasonForPrescription),

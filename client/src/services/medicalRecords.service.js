@@ -44,7 +44,7 @@ class MedicalRecordsService {
                     consultationId: consultation._id,
                     date: consultation.date || consultation.createdAt,
                     provider: provider,
-                    nameOfMedication: medication.nameOfMedication || 'N/A',
+                    nameOfMedication: medication.name || 'N/A',
                     dosage: medication.dosage || {},
                     frequency: medication.frequency || 'N/A',
                     reasonForPrescription: medication.reasonForPrescription || 'N/A',
