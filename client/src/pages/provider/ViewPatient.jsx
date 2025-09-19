@@ -231,10 +231,13 @@ const ProviderViewPatient = () => {
   // Helper function to format vital values
   const formatVitalValue = (vital) => {
     if (!vital) return 'N/A';
-    if (typeof vital === 'object' && vital.value !== undefined) {
-      return vital.unit ? `${vital.value} ${vital.unit}` : vital.value;
+    if (typeof vital === 'object') {
+      if (vital.value !== undefined && vital.value !== null) {
+        return vital.unit ? `${vital.value} ${vital.unit}` : vital.value.toString();
+      }
+      return 'N/A';
     }
-    return vital;
+    return vital.toString();
   };
 
   // Extract medical records from consultations
@@ -260,10 +263,13 @@ const ProviderViewPatient = () => {
         // Helper function to format vital values
         const formatVitalValue = (vital) => {
           if (!vital) return 'N/A';
-          if (typeof vital === 'object' && vital.value !== undefined) {
-            return vital.unit ? `${vital.value} ${vital.unit}` : vital.value;
+          if (typeof vital === 'object') {
+            if (vital.value !== undefined && vital.value !== null) {
+              return vital.unit ? `${vital.value} ${vital.unit}` : vital.value.toString();
+            }
+            return 'N/A';
           }
-          return vital;
+          return vital.toString();
         };
 
         const vitalRecord = {
@@ -841,31 +847,31 @@ const ProviderViewPatient = () => {
                   <div className={styles.vitalsGrid}>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>Heart Rate:</span>
-                      <span className={styles.vitalValue}>{record.heartRate} bpm</span>
+                      <span className={styles.vitalValue}>{record.heartRate}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>Blood Pressure:</span>
-                      <span className={styles.vitalValue}>{record.bloodPressure} mmHg</span>
+                      <span className={styles.vitalValue}>{record.bloodPressure}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>Temperature:</span>
-                      <span className={styles.vitalValue}>{record.bodyTemperature}°F</span>
+                      <span className={styles.vitalValue}>{record.bodyTemperature}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>Respiratory Rate:</span>
-                      <span className={styles.vitalValue}>{record.respiratoryRate}/min</span>
+                      <span className={styles.vitalValue}>{record.respiratoryRate}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>O2 Saturation:</span>
-                      <span className={styles.vitalValue}>{record.bloodOxygenSaturation}%</span>
+                      <span className={styles.vitalValue}>{record.bloodOxygenSaturation}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>Weight:</span>
-                      <span className={styles.vitalValue}>{record.weight} lbs</span>
+                      <span className={styles.vitalValue}>{record.weight}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>Height:</span>
-                      <span className={styles.vitalValue}>{record.height} inches</span>
+                      <span className={styles.vitalValue}>{record.height}</span>
                     </div>
                     <div className={styles.vitalItem}>
                       <span className={styles.vitalLabel}>BMI:</span>
