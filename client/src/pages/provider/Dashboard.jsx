@@ -36,8 +36,8 @@ const ProviderDashboard = () => {
           // Set patient metrics
           setPatientMetrics({
             total: dashboardData.patientCount || 0,
-            recent: 0, // This would need another API endpoint to get new patients this week
-            pendingRequests: 0 // This would need another endpoint to get pending requests
+            recent: dashboardData.newPatientsThisWeek || 0,
+            pendingRequests: dashboardData.pendingRequests || 0
           });
           
           // Set recent consultations

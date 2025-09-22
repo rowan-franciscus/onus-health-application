@@ -17,11 +17,17 @@ exports.getDashboard = async (req, res) => {
     // Get provider data
     const providerId = req.user.id;
     
+    // Calculate date for "this week" (last 7 days)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    
     // Get basic statistics
     const [
       connections,
       consultationCount,
-      recentConsultations
+      recentConsultations,
+      newPatientsThisWeek,
+      pendingRequests
     ] = await Promise.all([
       // Get all connections for this provider with populated patients
       Connection.find({ provider: providerId })
@@ -34,7 +40,19 @@ exports.getDashboard = async (req, res) => {
       Consultation.find({ provider: providerId })
         .sort({ createdAt: -1 })
         .limit(5)
-        .populate('patient', 'firstName lastName')
+        .populate('patient', 'firstName lastName'),
+      
+      // Count new connections created within the last week
+      Connection.countDocuments({ 
+        provider: providerId,
+        createdAt: { $gte: oneWeekAgo }
+      }),
+      
+      // Count pending full access requests
+      Connection.countDocuments({ 
+        provider: providerId,
+        fullAccessStatus: 'pending'
+      })
     ]);
     
     // Count only connections with valid patients (non-null)
@@ -45,7 +63,9 @@ exports.getDashboard = async (req, res) => {
       dashboardData: {
         patientCount,
         consultationCount,
-        recentConsultations
+        recentConsultations,
+        newPatientsThisWeek,
+        pendingRequests
       }
     });
   } catch (error) {
