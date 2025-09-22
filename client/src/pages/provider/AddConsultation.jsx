@@ -222,16 +222,65 @@ const AddConsultation = () => {
         // Set patient data from consultation
         if (response.patient) {
           const patientData = response.patient;
-          setPatient({
-            id: patientData._id,
-            name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || 'Unknown',
-            gender: patientData.patientProfile?.gender || 'Unknown',
-            age: patientData.patientProfile?.dateOfBirth ? 
-              calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
-            insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
-            email: patientData.email,
-            profileImage: patientData.profileImage
-          });
+          // Handle both populated patient object and patient ID string
+          if (typeof patientData === 'string') {
+            // If patient is just an ID, we need to fetch the patient data
+            console.log('Patient data is an ID, fetching patient details...');
+            try {
+              const patientResponse = await PatientService.getPatientById(patientData);
+              if (patientResponse && patientResponse.patient) {
+                const patient = patientResponse.patient;
+                setPatient({
+                  id: patient._id,
+                  name: `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown',
+                  gender: patient.patientProfile?.gender || 'Unknown',
+                  age: patient.patientProfile?.dateOfBirth ? 
+                    calculateAge(patient.patientProfile.dateOfBirth) : 'Unknown',
+                  insurance: patient.patientProfile?.insurance?.provider || 'Unknown',
+                  email: patient.email,
+                  profileImage: patient.profileImage
+                });
+              } else {
+                // If we can't fetch patient details, set minimal data
+                setPatient({
+                  id: patientData,
+                  name: 'Patient',
+                  gender: 'Unknown',
+                  age: 'Unknown',
+                  insurance: 'Unknown',
+                  email: 'Unknown'
+                });
+              }
+            } catch (patientError) {
+              console.error('Error fetching patient details:', patientError);
+              // Set minimal patient data to allow saving
+              setPatient({
+                id: patientData,
+                name: 'Patient',
+                gender: 'Unknown',
+                age: 'Unknown',
+                insurance: 'Unknown',
+                email: 'Unknown'
+              });
+            }
+          } else {
+            // Patient data is populated
+            setPatient({
+              id: patientData._id,
+              name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || 'Unknown',
+              gender: patientData.patientProfile?.gender || 'Unknown',
+              age: patientData.patientProfile?.dateOfBirth ? 
+                calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
+              insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
+              email: patientData.email,
+              profileImage: patientData.profileImage
+            });
+          }
+        } else {
+          console.error('No patient data in consultation response');
+          toast.error('Patient information is missing from consultation');
+          navigate('/provider/consultations');
+          return;
         }
         
         setIsLoading(false);
@@ -458,10 +507,14 @@ const AddConsultation = () => {
     try {
       console.log('handleSubmit called with formData:', formData);
       console.log('Current patient state:', patient);
+      console.log('Is editing:', isEditing);
+      console.log('Consultation ID:', consultationId);
       
       // Check if patient data is available
-      if (!patient) {
-        toast.error('Patient information is not available');
+      if (!patient || (!patient.id && !patient.email)) {
+        console.error('Patient data missing:', patient);
+        toast.error('Patient information is not available. Please refresh the page and try again.');
+        setIsSaving(false);
         return;
       }
       
@@ -608,7 +661,21 @@ const AddConsultation = () => {
       }
     } catch (error) {
       console.error('Error saving consultation:', error);
-      toast.error('Failed to save consultation');
+      console.error('Error details:', error.response?.data);
+      
+      // Provide more specific error messages
+      if (error.response?.status === 404) {
+        toast.error('Patient not found. Please ensure the patient exists in the system.');
+      } else if (error.response?.status === 403) {
+        toast.error('You do not have permission to update this consultation.');
+      } else if (error.response?.status === 400) {
+        const message = error.response?.data?.message || 'Invalid consultation data';
+        toast.error(message);
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to save consultation. Please try again.');
+      }
     } finally {
       setIsSaving(false);
     }

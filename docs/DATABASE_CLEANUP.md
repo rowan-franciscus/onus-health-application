@@ -107,20 +107,37 @@ The existing `server/scripts/cleanupOrphanedData.js` script was used to identify
 - **0 orphaned connections** - No orphaned patient-provider relationships found
 - **0 orphaned consultations** - No orphaned medical consultations found
 - **1 orphaned medical record** - One vitals record that was not properly linked to existing users:
-  - 1 vitals record (ID: 689506816643cc414f7977d79)
+
+---
+
+## Date: January 27, 2025
+
+### Context
+Additional users were deleted from the MongoDB Atlas database through the web interface, requiring cleanup of orphaned data.
+
+### Cleanup Script Used
+The existing `server/scripts/cleanupOrphanedData.js` script was used to identify and remove orphaned data.
+
+### Data Cleaned
+
+#### Summary of Deleted Records:
+- **1 orphaned connection** - Patient-provider relationship where both provider ID 6892515b643cc414f7976f14 and patient ID 68924de2643cc414f7976ed0 no longer existed
+- **1 orphaned consultation** - Medical consultation linked to the same deleted users
+- **8 orphaned medical records** - Various medical record types associated with the orphaned consultation:
+  - 1 vitals record
+  - 2 medication records
+  - 1 immunization record
+  - 1 lab result record
+  - 1 radiology report
+  - 1 hospital record
+  - 1 surgery record
 
 #### Database Statistics After Cleanup:
-- Total users: 11
-- Total connections: 3
-- Total consultations: 21
+- Total users: 8
+- Total connections: 2 (down from 3)
+- Total consultations: 20 (down from 21)
 - All remaining connections have valid user references
 - All remaining consultations have valid user references
 
 ### Verification
-The script verified data integrity after cleanup, confirming that:
-1. All remaining connections have valid provider and patient references
-2. All remaining consultations have valid provider and patient references
-3. No orphaned medical records remain in the database
-
-### Notes
-This cleanup was minimal compared to previous cleanups, indicating that most data was properly cleaned up when users were deleted. Only one vitals record was orphaned and needed removal. 
+The script verified data integrity after cleanup, confirming that all remaining connections and consultations have valid user references, and no orphaned medical records remain in the database. 
