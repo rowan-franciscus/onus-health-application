@@ -195,28 +195,6 @@ const updateUser = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-} {
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
-    
-    // Remove sensitive fields that shouldn't be updated via this endpoint
-    delete updateData.password;
-    
-    const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true, runValidators: true }
-    ).select('-password');
-    
-    if (!updatedUser) {
-      return next(new ApiError(httpStatus.NOT_FOUND, 'User not found'));
-    }
-    
-    res.json(updatedUser);
-  } catch (error) {
-    next(error);
-  }
 };
 
 /**
