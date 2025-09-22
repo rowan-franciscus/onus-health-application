@@ -559,13 +559,23 @@ exports.createConsultation = async (req, res) => {
  * Update a consultation
  */
 exports.updateConsultation = async (req, res) => {
+  console.log('=== CONSULTATION UPDATE START ===');
+  console.log('Consultation ID:', req.params.id);
+  console.log('Provider ID:', req.user.id);
+  console.log('Request body keys:', Object.keys(req.body));
+  
   const session = await mongoose.startSession();
-  session.startTransaction();
   
   try {
+    session.startTransaction();
+    
     const { id } = req.params;
     const providerId = req.user.id;
     const { vitals, medication, immunization, labResults, radiology, hospital, surgery, ...consultationData } = req.body;
+    
+    console.log('Consultation data keys:', Object.keys(consultationData));
+    console.log('Has vitals:', !!vitals);
+    console.log('Has medications:', !!medication, Array.isArray(medication) ? medication.length : 'not array');
     
     // Find consultation and check if provider is authorized
     let consultation = await Consultation.findOne({
@@ -574,9 +584,12 @@ exports.updateConsultation = async (req, res) => {
     }).session(session);
     
     if (!consultation) {
+      console.log('Consultation not found or unauthorized');
       await session.abortTransaction();
       return res.status(404).json({ message: 'Consultation not found or unauthorized' });
     }
+    
+    console.log('Found consultation, status:', consultation.status);
     
     // Update basic consultation fields
     Object.keys(consultationData).forEach(key => {
@@ -595,24 +608,32 @@ exports.updateConsultation = async (req, res) => {
     
     // Handle Vitals
     if (vitals && Object.values(vitals).some(val => val && (typeof val === 'object' ? val.value : val))) {
-      if (consultation.vitals) {
-        // Update existing vitals record
-        await VitalsRecord.findByIdAndUpdate(
-          consultation.vitals,
-          { ...vitals, updatedAt: Date.now() },
-          { session }
-        );
-      } else {
-        // Create new vitals record
-        const vitalsRecord = new VitalsRecord({
-          patient: patientId,
-          provider: providerId,
-          consultation: consultation._id,
-          date: consultation.date,
-          ...vitals
-        });
-        await vitalsRecord.save({ session });
-        consultation.vitals = vitalsRecord._id;
+      try {
+        console.log('Processing vitals update...');
+        if (consultation.vitals) {
+          // Update existing vitals record
+          await VitalsRecord.findByIdAndUpdate(
+            consultation.vitals,
+            { ...vitals, updatedAt: Date.now() },
+            { session }
+          );
+          console.log('Updated existing vitals record');
+        } else {
+          // Create new vitals record
+          const vitalsRecord = new VitalsRecord({
+            patient: patientId,
+            provider: providerId,
+            consultation: consultation._id,
+            date: consultation.date,
+            ...vitals
+          });
+          await vitalsRecord.save({ session });
+          consultation.vitals = vitalsRecord._id;
+          console.log('Created new vitals record');
+        }
+      } catch (vitalsError) {
+        console.error('Error updating vitals:', vitalsError);
+        throw new Error(`Failed to update vitals: ${vitalsError.message}`);
       }
     }
     
@@ -796,10 +817,19 @@ exports.updateConsultation = async (req, res) => {
       }
     }
     
-    await consultation.save({ session });
-    
-    // Commit the transaction
-    await session.commitTransaction();
+    try {
+      console.log('Saving consultation...');
+      await consultation.save({ session });
+      console.log('Consultation saved successfully');
+      
+      // Commit the transaction
+      console.log('Committing transaction...');
+      await session.commitTransaction();
+      console.log('Transaction committed successfully');
+    } catch (saveError) {
+      console.error('Error saving consultation or committing transaction:', saveError);
+      throw saveError;
+    }
     
     // Handle post-transaction operations
     try {
@@ -848,13 +878,39 @@ exports.updateConsultation = async (req, res) => {
     
     return res.json(populatedConsultation);
   } catch (error) {
+    console.error('=== CONSULTATION UPDATE ERROR ===');
+    console.error('Error type:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     // Only abort if transaction hasn't been committed
     if (session.inTransaction()) {
-      await session.abortTransaction();
+      console.log('Aborting transaction...');
+      try {
+        await session.abortTransaction();
+        console.log('Transaction aborted');
+      } catch (abortError) {
+        console.error('Error aborting transaction:', abortError);
+      }
     }
-    console.error('Error updating consultation:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
+    
+    // Provide more specific error messages
+    let errorMessage = 'Server error';
+    if (error.message.includes('vitals')) {
+      errorMessage = 'Failed to update vitals records';
+    } else if (error.message.includes('medication')) {
+      errorMessage = 'Failed to update medication records';
+    } else if (error.message.includes('validation')) {
+      errorMessage = 'Validation error: ' + error.message;
+    }
+    
+    return res.status(500).json({ 
+      message: errorMessage, 
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   } finally {
+    console.log('=== CONSULTATION UPDATE END ===');
     session.endSession();
   }
 };

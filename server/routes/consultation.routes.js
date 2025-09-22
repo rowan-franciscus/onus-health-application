@@ -114,7 +114,13 @@ router.put('/:id', authenticateJWT, isProvider,
   body('status').optional().isIn(['draft', 'completed', 'archived']).withMessage('Invalid status'),
   validateRequest, 
   (req, res) => {
-    consultationController.updateConsultation(req, res);
+    console.log('=== PUT /consultations/:id route hit ===');
+    console.log('Consultation ID:', req.params.id);
+    console.log('User:', req.user ? { id: req.user.id, role: req.user.role } : 'No user');
+    
+    // Temporarily use the simple update without transactions
+    const simpleController = require('../controllers/consultation.controller.simple');
+    simpleController.updateConsultationSimple(req, res);
   }
 );
 
