@@ -36,8 +36,37 @@ const getAllUsers = async (req, res, next) => {
       
     const total = await User.countDocuments(query);
     
+    // Filter patient medical data from the results
+    const filteredUsers = users.map(user => {
+      if (user.role === 'patient' && user.patientProfile) {
+        return {
+          _id: user._id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          title: user.title,
+          phone: user.phone,
+          isEmailVerified: user.isEmailVerified,
+          isProfileCompleted: user.isProfileCompleted,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          lastLogin: user.lastLogin,
+          profileImage: user.profileImage,
+          patientProfile: {
+            dateOfBirth: user.patientProfile?.dateOfBirth,
+            gender: user.patientProfile?.gender,
+            address: user.patientProfile?.address,
+            insurance: user.patientProfile?.insurance,
+            emergencyContact: user.patientProfile?.emergencyContact
+          }
+        };
+      }
+      return user;
+    });
+    
     res.json({
-      users,
+      users: filteredUsers,
       pagination: {
         total,
         page: parseInt(page),
@@ -61,6 +90,36 @@ const getUserById = async (req, res, next) => {
       return next(new ApiError(httpStatus.NOT_FOUND, 'User not found'));
     }
     
+    // If the user is a patient, filter out medical data for admin access
+    if (user.role === 'patient') {
+      const filteredUser = {
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        title: user.title,
+        phone: user.phone,
+        isEmailVerified: user.isEmailVerified,
+        isProfileCompleted: user.isProfileCompleted,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        lastLogin: user.lastLogin,
+        profileImage: user.profileImage,
+        patientProfile: {
+          dateOfBirth: user.patientProfile?.dateOfBirth,
+          gender: user.patientProfile?.gender,
+          address: user.patientProfile?.address,
+          insurance: user.patientProfile?.insurance,
+          emergencyContact: user.patientProfile?.emergencyContact
+          // Explicitly excluding: medicalHistory, familyMedicalHistory, currentMedications,
+          // supplements, allergies, lifestyle, immunisationHistory
+        }
+      };
+      return res.json(filteredUser);
+    }
+    
+    // For providers and other roles, return full data
     res.json(user);
   } catch (error) {
     next(error);
@@ -71,6 +130,72 @@ const getUserById = async (req, res, next) => {
  * Update user
  */
 const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    // Find the user first to check their role
+    const user = await User.findById(id);
+    if (!user) {
+      return next(new ApiError(httpStatus.NOT_FOUND, 'User not found'));
+    }
+    
+    // If updating a patient, filter out medical data from updates
+    if (user.role === 'patient' && updates.patientProfile) {
+      const allowedPatientFields = ['dateOfBirth', 'gender', 'address', 'insurance', 'emergencyContact'];
+      const filteredPatientProfile = {};
+      
+      allowedPatientFields.forEach(field => {
+        if (updates.patientProfile[field] !== undefined) {
+          filteredPatientProfile[field] = updates.patientProfile[field];
+        }
+      });
+      
+      updates.patientProfile = filteredPatientProfile;
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!updatedUser) {
+      return next(new ApiError(httpStatus.NOT_FOUND, 'User not found'));
+    }
+    
+    // Filter the response for patient data
+    if (updatedUser.role === 'patient') {
+      const filteredUser = {
+        _id: updatedUser._id,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        title: updatedUser.title,
+        phone: updatedUser.phone,
+        isEmailVerified: updatedUser.isEmailVerified,
+        isProfileCompleted: updatedUser.isProfileCompleted,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
+        lastLogin: updatedUser.lastLogin,
+        profileImage: updatedUser.profileImage,
+        patientProfile: {
+          dateOfBirth: updatedUser.patientProfile?.dateOfBirth,
+          gender: updatedUser.patientProfile?.gender,
+          address: updatedUser.patientProfile?.address,
+          insurance: updatedUser.patientProfile?.insurance,
+          emergencyContact: updatedUser.patientProfile?.emergencyContact
+        }
+      };
+      return res.json(filteredUser);
+    }
+    
+    res.json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+} {
   try {
     const { id } = req.params;
     const updateData = req.body;

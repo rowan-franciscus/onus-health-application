@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import Button from '../../components/common/Button/Button';
 import Input from '../../components/common/Input/Input';
-import Textarea from '../../components/common/Textarea/Textarea';
 import Select from '../../components/common/Select/Select';
 import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -30,27 +29,6 @@ const EditPatient = () => {
       name: '',
       phone: '',
       relationship: '',
-    },
-    medicalHistory: {
-      chronicConditions: '',
-      significantHistory: '',
-      mentalHealth: '',
-    },
-    familyHistory: {
-      chronicIllnesses: '',
-      hereditaryConditions: '',
-    },
-    currentMedication: {
-      medications: '',
-      supplements: '',
-    },
-    allergies: {
-      list: '',
-    },
-    lifestyle: {
-      smoking: '',
-      alcohol: '',
-      exercise: '',
     },
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -83,27 +61,6 @@ const EditPatient = () => {
             name: data.emergencyContact?.name || '',
             phone: data.emergencyContact?.phone || '',
             relationship: data.emergencyContact?.relationship || '',
-          },
-          medicalHistory: {
-            chronicConditions: data.medicalHistory?.chronicConditions || '',
-            significantHistory: data.medicalHistory?.significantHistory || '',
-            mentalHealth: data.medicalHistory?.mentalHealth || '',
-          },
-          familyHistory: {
-            chronicIllnesses: data.familyHistory?.chronicIllnesses || '',
-            hereditaryConditions: data.familyHistory?.hereditaryConditions || '',
-          },
-          currentMedication: {
-            medications: data.currentMedication?.medications || '',
-            supplements: data.currentMedication?.supplements || '',
-          },
-          allergies: {
-            list: data.allergies?.list || '',
-          },
-          lifestyle: {
-            smoking: data.lifestyle?.smoking || '',
-            alcohol: data.lifestyle?.alcohol || '',
-            exercise: data.lifestyle?.exercise || '',
           },
         });
       } catch (err) {
@@ -291,102 +248,6 @@ const EditPatient = () => {
               label="Emergency Contact Relationship"
               name="emergencyContact.relationship"
               value={formData.emergencyContact.relationship}
-              onChange={handleChange}
-            />
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Personal Medical History</h2>
-          <div className={styles.verticalGrid}>
-            <Textarea
-              label="Chronic conditions (e.g., diabetes, asthma)"
-              name="medicalHistory.chronicConditions"
-              value={formData.medicalHistory.chronicConditions}
-              onChange={handleChange}
-            />
-            <Textarea
-              label="Significant illnesses, surgeries, or hospitalizations"
-              name="medicalHistory.significantHistory"
-              value={formData.medicalHistory.significantHistory}
-              onChange={handleChange}
-            />
-            <Textarea
-              label="Mental health conditions or history"
-              name="medicalHistory.mentalHealth"
-              value={formData.medicalHistory.mentalHealth}
-              onChange={handleChange}
-            />
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Family Medical History</h2>
-          <div className={styles.verticalGrid}>
-            <Textarea
-              label="Family history of chronic illnesses"
-              name="familyHistory.chronicIllnesses"
-              value={formData.familyHistory.chronicIllnesses}
-              onChange={handleChange}
-            />
-            <Textarea
-              label="Hereditary conditions to be aware of"
-              name="familyHistory.hereditaryConditions"
-              value={formData.familyHistory.hereditaryConditions}
-              onChange={handleChange}
-            />
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Current Medication</h2>
-          <div className={styles.verticalGrid}>
-            <Textarea
-              label="Current medications (including dosage and frequency)"
-              name="currentMedication.medications"
-              value={formData.currentMedication.medications}
-              onChange={handleChange}
-            />
-            <Textarea
-              label="Supplements or vitamins"
-              name="currentMedication.supplements"
-              value={formData.currentMedication.supplements}
-              onChange={handleChange}
-            />
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Allergies</h2>
-          <div className={styles.verticalGrid}>
-            <Textarea
-              label="Known allergies (medications, foods, environment)"
-              name="allergies.list"
-              value={formData.allergies.list}
-              onChange={handleChange}
-            />
-          </div>
-        </section>
-
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Lifestyle & Habits</h2>
-          <div className={styles.verticalGrid}>
-            <Input
-              label="Smoking habits"
-              name="lifestyle.smoking"
-              value={formData.lifestyle.smoking}
-              onChange={handleChange}
-            />
-            <Input
-              label="Alcohol consumption"
-              name="lifestyle.alcohol"
-              value={formData.lifestyle.alcohol}
-              onChange={handleChange}
-            />
-            <Input
-              label="Exercise habits"
-              name="lifestyle.exercise"
-              value={formData.lifestyle.exercise}
               onChange={handleChange}
             />
           </div>
