@@ -430,6 +430,7 @@ const AddConsultation = () => {
       
       // Store files separately - we'll upload them after consultation creation
       const filesToUpload = formData.attachments || [];
+      console.log('Files to upload:', filesToUpload.length, filesToUpload.map(f => f instanceof File ? f.name : 'existing'));
       
       // Restructure the form data to match backend expectations (without attachments)
       const consultationData = {
@@ -465,22 +466,25 @@ const AddConsultation = () => {
       }
       
       if (response && (response._id || response.id)) {
-        const consultationId = response._id || response.id;
+        const responseConsultationId = response._id || response.id;
+        console.log('Consultation response ID:', responseConsultationId);
         
         // Upload files if any
         if (filesToUpload.length > 0) {
-          console.log(`Uploading ${filesToUpload.length} files for draft consultation ${consultationId}`);
+          console.log(`Uploading ${filesToUpload.length} files for draft consultation ${responseConsultationId}`);
           
           try {
             // Upload each file
             for (const file of filesToUpload) {
               // Skip if it's not a File object (could be existing attachment data)
               if (!(file instanceof File)) {
+                console.log('Skipping non-File object:', file);
                 continue;
               }
               
-              console.log(`Uploading file: ${file.name}`);
-              await FileService.uploadConsultationFile(consultationId, file);
+              console.log(`Uploading file: ${file.name} to consultation ${responseConsultationId}`);
+              await FileService.uploadConsultationFile(responseConsultationId, file);
+              console.log(`Successfully uploaded: ${file.name}`);
             }
             
             toast.success(isEditing ? 'Consultation draft updated successfully with attachments' : 'Consultation draft saved successfully with attachments');
@@ -492,6 +496,10 @@ const AddConsultation = () => {
           toast.success(isEditing ? 'Consultation draft updated successfully' : 'Consultation draft saved successfully');
         }
         
+        navigate('/provider/consultations');
+      } else {
+        console.error('No consultation ID in response:', response);
+        toast.error('Consultation saved but unable to upload attachments');
         navigate('/provider/consultations');
       }
     } catch (error) {
@@ -593,6 +601,7 @@ const AddConsultation = () => {
       
       // Store files separately - we'll upload them after consultation creation
       const filesToUpload = formData.attachments || [];
+      console.log('Files to upload:', filesToUpload.length, filesToUpload.map(f => f instanceof File ? f.name : 'existing'));
       
       // Restructure the form data to match backend expectations (without attachments)
       const consultationData = {
@@ -630,22 +639,25 @@ const AddConsultation = () => {
       }
       
       if (response && (response._id || response.id)) {
-        const consultationId = response._id || response.id;
+        const responseConsultationId = response._id || response.id;
+        console.log('Consultation response ID:', responseConsultationId);
         
         // Upload files if any
         if (filesToUpload.length > 0) {
-          console.log(`Uploading ${filesToUpload.length} files for consultation ${consultationId}`);
+          console.log(`Uploading ${filesToUpload.length} files for consultation ${responseConsultationId}`);
           
           try {
             // Upload each file
             for (const file of filesToUpload) {
               // Skip if it's not a File object (could be existing attachment data)
               if (!(file instanceof File)) {
+                console.log('Skipping non-File object:', file);
                 continue;
               }
               
-              console.log(`Uploading file: ${file.name}`);
-              await FileService.uploadConsultationFile(consultationId, file);
+              console.log(`Uploading file: ${file.name} to consultation ${responseConsultationId}`);
+              await FileService.uploadConsultationFile(responseConsultationId, file);
+              console.log(`Successfully uploaded: ${file.name}`);
             }
             
             toast.success(isEditing ? 'Consultation updated successfully with attachments' : 'Consultation saved successfully with attachments');
@@ -657,6 +669,10 @@ const AddConsultation = () => {
           toast.success(isEditing ? 'Consultation updated successfully' : 'Consultation saved successfully');
         }
         
+        navigate('/provider/consultations');
+      } else {
+        console.error('No consultation ID in response:', response);
+        toast.error('Consultation saved but unable to upload attachments');
         navigate('/provider/consultations');
       }
     } catch (error) {
