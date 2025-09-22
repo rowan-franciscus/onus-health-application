@@ -829,7 +829,7 @@ exports.getPatientRecentConsultations = async (req, res) => {
       status: 'completed'  // Only show completed consultations to patients
     })
       .populate('provider', 'firstName lastName providerProfile')
-      .sort({ date: -1 })
+      .sort({ date: -1, createdAt: -1, _id: -1 })  // Sort by date desc, then createdAt desc, then _id desc for consistent ordering
       .limit(limit);
     
     return res.json({
