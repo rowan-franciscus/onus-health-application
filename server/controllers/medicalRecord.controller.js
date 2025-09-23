@@ -332,12 +332,12 @@ exports.getProviderVitals = async (req, res) => {
   try {
     const { patientId, limit = 10 } = req.query;
     const providerId = req.user._id;
+    const Connection = require('../models/Connection');
     
     let query = {};
     
     // If patientId is specified, check provider's access level
     if (patientId) {
-      const Connection = require('../models/Connection');
       const connection = await Connection.findOne({
         provider: providerId,
         patient: new mongoose.Types.ObjectId(patientId)
