@@ -146,9 +146,34 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
     // Count total matching records
     const total = await Model.countDocuments(query);
 
+    // For providers, check if they have active connections to each patient
+    let recordsWithAccess = records;
+    if (req.user.role === 'provider') {
+      const Connection = require('../models/Connection');
+      const patientIds = [...new Set(records.map(record => record.patient._id.toString()))];
+      
+      // Find all active connections for this provider with the patients in the records
+      const connections = await Connection.find({
+        provider: req.user._id,
+        patient: { $in: patientIds }
+      });
+      
+      // Create a map of patient IDs to connection status
+      const connectionMap = {};
+      connections.forEach(conn => {
+        connectionMap[conn.patient.toString()] = true;
+      });
+      
+      // Add hasAccess field to each record
+      recordsWithAccess = records.map(record => ({
+        ...record.toObject(),
+        hasAccess: connectionMap[record.patient._id.toString()] || false
+      }));
+    }
+
     res.status(200).json({
       success: true,
-      records,
+      records: recordsWithAccess,
       pagination: {
         total,
         page: parseInt(page),
@@ -349,9 +374,30 @@ exports.getProviderVitals = async (req, res) => {
     
     console.log(`Found ${vitals.length} vitals records`);
     
+    // Check if provider has active connections to each patient
+    const patientIds = [...new Set(vitals.map(record => record.patient._id.toString()))];
+    
+    // Find all active connections for this provider with the patients in the records
+    const connections = await Connection.find({
+      provider: providerId,
+      patient: { $in: patientIds }
+    });
+    
+    // Create a map of patient IDs to connection status
+    const connectionMap = {};
+    connections.forEach(conn => {
+      connectionMap[conn.patient.toString()] = true;
+    });
+    
+    // Add hasAccess field to each record
+    const vitalsWithAccess = vitals.map(record => ({
+      ...record.toObject(),
+      hasAccess: connectionMap[record.patient._id.toString()] || false
+    }));
+    
     return res.json({
       success: true,
-      records: vitals,
+      records: vitalsWithAccess,
       pagination: {
         total: vitals.length,
         page: 1,

@@ -92,6 +92,7 @@ const MedicalRecords = () => {
           createdByPatient: record.createdByPatient || false,
           providerName: record.createdByPatient ? 'Patient (Self)' : 
             (record.provider ? `${record.provider.firstName} ${record.provider.lastName}` : 'Unknown Provider'),
+          hasAccess: record.hasAccess || false, // Include the hasAccess field from backend
           // Add type-specific properties based on recordType
           ...(recordType === 'vitals' && {
             heartRate: record.heartRate?.value || 'N/A',
@@ -237,13 +238,15 @@ const MedicalRecords = () => {
               View Record
             </Button>
           )}
-          <Button 
-            variant="tertiary" 
-            size="small" 
-            onClick={() => handleViewPatient(row.patientId)}
-          >
-            View Patient
-          </Button>
+          {row.hasAccess && (
+            <Button 
+              variant="tertiary" 
+              size="small" 
+              onClick={() => handleViewPatient(row.patientId)}
+            >
+              View Patient
+            </Button>
+          )}
         </div>
       )
     };
