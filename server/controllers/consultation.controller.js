@@ -134,11 +134,32 @@ exports.getConsultationById = async (req, res) => {
     console.log('Auth check - Consultation Provider ID:', consultation.provider._id.toString());
     
     // Check user permissions
-    if (
-      (userRole === 'patient' && consultation.patient._id.toString() !== userId) ||
-      (userRole === 'provider' && consultation.provider._id.toString() !== userId)
-    ) {
+    if (userRole === 'patient' && consultation.patient._id.toString() !== userId) {
       return res.status(403).json({ message: 'Unauthorized to access this consultation' });
+    }
+    
+    // For providers, check if they created the consultation OR have full access to the patient
+    if (userRole === 'provider') {
+      const isCreator = consultation.provider._id.toString() === userId;
+      
+      if (!isCreator) {
+        // Check if provider has full access to this patient
+        const connection = await Connection.findOne({
+          provider: userId,
+          patient: consultation.patient._id
+        });
+        
+        console.log('Connection check:', {
+          connection: connection ? 'found' : 'not found',
+          accessLevel: connection?.accessLevel,
+          fullAccessStatus: connection?.fullAccessStatus
+        });
+        
+        if (!connection || 
+            !(connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved')) {
+          return res.status(403).json({ message: 'Unauthorized to access this consultation' });
+        }
+      }
     }
     
     // Additional check: Patients should only see completed consultations

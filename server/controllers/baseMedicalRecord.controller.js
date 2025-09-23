@@ -5,6 +5,7 @@
 
 const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
+const Connection = require('../models/Connection');
 
 /**
  * Base controller class with common CRUD methods for medical records
@@ -69,10 +70,28 @@ class BaseMedicalRecordController {
         return res.status(404).json({ message: 'Consultation not found' });
       }
       
-      // Verify user is either the patient or provider for this consultation
-      if (consultation.patient.toString() !== userId && 
-          consultation.provider.toString() !== userId) {
+      // Verify user has access to this consultation
+      const userRole = req.user.role;
+      
+      if (userRole === 'patient' && consultation.patient.toString() !== userId) {
         return res.status(403).json({ message: 'Unauthorized to access this consultation' });
+      }
+      
+      if (userRole === 'provider') {
+        const isCreator = consultation.provider.toString() === userId;
+        
+        if (!isCreator) {
+          // Check if provider has full access to this patient
+          const connection = await Connection.findOne({
+            provider: userId,
+            patient: consultation.patient
+          });
+          
+          if (!connection || 
+              !(connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved')) {
+            return res.status(403).json({ message: 'Unauthorized to access this consultation' });
+          }
+        }
       }
       
       // Find records
