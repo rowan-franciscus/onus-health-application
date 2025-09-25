@@ -102,7 +102,8 @@ const ProtectedRoute = ({
     }
     
     // For providers with completed onboarding, check verification status
-    if (user.role === 'provider' && hasCompletedOnboarding) {
+    // Skip this check if we're still initializing to prevent flash
+    if (!isInitializing && user.role === 'provider' && hasCompletedOnboarding) {
       // Skip verification check if we're already on the verification-pending page
       if (location.pathname !== '/provider/verification-pending') {
         // Use the isVerified flag from the token first

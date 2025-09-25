@@ -29,8 +29,9 @@ Added authentication initialization tracking:
    - Handles both successful and failed user data fetches
 
 4. **Modified ProtectedRoute**
-   - Skips provider verification check while initializing
-   - Prevents premature redirects
+   - Skips provider verification check in useEffect while initializing
+   - Skips synchronous verification check during render when initializing
+   - Prevents premature redirects to both sign-in and verification-pending pages
 
 ## Files Modified
 - `/client/src/store/slices/authSlice.js` - Added initializing state
