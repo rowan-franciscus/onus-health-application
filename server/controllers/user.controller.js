@@ -20,7 +20,30 @@ exports.getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    return res.json(user);
+    // Format the response to include top-level fields expected by frontend
+    const userData = {
+      _id: user._id,
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      isProfileCompleted: user.isProfileCompleted,
+      onboardingCompleted: user.isProfileCompleted,
+      isEmailVerified: user.isEmailVerified,
+      profileImage: user.profileImage,
+      patientProfile: user.patientProfile,
+      providerProfile: user.providerProfile,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+    
+    // Add isVerified flag for providers at top level
+    if (user.role === 'provider') {
+      userData.isVerified = user.providerProfile && user.providerProfile.isVerified === true;
+    }
+    
+    return res.json(userData);
   } catch (error) {
     console.error('Error fetching current user:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });

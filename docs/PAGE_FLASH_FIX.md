@@ -51,3 +51,9 @@ Test all user roles:
 - Better user experience during page loads
 - Prevents unnecessary API calls during initialization
 - Cleaner authentication flow
+
+## Update (Provider Verification Fix)
+Fixed an additional issue where providers would see the verification pending page flash:
+- Updated `/server/controllers/user.controller.js` getCurrentUser endpoint
+- Now properly formats the response to include `isVerified` flag at top level for providers
+- Ensures consistency between login response and getCurrentUser response
