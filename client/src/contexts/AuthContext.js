@@ -8,7 +8,8 @@ import {
   clearSessionTimeout, 
   sessionTimeout,
   logout as logoutAction,
-  authSuccess
+  authSuccess,
+  setAuthInitialized
 } from '../store/slices/authSlice';
 import AuthService from '../services/auth.service';
 
@@ -134,10 +135,16 @@ export const AuthProvider = ({ children }) => {
           const currentUser = AuthService.getCurrentUser();
           if (currentUser) {
             dispatch(authSuccess(currentUser));
+          } else {
+            // Mark initialization as complete even if we couldn't load user data
+            dispatch(setAuthInitialized());
           }
           // Don't logout on error, just log it
           // The user might be in the middle of email verification
         }
+      } else if (!isAuthenticated) {
+        // If not authenticated, mark initialization as complete immediately
+        dispatch(setAuthInitialized());
       }
     };
     

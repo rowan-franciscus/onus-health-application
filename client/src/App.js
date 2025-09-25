@@ -5,6 +5,7 @@ import { selectIsAuthenticated, selectUser } from './store/slices/authSlice';
 import { AuthProvider } from './contexts/AuthContext';
 import SessionTimeout from './components/SessionTimeout';
 import ProtectedRoute from './components/ProtectedRoute';
+import AuthInitializer from './components/AuthInitializer';
 import config from './config';
 
 // Layouts
@@ -152,8 +153,9 @@ const LoadingFallback = () => {
 function App() {
   return (
     <AuthProvider>
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes>
+      <AuthInitializer>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
           {/* Auth routes */}
           <Route element={<AuthLayout />}>
             <Route path="/sign-in" element={<SignIn />} />
@@ -626,6 +628,7 @@ function App() {
         {/* Session timeout component */}
         <SessionTimeout />
       </Suspense>
+      </AuthInitializer>
     </AuthProvider>
   );
 }

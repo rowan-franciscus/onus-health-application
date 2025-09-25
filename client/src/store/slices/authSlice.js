@@ -187,6 +187,7 @@ const initialState = {
   isAuthenticated: !!getStoredToken(),
   user: null,
   loading: false,
+  initializing: !!getStoredToken(), // Track if we're initializing auth state
   error: null,
   sessionTimedOut: false,
   registrationSuccess: false,
@@ -214,6 +215,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.user = action.payload;
       state.loading = false;
+      state.initializing = false;
       state.error = null;
       state.sessionTimedOut = false;
     },
@@ -221,11 +223,13 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.loading = false;
+      state.initializing = false;
       state.error = action.payload;
     },
     logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
+      state.initializing = false;
       state.sessionTimedOut = false;
       state.registrationSuccess = false;
       state.emailVerified = false;
@@ -262,6 +266,10 @@ const authSlice = createSlice({
     clearPasswordResetSuccess: (state) => {
       state.passwordResetSuccess = false;
     },
+    // Mark auth initialization as complete
+    setAuthInitialized: (state) => {
+      state.initializing = false;
+    },
     // Mark onboarding as completed
     markOnboardingCompleted: (state) => {
       if (state.user) {
@@ -281,6 +289,7 @@ const authSlice = createSlice({
         ...initialState,
         isAuthenticated: false, // Explicitly set to false regardless of token
         user: null,             // Explicitly reset user
+        initializing: false,    // Explicitly set initializing to false
       };
     },
     // Reset just the loading state
@@ -449,6 +458,8 @@ export const {
   clearEmailVerified,
   clearPasswordResetRequested,
   clearPasswordResetSuccess,
+  setAuthInitialized,
+  markOnboardingCompleted,
   resetAuthState,
   resetAuthLoading,
 } = authSlice.actions;
@@ -458,6 +469,7 @@ export const selectAuth = (state) => state.auth;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectUser = (state) => state.auth.user;
 export const selectAuthLoading = (state) => state.auth.loading;
+export const selectAuthInitializing = (state) => state.auth.initializing;
 export const selectAuthError = (state) => state.auth.error;
 export const selectSessionTimedOut = (state) => state.auth.sessionTimedOut;
 export const selectRegistrationSuccess = (state) => state.auth.registrationSuccess;

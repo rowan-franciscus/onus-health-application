@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { selectIsAuthenticated, selectUser } from '../store/slices/authSlice';
+import { selectIsAuthenticated, selectUser, selectAuthInitializing } from '../store/slices/authSlice';
 import AuthService from '../services/auth.service';
 
 /**
@@ -20,11 +20,17 @@ const ProtectedRoute = ({
 }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectUser);
+  const isInitializing = useSelector(selectAuthInitializing);
   const location = useLocation();
   const navigate = useNavigate();
 
   // Effect to check provider verification status
   useEffect(() => {
+    // Skip if still initializing
+    if (isInitializing) {
+      return;
+    }
+    
     // Only run this check for provider routes when onboarding is complete
     if (user && user.role === 'provider' && (user.onboardingCompleted || user.isProfileCompleted)) {
       // Skip this check if we're already on the verification-pending page
@@ -56,7 +62,7 @@ const ProtectedRoute = ({
       
       checkVerification();
     }
-  }, [user, navigate, location.pathname]);
+  }, [user, navigate, location.pathname, isInitializing]);
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
