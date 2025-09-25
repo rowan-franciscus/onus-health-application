@@ -1,10 +1,44 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import jwt_decode from 'jwt-decode';
 import config from '../../config';
 import AuthService from '../../services/auth.service';
 
-// Helper function to get token from localStorage
+// Helper function to get token from localStorage and validate session
 const getStoredToken = () => {
-  return localStorage.getItem(config.tokenKey);
+  const token = localStorage.getItem(config.tokenKey);
+  if (!token) return null;
+  
+  try {
+    // Decode token to check session timeout
+    const decoded = jwt_decode(token);
+    const currentTime = Date.now() / 1000;
+    
+    // Check if token is expired
+    if (decoded.exp < currentTime) {
+      // Token is expired, clear it
+      AuthService.logout();
+      return null;
+    }
+    
+    // Check session timeout (30 minutes)
+    const tokenIssueTime = decoded.iat;
+    const minutesSinceIssue = Math.floor((currentTime - tokenIssueTime) / 60);
+    const sessionTimeoutMinutes = Math.floor((config.sessionTimeout || 1800000) / 60000); // Convert ms to minutes
+    
+    if (minutesSinceIssue >= sessionTimeoutMinutes) {
+      // Session has timed out
+      console.log('Session timed out on app initialization');
+      AuthService.logout();
+      return null;
+    }
+    
+    return token;
+  } catch (error) {
+    // Invalid token
+    console.error('Invalid token:', error);
+    AuthService.logout();
+    return null;
+  }
 };
 
 // Async thunks for authentication actions

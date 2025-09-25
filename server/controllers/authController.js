@@ -201,11 +201,40 @@ exports.refreshToken = async (req, res) => {
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
 
+    // Check if there's an existing auth token and if it has session timeout
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      if (token) {
+        try {
+          const payload = jwt.verify(token, config.jwtSecret, { ignoreExpiration: true });
+          
+          // Calculate time since token was issued
+          const currentTime = Math.floor(Date.now() / 1000);
+          const tokenIssueTime = payload.iat;
+          const minutesSinceIssue = Math.floor((currentTime - tokenIssueTime) / 60);
+          
+          // If the previous token's session has timed out, don't allow refresh
+          if (minutesSinceIssue >= config.sessionTimeout) {
+            return res.status(401).json({
+              success: false,
+              message: 'Session timeout',
+              code: 'SESSION_TIMEOUT'
+            });
+          }
+        } catch (error) {
+          // If we can't verify the old token, continue with refresh
+          console.log('Could not verify old auth token during refresh:', error.message);
+        }
+      }
+    }
+
     // Generate new tokens
     const newAuthToken = user.generateAuthToken();
     const newRefreshToken = user.generateRefreshToken();
 
     res.json({
+      success: true,
       tokens: {
         authToken: newAuthToken,
         refreshToken: newRefreshToken
@@ -544,10 +573,16 @@ exports.resetPassword = async (req, res) => {
 exports.checkSessionStatus = async (req, res) => {
   try {
     // User is already verified by auth middleware
+    const user = req.user;
+    
+    // Generate a new auth token with updated issue time to keep session alive
+    const newAuthToken = user.generateAuthToken();
+    
     res.json({ 
       success: true, 
       message: 'Session is active',
-      userId: req.user._id
+      userId: user._id,
+      token: newAuthToken // Return new token to refresh the session
     });
   } catch (error) {
     console.error('Session status check error:', error);

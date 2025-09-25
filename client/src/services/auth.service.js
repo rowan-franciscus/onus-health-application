@@ -303,12 +303,16 @@ class AuthService {
         throw new Error('Invalid refresh token format');
       }
 
-      const response = await ApiService.post('/auth/refresh-token', { refreshToken });
+      // Include the current auth token in the header for session timeout validation
+      const currentToken = this.getToken();
+      const headers = currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
       
-      if (response.success && response.token) {
-        this.setToken(response.token);
-        if (response.refreshToken) {
-          this.setRefreshToken(response.refreshToken);
+      const response = await ApiService.post('/auth/refresh-token', { refreshToken }, { headers });
+      
+      if (response.success && response.tokens) {
+        this.setToken(response.tokens.authToken);
+        if (response.tokens.refreshToken) {
+          this.setRefreshToken(response.tokens.refreshToken);
         }
       }
       
@@ -452,7 +456,14 @@ class AuthService {
    */
   static async pingSession() {
     try {
-      return await ApiService.get('/auth/session-status');
+      const response = await ApiService.get('/auth/session-status');
+      
+      // If a new token is returned, update it to refresh the session
+      if (response.token) {
+        this.setToken(response.token);
+      }
+      
+      return response;
     } catch (error) {
       console.error('Session ping error:', error);
       throw error;

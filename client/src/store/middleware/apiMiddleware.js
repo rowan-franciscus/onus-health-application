@@ -153,20 +153,24 @@ api.interceptors.response.use(
         }
 
         // Try to refresh the token
+        // Include the current auth token in the header for session timeout validation
+        const currentToken = localStorage.getItem(config.tokenKey);
+        const headers = currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
+        
         const response = await axios.post(`${config.apiUrl}/auth/refresh-token`, {
           refreshToken,
-        });
+        }, { headers });
 
-        if (response.data.success && response.data.token) {
-          // Store the new token
-          localStorage.setItem(config.tokenKey, response.data.token);
+        if (response.data.success && response.data.tokens) {
+          // Store the new tokens
+          localStorage.setItem(config.tokenKey, response.data.tokens.authToken);
           
-          if (response.data.refreshToken) {
-            localStorage.setItem(config.refreshTokenKey, response.data.refreshToken);
+          if (response.data.tokens.refreshToken) {
+            localStorage.setItem(config.refreshTokenKey, response.data.tokens.refreshToken);
           }
           
           // Update authorization header and retry request
-          originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+          originalRequest.headers.Authorization = `Bearer ${response.data.tokens.authToken}`;
           return api(originalRequest);
         } else {
           // If server doesn't return a new token, force logout

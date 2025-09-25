@@ -156,6 +156,9 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('authRedirectPath', currentPath);
       }
       
+      // Clear all auth data from localStorage
+      AuthService.logout();
+      
       // Redirect to login with timeout message
       navigate('/sign-in?timeout=true');
       
