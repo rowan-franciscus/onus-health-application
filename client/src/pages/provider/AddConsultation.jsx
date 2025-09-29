@@ -81,8 +81,10 @@ const AddConsultation = () => {
         },
         medication: consultationData.medications?.map(med => ({
           name: med.name || '',
-          dosage: med.dosage?.value || '',
-          dosageUnit: med.dosage?.unit || '',
+          dosage: {
+            value: med.dosage?.value || '',
+            unit: med.dosage?.unit || ''
+          },
           frequency: med.frequency || '',
           reason: med.reasonForPrescription || '',
           startDate: med.startDate ? new Date(med.startDate).toISOString().substr(0, 10) : '',
@@ -375,9 +377,12 @@ const AddConsultation = () => {
       
       // Transform medication data to match backend schema
       const transformedMedication = formData.medication.map(med => ({
-        ...med,
+        name: med.name,
+        dosage: med.dosage, // Keep dosage as object with value and unit
+        frequency: med.frequency,
         reasonForPrescription: med.reason,
-        reason: undefined
+        startDate: med.startDate,
+        endDate: med.endDate
       }));
       
       // Transform immunization data to match backend schema
@@ -570,9 +575,12 @@ const AddConsultation = () => {
       
       // Transform medication data to match backend schema
       const transformedMedication = formData.medication.map(med => ({
-        ...med,
+        name: med.name,
+        dosage: med.dosage, // Keep dosage as object with value and unit
+        frequency: med.frequency,
         reasonForPrescription: med.reason,
-        reason: undefined
+        startDate: med.startDate,
+        endDate: med.endDate
       }));
       
       // Transform immunization data to match backend schema

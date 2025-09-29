@@ -165,10 +165,6 @@ const ConsultationForm = ({
       initialValues={initialValues}
       validationSchema={validationSchema}
       onSubmit={(values, { setSubmitting, setErrors }) => {
-        console.log('=== FORMIK ONSUBMIT TRIGGERED ===');
-        console.log('Form values:', values);
-        console.log('Attachments:', attachments);
-        
         try {
           // Add attachments to values - only send new files to be uploaded
           const formData = {
@@ -176,7 +172,6 @@ const ConsultationForm = ({
             attachments // Only new files, existing attachments stay on server
           };
           
-          console.log('Calling onSubmit prop with formData:', formData);
           onSubmit(formData);
         } catch (error) {
           console.error('Error during form submission:', error);
@@ -184,25 +179,6 @@ const ConsultationForm = ({
         } finally {
           setSubmitting(false);
         }
-      }}
-      validate={(values) => {
-        console.log('=== FORMIK VALIDATE CALLED ===');
-        console.log('Validating values:', values);
-        const errors = {};
-        
-        // Log any validation errors
-        try {
-          validationSchema.validateSync(values, { abortEarly: false });
-        } catch (err) {
-          console.log('Validation errors:', err.errors);
-          if (err.inner) {
-            err.inner.forEach(error => {
-              console.log(`Field ${error.path}: ${error.message}`);
-            });
-          }
-        }
-        
-        return errors;
       }}
     >
       {(formik) => (
@@ -292,10 +268,7 @@ const ConsultationForm = ({
               variant="primary"
               disabled={isSaving || formik.isSubmitting}
               className={styles.submitButton}
-              onClick={() => {
-                console.log('Save Consultation button clicked - manual submit');
-                formik.handleSubmit();
-              }}
+              onClick={() => formik.handleSubmit()}
             >
               Save Consultation
             </Button>
