@@ -164,13 +164,45 @@ const ConsultationForm = ({
     <Formik
       initialValues={initialValues}
       validationSchema={validationSchema}
-      onSubmit={(values) => {
-        // Add attachments to values - only send new files to be uploaded
-        const formData = {
-          ...values,
-          attachments // Only new files, existing attachments stay on server
-        };
-        onSubmit(formData);
+      onSubmit={(values, { setSubmitting, setErrors }) => {
+        console.log('=== FORMIK ONSUBMIT TRIGGERED ===');
+        console.log('Form values:', values);
+        console.log('Attachments:', attachments);
+        
+        try {
+          // Add attachments to values - only send new files to be uploaded
+          const formData = {
+            ...values,
+            attachments // Only new files, existing attachments stay on server
+          };
+          
+          console.log('Calling onSubmit prop with formData:', formData);
+          onSubmit(formData);
+        } catch (error) {
+          console.error('Error during form submission:', error);
+          setErrors({ submit: error.message });
+        } finally {
+          setSubmitting(false);
+        }
+      }}
+      validate={(values) => {
+        console.log('=== FORMIK VALIDATE CALLED ===');
+        console.log('Validating values:', values);
+        const errors = {};
+        
+        // Log any validation errors
+        try {
+          validationSchema.validateSync(values, { abortEarly: false });
+        } catch (err) {
+          console.log('Validation errors:', err.errors);
+          if (err.inner) {
+            err.inner.forEach(error => {
+              console.log(`Field ${error.path}: ${error.message}`);
+            });
+          }
+        }
+        
+        return errors;
       }}
     >
       {(formik) => (
@@ -256,10 +288,14 @@ const ConsultationForm = ({
               Save Draft
             </Button>
             <Button
-              type="submit"
+              type="button"
               variant="primary"
-              disabled={isSaving}
+              disabled={isSaving || formik.isSubmitting}
               className={styles.submitButton}
+              onClick={() => {
+                console.log('Save Consultation button clicked - manual submit');
+                formik.handleSubmit();
+              }}
             >
               Save Consultation
             </Button>
