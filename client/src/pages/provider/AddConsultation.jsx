@@ -526,6 +526,30 @@ const AddConsultation = () => {
         return;
       }
       
+      // Validate required fields for completed consultations
+      if (!formData.general?.reasonForVisit || formData.general.reasonForVisit.trim() === '') {
+        toast.error('Reason for visit is required for completed consultations. Please fill in the reason for visit in the General tab.');
+        setIsSaving(false);
+        // Switch to General tab to show the missing field
+        setActiveTab('general');
+        return;
+      }
+      
+      // Validate other required fields
+      if (!formData.general?.specialistName || formData.general.specialistName.trim() === '') {
+        toast.error('Specialist name is required. Please fill in the specialist name in the General tab.');
+        setIsSaving(false);
+        setActiveTab('general');
+        return;
+      }
+      
+      if (!formData.general?.specialty || formData.general.specialty.trim() === '') {
+        toast.error('Specialty is required. Please fill in the specialty in the General tab.');
+        setIsSaving(false);
+        setActiveTab('general');
+        return;
+      }
+      
       // Extract date from general and move to top level
       const { date, ...generalWithoutDate } = formData.general;
       

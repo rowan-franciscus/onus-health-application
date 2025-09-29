@@ -40,6 +40,8 @@ exports.updateConsultationSimple = async (req, res) => {
     }
     
     console.log('Found consultation, status:', consultation.status);
+    console.log('Updating to status:', consultationData.status);
+    console.log('General data:', consultationData.general);
     
     // Update basic consultation fields
     Object.keys(consultationData).forEach(key => {
@@ -53,9 +55,35 @@ exports.updateConsultationSimple = async (req, res) => {
     
     consultation.lastUpdated = Date.now();
     
+    // Check if required fields are present when changing to completed status
+    if (consultationData.status === 'completed') {
+      if (!consultation.general?.reasonForVisit || consultation.general.reasonForVisit.trim() === '') {
+        console.log('Missing required field: reasonForVisit for completed consultation');
+        return res.status(400).json({ 
+          message: 'Reason for visit is required for completed consultations',
+          field: 'general.reasonForVisit'
+        });
+      }
+    }
+    
     // Save the consultation first
-    await consultation.save();
-    console.log('Consultation basic fields updated');
+    try {
+      await consultation.save();
+      console.log('Consultation basic fields updated');
+    } catch (saveError) {
+      console.error('Error saving consultation:', saveError);
+      if (saveError.name === 'ValidationError') {
+        const errors = Object.keys(saveError.errors).map(key => ({
+          field: key,
+          message: saveError.errors[key].message
+        }));
+        return res.status(400).json({
+          message: 'Validation error',
+          errors: errors
+        });
+      }
+      throw saveError;
+    }
     
     // Update medical records without transactions
     const patientId = consultation.patient;
