@@ -43,8 +43,7 @@ const ImmunizationStep = ({ formData, onStepChange, next, previous, isSubmitting
               />
               <ErrorMessage name="immunization.immunizationHistory" component="div" className={styles.error} />
               <p className={styles.fieldDescription}>
-                Keeping track of your immunization history helps ensure you're protected against preventable diseases
-                and helps healthcare providers recommend appropriate vaccinations.
+                Keeping note of your immunization history helps paint a clearer picture of your overall health and allows your healthcare provider to offer care that's best suited to you.
               </p>
             </div>
 
