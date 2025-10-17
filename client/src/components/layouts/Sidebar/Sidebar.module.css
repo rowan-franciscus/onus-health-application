@@ -30,7 +30,7 @@
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #9C8EEB;
   text-decoration: none;
   transition: all 0.2s ease;
   font-size: 16px;
@@ -71,11 +71,13 @@
 .icon img {
   width: 20px;
   height: 20px;
-  opacity: 0.8;
+  filter: brightness(0.95) saturate(0.7);
+  transition: filter 0.2s ease;
 }
 
+.navItem:hover .icon img,
 .active .icon img {
-  opacity: 1;
+  filter: brightness(1) saturate(1);
 }
 
 .label {
