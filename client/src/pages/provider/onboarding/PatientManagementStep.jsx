@@ -29,8 +29,6 @@ const PatientManagementStep = ({ formData, onStepChange, next, previous, isSubmi
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Patient Management Details</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

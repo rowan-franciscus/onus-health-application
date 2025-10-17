@@ -24,8 +24,6 @@ const CurrentMedicationStep = ({ formData, onStepChange, next, previous, isSubmi
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Current Medication</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

@@ -25,8 +25,6 @@ const MedicalHistoryStep = ({ formData, onStepChange, next, previous, isSubmitti
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Personal Medical History</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

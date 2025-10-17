@@ -45,7 +45,6 @@ const ReviewStep = ({ formData, onStepChange, previous, onSubmit, isSubmitting, 
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Review Your Information</h2>
       <p className={styles.reviewIntro}>
         Please review all your information below. If you need to make changes,
         click the "Edit" button next to the appropriate section. Once everything is correct,

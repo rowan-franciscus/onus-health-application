@@ -24,8 +24,6 @@ const FamilyHistoryStep = ({ formData, onStepChange, next, previous, isSubmittin
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Family Medical History</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

@@ -24,8 +24,6 @@ const DataAccessStep = ({ formData, onStepChange, next, previous, isSubmitting }
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Data & Access Preferences</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

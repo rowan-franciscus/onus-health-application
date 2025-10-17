@@ -23,8 +23,6 @@ const ImmunizationStep = ({ formData, onStepChange, next, previous, isSubmitting
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Immunization</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

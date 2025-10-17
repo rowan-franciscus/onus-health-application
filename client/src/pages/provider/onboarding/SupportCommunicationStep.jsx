@@ -25,8 +25,6 @@ const SupportCommunicationStep = ({ formData, onStepChange, next, previous, isSu
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Support & Communication</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

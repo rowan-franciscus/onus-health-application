@@ -46,8 +46,6 @@ const ProfessionalInfoStep = ({ formData, onStepChange, next, isSubmitting }) =>
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Professional Information</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

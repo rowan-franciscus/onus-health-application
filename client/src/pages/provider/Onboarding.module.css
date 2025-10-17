@@ -5,7 +5,7 @@
   flex-direction: column;
   background-color: #f9f9f9;
   background-image: url('../../assets/patterns/medical-pattern-light.svg');
-  background-size: 300px;
+  background-size: 600px;
   background-repeat: repeat;
   position: relative;
   overflow: hidden; /* Prevent outer scrolling */

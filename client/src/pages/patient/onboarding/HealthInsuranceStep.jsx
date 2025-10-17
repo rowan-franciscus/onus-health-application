@@ -28,8 +28,6 @@ const HealthInsuranceStep = ({ formData, onStepChange, next, previous, isSubmitt
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Health Insurance</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}

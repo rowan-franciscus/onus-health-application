@@ -26,8 +26,6 @@ const PracticeInfoStep = ({ formData, onStepChange, next, previous, isSubmitting
 
   return (
     <div className={styles.stepContainer}>
-      <h2 className={styles.stepHeading}>Practice Information</h2>
-      
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
