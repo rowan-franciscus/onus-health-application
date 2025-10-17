@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import Sidebar from '../Sidebar';
 import Header from '../Header';
@@ -65,7 +65,6 @@ const getNavItems = (role, logoutFn) => {
  */
 const DashboardLayout = ({ role }) => {
   const { user, logout } = useAuth();
-  const location = useLocation();
   const { items, footerItems } = getNavItems(role, logout);
   
   // Create the logo component
@@ -74,16 +73,6 @@ const DashboardLayout = ({ role }) => {
       <img src={logoWhite} alt="Onus Logo" className={styles.logoImage} />
     </div>
   );
-
-  // Determine current page title based on location
-  const getCurrentPageTitle = () => {
-    // Find the current nav item based on the path
-    const currentItem = items.find((item) => 
-      location.pathname.startsWith(item.to)
-    );
-    
-    return currentItem ? currentItem.label : '';
-  };
 
   // Get user information based on role
   const getUserDisplay = () => {
@@ -159,7 +148,6 @@ const DashboardLayout = ({ role }) => {
       />
       <div className={styles.mainContent}>
         <Header 
-          title={getCurrentPageTitle()}
           user={getUserDisplay()}
           className={styles.header}
         />
