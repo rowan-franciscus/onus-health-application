@@ -10,6 +10,12 @@
   margin-bottom: 2rem;
 }
 
+.header h1 {
+  color: #333;
+  margin: 0;
+  font-size: 1.75rem;
+}
+
 .titleSection h1 {
   color: #333;
   margin: 0;
@@ -42,22 +48,10 @@
 }
 
 .contentGrid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   margin-bottom: 30px;
-}
-
-@media (min-width: 768px) {
-  .contentGrid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-@media (min-width: 1200px) {
-  .contentGrid {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
 }
 
 /* Card styles */
@@ -66,6 +60,7 @@
 .practiceInfoCard,
 .managementInfoCard,
 .supportInfoCard {
+  margin-bottom: 1.5rem;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -84,16 +79,35 @@
   font-size: 1.25rem;
 }
 
+/* Field styles for read-only display */
+.field {
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  color: #6039cc;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+  display: block;
+  font-weight: 500;
+}
+
+.value {
+  color: #333;
+  font-size: 1rem;
+  margin: 0;
+}
+
 .formRow {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-bottom: 15px;
 }
 
 @media (min-width: 768px) {
   .formRow {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -278,6 +292,10 @@
   .formRow {
     grid-template-columns: 1fr;
   }
+  
+  .basicInfoCard .formRow:first-of-type {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -289,7 +307,6 @@
   
   .headerActions {
     width: 100%;
-    justify-content: center;
   }
   
   .editButton {
