@@ -61,7 +61,20 @@ const sendEmail = async (emailData) => {
     const provider = emailData.provider || config.mailProvider;
 
     if (provider === 'sendgrid' && config.sendgridApiKey && config.sendgridApiKey.startsWith('SG.')) {
-      await sgMail.send(email);
+      // Disable click tracking to prevent SSL certificate issues
+      const sendGridEmail = {
+        ...email,
+        trackingSettings: {
+          clickTracking: {
+            enable: false,
+            enableText: false
+          },
+          openTracking: {
+            enable: false
+          }
+        }
+      };
+      await sgMail.send(sendGridEmail);
       logger.info(`Email sent successfully via SendGrid to ${email.to}`);
       return true;
     } else if (provider === 'nodemailer' && transporter) {
