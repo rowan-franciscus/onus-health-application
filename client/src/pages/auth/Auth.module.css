@@ -1,6 +1,6 @@
 /* Auth.module.css */
 .authContainer {
-  max-width: 450px;
+  max-width: 1000px;
   width: 100%;
   padding: 2rem;
   margin: 0 auto;
@@ -525,6 +525,7 @@
 }
 
 .resendButton {
+  width: 100%;
   padding: 0.75rem 1.5rem;
   background-color: #E0E0E0;
   color: #4A4A4A;
@@ -534,7 +535,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .resendButton:not(:disabled):hover {
@@ -552,6 +553,11 @@
   color: #6D46FF;
   border: 1px solid #6D46FF;
   margin-top: 1rem;
+  display: block;
+  text-decoration: none;
+  text-align: center;
+  line-height: 40px;
+  padding: 0;
 }
 
 .backButton:hover {
