@@ -50,11 +50,12 @@ const Settings = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   
   // Notification settings
-  const [notificationSettings, setNotificationSettings] = useState({
+  // TODO: Implement notification preferences functionality
+  /* const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
     emailConsultationUpdates: true,
     emailPatientRequests: true
-  });
+  }); */
   
   useEffect(() => {
     if (user) {
@@ -185,7 +186,8 @@ const Settings = () => {
     }
   };
   
-  const handleNotificationChange = (e) => {
+  // TODO: Implement notification preferences functionality
+  /* const handleNotificationChange = (e) => {
     const { name, checked } = e.target;
     setNotificationSettings(prev => ({
       ...prev,
@@ -196,7 +198,7 @@ const Settings = () => {
   const handleSaveNotifications = () => {
     // This would be an API call in a real app
     toast.success('Notification settings saved');
-  };
+  }; */
   
   const handleOpenDeleteModal = () => {
     setIsDeleteModalOpen(true);
@@ -316,7 +318,8 @@ const Settings = () => {
         </form>
       </Card>
       
-      <Card className={styles.notificationsCard}>
+      {/* TODO: Implement notification preferences functionality */}
+      {/* <Card className={styles.notificationsCard}>
         <div className={styles.cardHeader}>
           <h2>Notification Settings</h2>
           <p>Control how you receive notifications</p>
@@ -359,7 +362,7 @@ const Settings = () => {
         <div className={styles.formActions}>
           <Button onClick={handleSaveNotifications}>Save Preferences</Button>
         </div>
-      </Card>
+      </Card> */}
       
       <Card className={styles.dangerZoneCard}>
         <div className={styles.cardHeader}>

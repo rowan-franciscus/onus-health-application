@@ -140,4 +140,56 @@ The existing `server/scripts/cleanupOrphanedData.js` script was used to identify
 - All remaining consultations have valid user references
 
 ### Verification
+The script verified data integrity after cleanup, confirming that all remaining connections and consultations have valid user references, and no orphaned medical records remain in the database.
+
+---
+
+## Date: October 1, 2025
+
+### Context
+Additional users were deleted from the MongoDB Atlas database through the web interface, requiring cleanup of orphaned data.
+
+### Cleanup Script Used
+The existing `server/scripts/cleanupOrphanedData.js` script was used to identify and remove orphaned data.
+
+### Data Cleaned
+
+#### Summary of Deleted Records:
+- **1 orphaned connection** - Patient-provider relationship where both provider ID 68c1c785c8a2ca2b04454736 and patient ID 68c30ed9c8a2ca2b04454d17 no longer existed
+- **9 orphaned consultations** - Medical consultations linked to deleted users:
+
+---
+
+## Date: October 17, 2025
+
+### Context
+Additional users were deleted from the MongoDB Atlas database through the web interface, requiring cleanup of orphaned data.
+
+### Cleanup Script Used
+The existing `server/scripts/cleanupOrphanedData.js` script was used to identify and remove orphaned data.
+
+### Data Cleaned
+
+#### Summary of Deleted Records:
+- **2 orphaned connections** - Patient-provider relationships where users no longer existed:
+  - Connection where provider ID 68cd250bc8a2ca2b0445853f no longer existed
+  - Connection where both provider ID 68cd250bc8a2ca2b0445853f and patient ID 68cd2682c8a2ca2b0445858b no longer existed
+- **11 orphaned consultations** - Medical consultations linked to deleted users (primarily provider 68cd250bc8a2ca2b0445853f and patient 68cd2682c8a2ca2b0445858b)
+- **73 orphaned medical records** - Various medical record types associated with the orphaned consultations:
+  - 10 vitals records
+  - 8 medications records
+  - 11 immunizations records
+  - 11 lab results records
+  - 11 radiology reports
+  - 11 hospital records
+  - 11 surgery records
+
+#### Database Statistics After Cleanup:
+- Total users: 12
+- Total connections: 8 (down from 10)
+- Total consultations: 27 (down from 38)
+- All remaining connections have valid user references
+- All remaining consultations have valid user references
+
+### Verification
 The script verified data integrity after cleanup, confirming that all remaining connections and consultations have valid user references, and no orphaned medical records remain in the database. 
