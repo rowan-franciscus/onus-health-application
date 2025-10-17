@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
+import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
 import classNames from 'classnames';
 import styles from './FormStep.module.css';
@@ -57,145 +57,225 @@ const TermsAndConditionsStep = ({ formData, onStepChange, next, previous, isSubm
               >
                 <h3>Terms of Service</h3>
                 <p>
-                  <strong>Effective Date: [Date]</strong>
+                  <strong>Effective Date: July 25, 2025</strong><br />
+                  <strong>Last Updated: July 25, 2025</strong><br />
+                  <strong>Contact: hello@onus.health</strong>
                 </p>
                 
-                <h4>1. Acceptance of Terms</h4>
                 <p>
-                  By accessing and using the Onus Health digital health record application ("the Service"), 
-                  you accept and agree to be bound by the terms and provision of this agreement. If you do not 
-                  agree to abide by the above, please do not use this service.
+                  Welcome to Onus, the Electronic Health Record (EHR) platform that empowers patients with ownership of their health data and helps providers deliver better care through access to verified patient records.
                 </p>
                 
-                <h4>2. Use of Service</h4>
-                <p>
-                  The Service is designed to help manage and store electronic health records. You must provide 
-                  accurate, complete, and current information. You are responsible for maintaining the 
-                  confidentiality of your account and password.
-                </p>
-                
-                <h4>3. Privacy and Data Protection</h4>
-                <p>
-                  Your use of the Service is also governed by our Privacy Policy. We are committed to protecting 
-                  your personal health information and maintaining compliance with all applicable healthcare 
-                  privacy regulations, including HIPAA where applicable.
-                </p>
-                
-                <h4>4. Medical Disclaimer</h4>
-                <p>
-                  The Service is not intended to be a substitute for professional medical advice, diagnosis, 
-                  or treatment. Always seek the advice of your physician or other qualified health provider 
-                  with any questions you may have regarding a medical condition.
-                </p>
-                
-                <h4>5. User Responsibilities</h4>
-                <p>
-                  You agree to use the Service only for lawful purposes and in accordance with these Terms. 
-                  You agree not to use the Service:
-                </p>
+                <h4>Who This Applies To</h4>
+                <p>These Terms apply to both:</p>
                 <ul>
-                  <li>In any way that violates any applicable federal, state, local, or international law or regulation</li>
-                  <li>To transmit, or procure the sending of, any advertising or promotional material, including any "junk mail," "chain letter," "spam," or any other similar solicitation</li>
-                  <li>To impersonate or attempt to impersonate another user, person, or entity</li>
-                  <li>To engage in any other conduct that restricts or inhibits anyone's use or enjoyment of the Service</li>
+                  <li>Patients using Onus to store, access, and manage their health data, and</li>
+                  <li>Healthcare Providers using Onus to view and update patient records (with proper authorization).</li>
                 </ul>
                 
-                <h4>6. Intellectual Property Rights</h4>
-                <p>
-                  The Service and its entire contents, features, and functionality are owned by Onus Health, 
-                  its licensors, or other providers of such material and are protected by copyright, trademark, 
-                  patent, trade secret, and other intellectual property or proprietary rights laws.
-                </p>
+                <h4>1. Purpose of Onus</h4>
+                <p><strong>Legal:</strong></p>
+                <p>Onus provides a secure digital platform enabling:</p>
+                <ul>
+                  <li>Patients to store, access, and share their electronic health records;</li>
+                  <li>Providers to view and input data with patient authorization for informed care decisions;</li>
+                  <li>All data is encrypted and securely managed in accordance with international best practices.</li>
+                </ul>
+                <p>Onus is not a registered healthcare provider, and it does not offer diagnosis, treatment, or medical advice. Any decisions made based on data within Onus remain the sole responsibility of the providers and patients.</p>
                 
-                <h4>7. Termination</h4>
-                <p>
-                  We may terminate or suspend your account and bar access to the Service immediately, without 
-                  prior notice or liability, under our sole discretion, for any reason whatsoever and without 
-                  limitation, including but not limited to a breach of the Terms.
-                </p>
+                <p><strong>Plain-Language:</strong></p>
+                <p>Think of Onus like a secure digital vault for your health data. You can view it, share it with your doctor, and keep it for life. Doctors use it to better understand your history and help you more efficiently.</p>
                 
-                <h4>8. Disclaimer of Warranties</h4>
-                <p>
-                  The Service is provided on an "AS IS" and "AS AVAILABLE" basis. The Service is provided 
-                  without warranties of any kind, whether express or implied, including, but not limited to, 
-                  implied warranties of merchantability, fitness for a particular purpose, non-infringement, 
-                  or course of performance.
-                </p>
+                <h4>2. User Responsibilities</h4>
+                <p><strong>Patients:</strong></p>
+                <ul>
+                  <li>Can choose to upload their health data or allow providers to do so.</li>
+                  <li>Must authorize providers before they can view or edit records.</li>
+                  <li>Are responsible for managing access permissions to their data.</li>
+                </ul>
                 
-                <h4>9. Limitation of Liability</h4>
-                <p>
-                  In no event shall Onus Health, nor its directors, employees, partners, agents, suppliers, 
-                  or affiliates, be liable for any indirect, incidental, special, consequential, or punitive 
-                  damages, including without limitation, loss of profits, data, use, goodwill, or other 
-                  intangible losses.
-                </p>
+                <p><strong>Providers:</strong></p>
+                <ul>
+                  <li>Must enter data truthfully and maintain medical and professional ethics.</li>
+                  <li>May only access patient records with explicit patient authorization.</li>
+                  <li>Must keep data confidential and not share it without consent.</li>
+                </ul>
                 
-                <h4>10. Governing Law</h4>
-                <p>
-                  These Terms shall be governed and construed in accordance with the laws of [Your Jurisdiction], 
-                  without regard to its conflict of law provisions. Our failure to enforce any right or provision 
-                  of these Terms will not be considered a waiver of those rights.
-                </p>
+                <h4>3. Disclaimer of Medical Liability</h4>
+                <p><strong>Legal:</strong></p>
+                <p>Onus is a data management tool. It does not:</p>
+                <ul>
+                  <li>Provide medical advice;</li>
+                  <li>Verify the accuracy or medical validity of submitted data;</li>
+                  <li>Accept liability for health outcomes based on platform data.</li>
+                </ul>
+                <p>Providers and patients use Onus at their own discretion. Onus assumes no liability for damages arising from incorrect, outdated, or misused data.</p>
                 
-                <h4>11. Changes to Terms</h4>
-                <p>
-                  We reserve the right, at our sole discretion, to modify or replace these Terms at any time. 
-                  If a revision is material, we will provide at least 30 days notice prior to any new terms 
-                  taking effect.
-                </p>
+                <p><strong>Plain-Language:</strong></p>
+                <p>We're not doctors - we just help you and your doctor manage data better. Any medical decisions should always be made by you and your healthcare professional.</p>
                 
-                <h4>12. Contact Information</h4>
-                <p>
-                  If you have any questions about these Terms, please contact us at:
-                  <br />
-                  Email: support@onushealth.com
-                  <br />
-                  Address: [Your Company Address]
-                </p>
+                <h4>4. Suspension & Termination</h4>
+                <p><strong>Legal:</strong></p>
+                <p>Onus may suspend or terminate any account, without prior notice, if:</p>
+                <ul>
+                  <li>Fraudulent, illegal, or unethical behavior is detected;</li>
+                  <li>Providers share confidential patient data without authorization;</li>
+                  <li>Users breach these Terms of Service.</li>
+                </ul>
+                <p>Suspension may be temporary or permanent, based on the severity of the breach.</p>
+                
+                <p><strong>Plain-Language:</strong></p>
+                <p>If someone breaks the rules or acts shady, we can shut down their account to protect everyone else, including you.</p>
+                
+                <h4>5. Fees & Payment</h4>
+                <p><strong>Legal:</strong></p>
+                <p>Currently, Onus is offered free of charge. However:</p>
+                <ul>
+                  <li>Future fees may be introduced for providers;</li>
+                  <li>Patients may be charged for premium features (e.g., analytics or downloadable reports).</li>
+                </ul>
+                <p>Users will be notified in advance before any pricing changes occur.</p>
+                
+                <p><strong>Plain-Language:</strong></p>
+                <p>Right now, Onus is free! In the future, there might be small charges for extra features - don't worry, we'll always let you know first.</p>
+                
+                <h4>6. Service Availability & Support</h4>
+                <p><strong>Legal:</strong></p>
+                <p>Onus is hosted on AWS with a high-availability infrastructure. However, occasional downtimes may occur due to maintenance or unforeseen events.</p>
+                <p>Support is available during Namibian business hours: 8am–5pm, Monday to Friday at hello@onus.health.</p>
+                
+                <p><strong>Plain-Language:</strong></p>
+                <p>We're usually up and running, but tech sometimes needs a break. If you need help, we're here during work hours.</p>
+                
+                <h4>7. Governing Law & Dispute Resolution</h4>
+                <p><strong>Legal:</strong></p>
+                <p>This Agreement is governed by the laws of the Republic of Namibia. In the event of a dispute:</p>
+                <ul>
+                  <li>The parties will first attempt to resolve the matter amicably;</li>
+                  <li>Failing which, mediation or arbitration will be pursued;</li>
+                  <li>If unresolved, legal proceedings may commence in Namibian courts.</li>
+                </ul>
+                <p>Disputes must be raised within a reasonable period from the event giving rise to the dispute.</p>
+                
+                <p><strong>Plain-Language:</strong></p>
+                <p>Namibian law applies here. If something goes wrong, we'll try to work it out with you and your provider. If not, mediation or court is an option.</p>
+                
+                <h4>8. Policy Updates & User Rights</h4>
+                <p><strong>Legal:</strong></p>
+                <p>Onus reserves the right to update this Terms of Service at any time. Users will be informed of material changes and may contact us or close their account if they disagree with any updated terms.</p>
+                <p>You may terminate your account at any time and request deletion of your data.</p>
+                
+                <p><strong>Plain-Language:</strong></p>
+                <p>We'll update these terms when necessary. If you don't agree with changes, you're free to terminate your account any time - but we hope to make your time with Onus as good as possible for you to stay!</p>
+                
+                <h4>9. Contact Us</h4>
+                <p>For questions, feedback, or complaints, email: <strong>hello@onus.health</strong></p>
                 
                 <hr style={{ margin: '30px 0' }} />
                 
                 <h3>Privacy Policy</h3>
                 <p>
-                  <strong>Effective Date: [Date]</strong>
+                  <strong>Effective Date: July 25, 2025</strong><br />
+                  <strong>Last Updated: July 25, 2025</strong><br />
+                  <strong>Contact: hello@onus.health</strong>
                 </p>
                 
-                <h4>1. Information We Collect</h4>
-                <p>
-                  We collect information you provide directly to us, such as when you create an account, 
-                  fill out forms, or communicate with us. This includes personal information, health information, 
-                  and other data necessary to provide our services.
-                </p>
+                <h4>1. Introduction</h4>
+                <p>This Privacy Policy outlines how Onus Technologies ("Onus", "we", "us", or "our") collects, uses, stores, and protects personal data provided by users of the Onus Electronic Health Record (EHR) platform, including both Patients and Healthcare Providers ("you" or "users").</p>
+                <p>This Privacy Policy applies to all users located in Namibia, and where applicable, follows international data protection standards, including those aligned with the General Data Protection Regulation (GDPR) and the U.S. HIPAA framework, given the absence of local data protection legislation in Namibia.</p>
                 
-                <h4>2. How We Use Your Information</h4>
-                <p>
-                  We use the information we collect to provide, maintain, and improve our services, including 
-                  to process transactions, send notifications, and provide customer support.
-                </p>
+                <h4>2. Plain Language Summary</h4>
+                <p>To make this policy easier to understand, here's a quick summary:</p>
+                <ul>
+                  <li>We collect your data to provide you with secure, lifetime access to your health information.</li>
+                  <li>You control your data and can delete it or withdraw consent at any time.</li>
+                  <li>We protect your data using best-in-class security, including end to end encryption.</li>
+                  <li>We do not share your health data with third parties unless you explicitly authorize it.</li>
+                  <li>We may use anonymized data to improve the platform and contribute to better healthcare in Namibia, as well as draw valuable insights that will benefit you, all anonymized.</li>
+                  <li>You can contact us anytime at hello@onus.health for questions or concerns.</li>
+                </ul>
                 
-                <h4>3. Information Sharing and Disclosure</h4>
-                <p>
-                  We do not sell, trade, or otherwise transfer your personal health information to third parties 
-                  without your consent, except as described in this privacy policy or as required by law.
-                </p>
+                <h4>3. Information We Collect</h4>
+                <p><strong>3.1 For Patients:</strong></p>
+                <ul>
+                  <li>Full Name</li>
+                  <li>Health Records and Metrics</li>
+                  <li>Contact Information</li>
+                  <li>Insurance Provider</li>
+                  <li>Date of Birth or Age</li>
+                  <li>Emergency Contact Information</li>
+                </ul>
                 
-                <h4>4. Data Security</h4>
-                <p>
-                  We implement appropriate technical and organizational measures to protect the security of 
-                  your personal information, including encryption, access controls, and secure data storage.
-                </p>
+                <p><strong>3.2 For Providers:</strong></p>
+                <ul>
+                  <li>Full Name</li>
+                  <li>Professional Credentials</li>
+                  <li>Practice or License Number</li>
+                  <li>Contact Information</li>
+                  <li>Practice or Institution Details</li>
+                </ul>
                 
-                <h4>5. Your Rights</h4>
-                <p>
-                  You have the right to access, correct, or delete your personal information. You may also 
-                  have additional rights depending on your jurisdiction.
-                </p>
+                <p>We may also collect login and usage information, as well as contact details for newsletters and other communications.</p>
                 
-                <h4>6. Updates to This Policy</h4>
-                <p>
-                  We may update this privacy policy from time to time. We will notify you of any changes by 
-                  posting the new policy on this page and updating the effective date.
-                </p>
+                <h4>4. How We Use Your Information</h4>
+                <p>We use your personal data for the following purposes:</p>
+                <ul>
+                  <li>To provide secure access to health data for patients.</li>
+                  <li>To enable authorized providers to deliver quality care.</li>
+                  <li>To verify provider credentials and enable communication.</li>
+                  <li>To analyze anonymized and aggregated data for statistical health insights.</li>
+                  <li>To improve the Onus platform through usage feedback (e.g., heatmaps or future analytics).</li>
+                </ul>
+                
+                <h4>5. Consent and User Rights</h4>
+                <p>When you sign up for Onus, you give Onus consent to this, and prior to processing anonymized data, we will ask for consent for this specifically again.</p>
+                <ul>
+                  <li>You can withdraw consent at any time by deleting your account.</li>
+                  <li>Following deletion, data will remain on backup systems for 6 months, after which it will be permanently erased.</li>
+                  <li>You may download your health records before deletion.</li>
+                </ul>
+                
+                <h4>6. Minors and Guardian Consent</h4>
+                <p>Individuals under 18 years old must have consent provided by a parent or legal guardian. Guardians may register and manage accounts for minors until they reach the legal age, at which point full access and ownership transfer to the individual should be given.</p>
+                
+                <h4>7. Data Storage and Security</h4>
+                <ul>
+                  <li>All data is hosted on Amazon Web Services (AWS), which meets global security compliance standards.</li>
+                  <li>Personal and health data is protected via end-to-end encryption, both at rest and in transit.</li>
+                  <li>Onus cannot access health data unless it has been anonymized.</li>
+                  <li>Access to user data is restricted to authorized patients and providers only.</li>
+                </ul>
+                
+                <h4>8. Sharing Data with Third Parties</h4>
+                <ul>
+                  <li>Onus does not share health data with third parties unless explicitly authorized by the patient.</li>
+                  <li>Personal contact data (e.g., name, email) may be processed by third-party tools for sending newsletters or improving the platform.</li>
+                  <li>We do not sell or monetize user data for advertising or profiling.</li>
+                </ul>
+                
+                <h4>9. Anonymized Data Use</h4>
+                <p>With patient consent, Onus may use anonymized data to:</p>
+                <ul>
+                  <li>Identify nationwide health trends.</li>
+                  <li>Inform future health initiatives.</li>
+                  <li>Deliver personalized analytics to patients and providers (in future updates).</li>
+                </ul>
+                <p>Anonymized data will never include identifying information and cannot be traced back to individual users.</p>
+                
+                <h4>10. Access Outside Namibia</h4>
+                <p>Currently, Onus is available only to users in Namibia. This policy will be updated once international availability is introduced.</p>
+                
+                <h4>11. Data Breach Notification</h4>
+                <p>While Onus follows best practices in data security, in the unlikely event of a breach:</p>
+                <ul>
+                  <li>Affected users will be informed promptly and transparently.</li>
+                  <li>Onus will provide clear instructions and support where applicable.</li>
+                </ul>
+                <p>We are in the process of developing a formal breach response plan.</p>
+                
+                <h4>12. Contact</h4>
+                <p>If you have questions, concerns, or requests related to your data, please contact us at:</p>
+                <p>📧 <strong>hello@onus.health</strong></p>
               </div>
               
               <div className={styles.checkboxContainer}>
