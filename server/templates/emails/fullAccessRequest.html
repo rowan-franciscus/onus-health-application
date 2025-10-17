@@ -1,34 +1,31 @@
-<h1>Healthcare Provider Requesting Full Access</h1>
+<h1>Full Access Request</h1>
 
-<p>Hello {{patientName}},</p>
+<p>Hi {{patientName}},</p>
 
-<p>
-  <strong>{{providerName}}</strong> ({{providerSpecialty}}) has requested full access to your medical data on Onus Health.
-</p>
+<p><strong>{{providerName}}</strong> ({{providerSpecialty}}) has requested full access to your medical records.</p>
 
-<div style="background-color: #f8f9fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
-  <h3 style="margin: 0 0 10px 0; color: #495057;">Access Levels:</h3>
-  <p style="margin: 5px 0;"><strong>Current:</strong> Limited Access - Provider can only see consultations and records they create for you</p>
-  <p style="margin: 5px 0;"><strong>Requested:</strong> Full Access - Provider can see all your medical data, including records from other providers</p>
+<div class="info-box">
+  <p style="margin-bottom: 8px;"><strong>Access Levels:</strong></p>
+  <p style="margin: 4px 0;"><strong>Current:</strong> Limited - Only records they create</p>
+  <p style="margin: 4px 0;"><strong>Requested:</strong> Full - All your medical records</p>
 </div>
 
 {{#if notes}}
-<p><strong>Provider Notes:</strong> {{notes}}</p>
+<div style="background-color: #f0f0f5; padding: 16px; border-radius: 8px; margin: 20px 0;">
+  <p style="margin: 0;"><strong>Provider's Note:</strong></p>
+  <p style="margin: 8px 0 0 0;">{{notes}}</p>
+</div>
 {{/if}}
 
-<p>
-  You can approve or deny this request from your Onus Health account. The provider will continue to have limited access until you make a decision.
-</p>
+<p>Review and respond to this request in your Onus dashboard:</p>
 
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{frontendUrl}}/patient/connections" class="btn" style="background-color: #6039cc;">
-    Review Request
-  </a>
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{frontendUrl}}/patient/connections" class="btn">Review Request</a>
 </div>
 
-<p>
-  If you approve this request, {{providerName}} will be able to view all your medical records, consultations, and health data from other providers. If you deny it, they will continue with limited access only.
+<p class="backup-link" style="text-align: center; margin: 20px 0;">
+  If the button doesn't work, copy and paste this link:<br>
+  <a href="{{frontendUrl}}/patient/connections">{{frontendUrl}}/patient/connections</a>
 </p>
 
-<p>
-  You can revoke access at any time from your Connections page. 
+<p style="font-size: 14px; color: #666666;">You can approve or deny this request, or revoke access at any time from your Connections page.</p> 

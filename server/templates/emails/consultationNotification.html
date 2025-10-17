@@ -1,21 +1,21 @@
-<h1>New Medical Consultation</h1>
+<h1>New Consultation Added</h1>
 <p>Hi {{patientName}},</p>
-<p>A new medical consultation has been created for you by <strong>{{providerName}}</strong> on {{consultationDate}}.</p>
+<p><strong>{{providerName}}</strong> has created a new consultation for you on {{consultationDate}}.</p>
 
-<div style="border-left: 4px solid #4285f4; padding-left: 15px; margin: 15px 0;">
-  <p><strong>Consultation Details:</strong></p>
-  <p><strong>Provider:</strong> {{providerName}}</p>
-  <p><strong>Specialty:</strong> {{specialty}}</p>
-  <p><strong>Reason for Visit:</strong> {{reasonForVisit}}</p>
+<div class="info-box">
+  <p style="margin-bottom: 8px;"><strong>Consultation Details:</strong></p>
+  <p style="margin: 4px 0;"><strong>Provider:</strong> {{providerName}}</p>
+  <p style="margin: 4px 0;"><strong>Specialty:</strong> {{specialty}}</p>
+  <p style="margin: 4px 0;"><strong>Reason:</strong> {{reasonForVisit}}</p>
 </div>
 
-<p>You can view the complete details of this consultation by visiting your Onus Health dashboard.</p>
+<p>View the full consultation details in your Onus dashboard:</p>
 
-<div style="text-align: center;">
-  <a href="{{consultationUrl}}" class="btn" style="color: white;">View Consultation</a>
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{consultationUrl}}" class="btn">View Consultation</a>
 </div>
 
-<p>Thank you for using Onus Health to manage your medical records.</p>
-
-<p>Best regards,<br>
-The Onus Health Team</p> 
+<p class="backup-link" style="text-align: center; margin: 20px 0;">
+  If the button doesn't work, copy and paste this link:<br>
+  <a href="{{consultationUrl}}">{{consultationUrl}}</a>
+</p> 

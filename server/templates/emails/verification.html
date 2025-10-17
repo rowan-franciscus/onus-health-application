@@ -1,17 +1,18 @@
-<h1>Welcome to Onus Health!</h1>
+<h1>Verify Your Email</h1>
 <p>Hi {{firstName}},</p>
-<p>Thank you for registering with Onus Health. To complete your registration and verify your email address, please click the button below:</p>
+<p>Welcome to Onus! To complete your account setup, please verify your email address by clicking the button below:</p>
 
-<div style="text-align: center;">
-  <a href="{{verificationUrl}}" class="btn" style="color: white;">Verify Email Address</a>
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{verificationUrl}}" class="btn">Verify Email</a>
 </div>
 
-<p>If the button above doesn't work, you can also copy and paste the following link into your browser:</p>
-<p><a href="{{verificationUrl}}">{{verificationUrl}}</a></p>
+<p class="backup-link" style="text-align: center; margin: 20px 0;">
+  If the button doesn't work, copy and paste this link into your browser:<br>
+  <a href="{{verificationUrl}}">{{verificationUrl}}</a>
+</p>
 
-<p>This link will expire in 24 hours.</p>
+<div class="info-box">
+  <p><strong>⏰ This verification link expires in 24 hours.</strong></p>
+</div>
 
-<p>If you did not create an account with Onus Health, please ignore this email.</p>
-
-<p>Thank you,<br>
-The Onus Health Team</p> 
+<p style="font-size: 14px; color: #666666;">If you didn't create an Onus account, you can safely ignore this email.</p> 

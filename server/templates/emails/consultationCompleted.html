@@ -1,18 +1,21 @@
 <h1>Consultation Completed</h1>
-<p>Dear {{patientName}},</p>
-<p>Your medical consultation with {{providerName}} has been completed.</p>
+<p>Hi {{patientName}},</p>
+<p>Your consultation with <strong>{{providerName}}</strong> has been completed.</p>
 
-<p><strong>Consultation Details:</strong></p>
-<ul>
-  <li>Date: {{consultationDate}}</li>
-  <li>Provider: {{providerName}}</li>
-</ul>
+<div class="info-box">
+  <p style="margin: 4px 0;"><strong>Date:</strong> {{consultationDate}}</p>
+  <p style="margin: 4px 0;"><strong>Provider:</strong> {{providerName}}</p>
+</div>
 
-<p>You can view the full details of this consultation by logging into your Onus Health account and navigating to your consultations page.</p>
+<p>View the full consultation details in your dashboard:</p>
 
-<p>If you have any questions or concerns about your consultation, please don't hesitate to contact your healthcare provider or our support team.</p>
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{frontendUrl}}/patient/consultations" class="btn">View Consultations</a>
+</div>
 
-<p>Thank you for choosing Onus Health.</p>
+<p class="backup-link" style="text-align: center; margin: 20px 0;">
+  If the button doesn't work, copy and paste this link:<br>
+  <a href="{{frontendUrl}}/patient/consultations">{{frontendUrl}}/patient/consultations</a>
+</p>
 
-<p>Best regards,<br>
-The Onus Health Team</p> 
+<p style="font-size: 14px; color: #666666;">Questions about your consultation? Contact your healthcare provider directly.</p> 

@@ -1,36 +1,26 @@
-<h1>Full Access Request Approved</h1>
+<h1>✓ Full Access Approved</h1>
 
-<p>Dear {{providerName}},</p>
+<p>Hi {{providerName}},</p>
 
-<p>
-  Great news! <strong>{{patientName}}</strong> has approved your request for full access to their medical data on Onus Health.
-</p>
+<p><strong>{{patientName}}</strong> has approved your full access request.</p>
 
-<div style="background-color: #d4edda; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #28a745;">
-  <h3 style="margin: 0 0 10px 0; color: #155724;">✓ Full Access Granted</h3>
-  <p style="margin: 5px 0; color: #155724;">You now have access to all of {{patientName}}'s medical records, consultations, and health data from all providers.</p>
+<div class="info-box">
+  <p style="margin-bottom: 8px;"><strong>You now have access to:</strong></p>
+  <p style="margin: 4px 0;">• All medical consultations and records</p>
+  <p style="margin: 4px 0;">• Patient profile and personal information</p>
+  <p style="margin: 4px 0;">• Medical history from other providers</p>
+  <p style="margin: 4px 0;">• Lab results and diagnostic data</p>
 </div>
 
-<p>
-  This includes:
-</p>
-<ul>
-  <li>All medical consultations and records</li>
-  <li>Patient profile and personal information</li>
-  <li>Medical history from other healthcare providers</li>
-  <li>Lab results, imaging reports, and other diagnostic data</li>
-</ul>
+<p>View patient data in your dashboard:</p>
 
-<div style="text-align: center; margin: 30px 0;">
-  <a href="{{frontendUrl}}/provider/patients" class="btn" style="background-color: #6039cc;">
-    View Patient Data
-  </a>
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{frontendUrl}}/provider/patients" class="btn">View Patient Data</a>
 </div>
 
-<p>
-  Please ensure you continue to handle this patient's medical information in accordance with HIPAA regulations and your professional standards.
+<p class="backup-link" style="text-align: center; margin: 20px 0;">
+  If the button doesn't work, copy and paste this link:<br>
+  <a href="{{frontendUrl}}/provider/patients">{{frontendUrl}}/provider/patients</a>
 </p>
 
-<p>
-  Note that the patient can revoke this access at any time from their Connections page.
-</p> 
+<p style="font-size: 14px; color: #666666;">Please handle this patient's information in accordance with privacy regulations and professional standards. The patient can revoke access at any time.</p> 

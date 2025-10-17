@@ -7,11 +7,11 @@
   <style>
     /* Base styles */
     body {
-      background-color: #f6f6f6;
-      font-family: 'DM Sans', sans-serif, Helvetica, Arial;
+      background-color: #f9f9fb;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-      font-size: 14px;
-      line-height: 1.4;
+      font-size: 16px;
+      line-height: 1.6;
       margin: 0;
       padding: 0;
       -ms-text-size-adjust: 100%;
@@ -19,80 +19,149 @@
     }
     
     .email-wrapper {
-      background-color: #f6f6f6;
+      background-color: #f9f9fb;
       width: 100%;
       margin: 0;
-      padding: 0;
+      padding: 40px 20px;
     }
     
     .email-content {
       background-color: #ffffff;
-      border: 1px solid #e9e9e9;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(89, 48, 229, 0.08);
       max-width: 600px;
-      margin: 20px auto;
-      padding: 20px;
+      margin: 0 auto;
+      overflow: hidden;
     }
     
     .email-header {
-      padding: 20px 0;
+      background: linear-gradient(135deg, #5930e5 0%, #7a57eb 100%);
+      padding: 40px 30px;
       text-align: center;
-      border-bottom: 1px solid #e9e9e9;
     }
     
     .email-logo {
-      max-width: 120px;
-      margin-bottom: 10px;
+      max-width: 140px;
+      height: auto;
     }
     
     .email-body {
-      padding: 20px 0;
+      padding: 40px 30px;
     }
     
     .email-footer {
-      padding: 20px 0;
+      background-color: #f9f9fb;
+      padding: 30px;
       text-align: center;
-      font-size: 12px;
-      color: #888888;
-      border-top: 1px solid #e9e9e9;
+      font-size: 13px;
+      color: #666666;
     }
     
     h1 {
-      color: #34495e;
-      font-size: 22px;
+      color: #333333;
+      font-size: 24px;
       font-weight: 600;
-      margin: 0 0 20px;
+      margin: 0 0 16px;
+      line-height: 1.3;
     }
     
     p {
       color: #4a4a4a;
-      font-size: 14px;
-      margin: 0 0 15px;
+      font-size: 16px;
+      margin: 0 0 16px;
+      line-height: 1.6;
     }
     
     .btn {
       display: inline-block;
-      background-color: #4285f4;
-      border-radius: 4px;
-      color: #ffffff;
+      background: linear-gradient(135deg, #5930e5 0%, #7a57eb 100%);
+      border-radius: 8px;
+      color: #ffffff !important;
       font-weight: 600;
       text-decoration: none;
       text-align: center;
-      padding: 12px 24px;
-      margin: 15px 0;
+      padding: 14px 32px;
+      margin: 24px 0;
       cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(89, 48, 229, 0.25);
+      transition: all 0.3s ease;
     }
     
     .btn:hover {
-      background-color: #3367d6;
+      background: linear-gradient(135deg, #4920c0 0%, #5930e5 100%);
+      box-shadow: 0 6px 16px rgba(89, 48, 229, 0.35);
+      transform: translateY(-1px);
+    }
+    
+    .backup-link {
+      font-size: 14px;
+      color: #666666;
+      word-break: break-all;
+    }
+    
+    .backup-link a {
+      color: #5930e5;
+      text-decoration: none;
+    }
+    
+    .backup-link a:hover {
+      text-decoration: underline;
+    }
+    
+    .info-box {
+      background-color: #f0f0f5;
+      border-left: 4px solid #5930e5;
+      padding: 16px 20px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .info-box p {
+      margin: 0;
+    }
+    
+    .footer-link {
+      color: #5930e5;
+      text-decoration: none;
+    }
+    
+    .footer-link:hover {
+      text-decoration: underline;
     }
     
     @media only screen and (max-width: 620px) {
+      .email-wrapper {
+        padding: 20px 10px;
+      }
+      
       .email-content {
-        width: 100% !important;
-        margin: 0 !important;
-        border-radius: 0 !important;
+        border-radius: 8px;
+      }
+      
+      .email-header {
+        padding: 30px 20px;
+      }
+      
+      .email-body {
+        padding: 30px 20px;
+      }
+      
+      .email-footer {
+        padding: 20px;
+      }
+      
+      h1 {
+        font-size: 22px;
+      }
+      
+      p {
+        font-size: 15px;
+      }
+      
+      .btn {
+        padding: 12px 28px;
+        font-size: 15px;
       }
     }
   </style>
@@ -102,8 +171,8 @@
   <div class="email-wrapper">
     <div class="email-content">
       <div class="email-header">
-        <img src="{{logoUrl}}" alt="Onus Health Logo" class="email-logo">
-        <h2>Onus Health</h2>
+        <!-- Onus logo will be added here when available -->
+        <div style="color: white; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Onus</div>
       </div>
       
       <div class="email-body">
@@ -111,10 +180,10 @@
       </div>
       
       <div class="email-footer">
-        <p>&copy; {{year}} Onus Health. All rights reserved.</p>
-        <p>
-          If you have any questions, please contact us at 
-          <a href="mailto:support@onus.health">support@onus.health</a>
+        <p style="margin: 0 0 8px 0;">© {{year}} Onus Technologies. All rights reserved.</p>
+        <p style="margin: 0;">
+          Questions? Contact us at 
+          <a href="mailto:hello@onus.health" class="footer-link">hello@onus.health</a>
         </p>
       </div>
     </div>
