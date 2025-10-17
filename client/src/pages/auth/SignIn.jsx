@@ -177,7 +177,8 @@ const SignIn = () => {
       
       {error && <div className={styles.errorMessage}>{error}</div>}
       
-      <p className={styles.methodText}>Sign in as Patient or Health Provider:</p>
+      {/* TEMPORARILY DISABLED - Role selector does not affect sign-in functionality */}
+      {/* <p className={styles.methodText}>Sign in as Patient or Health Provider:</p>
       
       <div className={styles.roleSelector}>
         <button 
@@ -194,7 +195,7 @@ const SignIn = () => {
         >
           Health Provider
         </button>
-      </div>
+      </div> */}
       
       <div className={styles.signInOptions}>
         <p className={styles.methodText}>Select a method to sign in:</p>
