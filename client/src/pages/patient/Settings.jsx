@@ -701,7 +701,8 @@ const PatientSettings = () => {
         </div>
       </Card>
 
-      {/* Notification Preferences */}
+      {/* Notification Preferences - TEMPORARILY DISABLED */}
+      {/* TODO: Re-enable this section when notification functionality is implemented
       <Card className={styles.settingsSection}>
         <h2>Notification Preferences</h2>
         
@@ -779,6 +780,7 @@ const PatientSettings = () => {
           {savingNotifications ? 'Saving Preferences...' : 'Save Preferences'}
         </Button>
       </Card>
+      */}
 
       {/* Delete Account */}
       <Card className={styles.settingsSection}>
