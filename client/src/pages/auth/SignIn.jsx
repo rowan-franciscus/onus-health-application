@@ -162,10 +162,11 @@ const SignIn = () => {
   }
 
   return (
-    <div className={styles.adminAuthCard}>
-      <div className={styles.logoContainer}>
-        <OnusLogo className={styles.logo} />
-      </div>
+    <div className={styles.authPageContainer}>
+      <div className={styles.adminAuthCard}>
+        <div className={styles.logoContainer}>
+          <OnusLogo className={styles.logo} />
+        </div>
       
       <h1 className={styles.title}>Sign in to your Account</h1>
       
@@ -283,6 +284,7 @@ const SignIn = () => {
       
       <div className={styles.copyright}>
         © 2025 Onus Technologies Namibia. All Rights Reserved.
+      </div>
       </div>
     </div>
   );

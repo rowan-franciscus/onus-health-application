@@ -124,10 +124,11 @@ const SignUp = () => {
   };
 
   return (
-    <div className={styles.adminAuthCard}>
-      <div className={styles.logoContainer}>
-        <OnusLogo className={styles.logo} />
-      </div>
+    <div className={styles.authPageContainer}>
+      <div className={styles.adminAuthCard}>
+        <div className={styles.logoContainer}>
+          <OnusLogo className={styles.logo} />
+        </div>
       
       <h1 className={styles.title}>Create an Account</h1>
       
@@ -285,6 +286,7 @@ const SignUp = () => {
       
       <div className={styles.copyright}>
         © 2025 Onus Technologies Namibia. All Rights Reserved.
+      </div>
       </div>
     </div>
   );

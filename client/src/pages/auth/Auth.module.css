@@ -537,6 +537,16 @@
   opacity: 0.03;
 }
 
+/* Regular auth pages container */
+.authPageContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: #f8f9ff;
+}
+
 /* Responsive styles */
 @media (max-width: 576px) {
   .authContainer {
