@@ -97,6 +97,23 @@
   }
 }
 
+/* Verification pages layout */
+.verificationLayout {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9ff;
+  padding: 2rem;
+}
+
+.verificationContainer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
   .adminLayoutContainer {
     flex-direction: column;
@@ -109,5 +126,9 @@
   
   .adminImageSide {
     display: none;
+  }
+  
+  .verificationLayout {
+    padding: 1rem;
   }
 } 

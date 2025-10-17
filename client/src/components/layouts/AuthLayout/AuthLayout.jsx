@@ -16,8 +16,13 @@ const AuthLayout = () => {
                     pathname === '/sign-up' ||
                     pathname === '/forgot-password';
   
+  // Verification pages need full width layout
+  const isVerificationPage = pathname === '/verify-your-email' || 
+                            pathname.startsWith('/verify-email/') ||
+                            pathname === '/verification-error';
+  
   return (
-    <div className={`${styles.authLayout} ${isAuthPage ? styles.adminAuthLayout : ''}`}>
+    <div className={`${styles.authLayout} ${isAuthPage ? styles.adminAuthLayout : ''} ${isVerificationPage ? styles.verificationLayout : ''}`}>
       {isAuthPage ? (
         <div className={styles.adminLayoutContainer}>
           <div className={styles.adminContentSide}>
@@ -32,6 +37,10 @@ const AuthLayout = () => {
               className={styles.heroImage}
             />
           </div>
+        </div>
+      ) : isVerificationPage ? (
+        <div className={styles.verificationContainer}>
+          <Outlet />
         </div>
       ) : (
         <div className={styles.container}>
