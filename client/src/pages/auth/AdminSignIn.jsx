@@ -20,7 +20,7 @@ const AdminSignIn = () => {
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const [apiTestResult, setApiTestResult] = useState(null);
+  // const [apiTestResult, setApiTestResult] = useState(null); // TEMPORARILY DISABLED - Debug feature
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -117,11 +117,10 @@ const AdminSignIn = () => {
     }
   };
 
-  // Direct API test using fetch to diagnose issues
+  /* TEMPORARILY DISABLED - Debug and testing functions
   const testApiConnection = async () => {
     setApiTestResult('Testing connection...');
     try {
-      // Test with a fetch request to the server's status endpoint
       const response = await fetch('http://localhost:5001/api/status/db');
       if (response.ok) {
         const data = await response.json();
@@ -133,7 +132,6 @@ const AdminSignIn = () => {
       setApiTestResult(`Connection error: ${error.message}`);
     }
 
-    // Also try with axios
     try {
       const axiosResponse = await axios.get('http://localhost:5001/api/status/db');
       console.log('Axios test response:', axiosResponse.data);
@@ -143,11 +141,9 @@ const AdminSignIn = () => {
   };
 
   const handleSocialLogin = (provider) => {
-    // This would typically redirect to the OAuth provider
     console.log(`Logging in with ${provider}`);
   };
 
-  // Direct API login using axios to bypass the service layer
   const directApiLogin = async (e) => {
     e.preventDefault();
     
@@ -158,7 +154,6 @@ const AdminSignIn = () => {
     dispatch(authStart());
     
     try {
-      // Make direct API call with axios
       console.log('Attempting direct API login to:', `http://localhost:5001/api/auth/admin/login`);
       
       const axiosResponse = await axios.post(
@@ -172,14 +167,11 @@ const AdminSignIn = () => {
       
       console.log('Direct API login response:', axiosResponse.data);
       
-      // Handle successful response
       if (axiosResponse.data.tokens) {
-        // Store tokens manually
         localStorage.setItem(config.tokenKey, axiosResponse.data.tokens.authToken);
         localStorage.setItem(config.refreshTokenKey, axiosResponse.data.tokens.refreshToken);
         localStorage.setItem('lastLoginTime', Date.now().toString());
         
-        // Update Redux store
         dispatch(authSuccess(jwt_decode(axiosResponse.data.tokens.authToken)));
         navigate('/admin/dashboard');
       } else {
@@ -196,6 +188,7 @@ const AdminSignIn = () => {
       }
     }
   };
+  */
 
   // Show loading while checking authentication state
   if (isAuthenticated && !user) {
@@ -223,7 +216,8 @@ const AdminSignIn = () => {
       
       {error && <div className={styles.errorMessage}>{error}</div>}
       
-      <div className={styles.signInOptions}>
+      {/* TEMPORARILY DISABLED - Social login not yet implemented */}
+      {/* <div className={styles.signInOptions}>
         <p className={styles.methodText}>Select a method to sign in:</p>
         
         <div className={styles.socialButtons}>
@@ -249,7 +243,7 @@ const AdminSignIn = () => {
         <div className={styles.divider}>
           <span>or continue with email</span>
         </div>
-      </div>
+      </div> */}
       
       <form onSubmit={handleSubmit} className={styles.authForm}>
         <div className={styles.formGroup}>
@@ -293,33 +287,31 @@ const AdminSignIn = () => {
           <a href="/forgot-password">Forgot password?</a>
         </div>
         
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            type="submit" 
-            className={styles.submitButton}
-            disabled={loading}
-            style={{ flex: 1 }}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-          
-          <button 
-            type="button" 
-            onClick={directApiLogin}
-            className={styles.submitButton}
-            disabled={loading}
-            style={{ 
-              flex: 1, 
-              background: '#4a5568'
-            }}
-          >
-            Direct API Login
-          </button>
-        </div>
+        <button 
+          type="submit" 
+          className={styles.submitButton}
+          disabled={loading}
+        >
+          {loading ? 'Signing in...' : 'Sign In'}
+        </button>
+        
+        {/* TEMPORARILY DISABLED - Debug features */}
+        {/* <button 
+          type="button" 
+          onClick={directApiLogin}
+          className={styles.submitButton}
+          disabled={loading}
+          style={{ 
+            flex: 1, 
+            background: '#4a5568'
+          }}
+        >
+          Direct API Login
+        </button> */}
       </form>
       
-      {/* API connection test button and result display */}
-      <div style={{ marginTop: '20px', textAlign: 'center' }}>
+      {/* TEMPORARILY DISABLED - API connection test */}
+      {/* <div style={{ marginTop: '20px', textAlign: 'center' }}>
         <button 
           onClick={testApiConnection}
           style={{
@@ -347,7 +339,7 @@ const AdminSignIn = () => {
             {apiTestResult}
           </div>
         )}
-      </div>
+      </div> */}
       
       <div className={styles.copyright}>
         © 2025 Onus Technologies Namibia. All Rights Reserved.
