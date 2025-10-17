@@ -197,7 +197,8 @@ const SignIn = () => {
         </button>
       </div> */}
       
-      <div className={styles.signInOptions}>
+      {/* TEMPORARILY DISABLED - Social login not yet implemented */}
+      {/* <div className={styles.signInOptions}>
         <p className={styles.methodText}>Select a method to sign in:</p>
         
         <div className={styles.socialButtons}>
@@ -223,7 +224,7 @@ const SignIn = () => {
         <div className={styles.divider}>
           <span>or continue with email</span>
         </div>
-      </div>
+      </div> */}
       
       <form onSubmit={handleSubmit} className={styles.authForm}>
         <div className={styles.formGroup}>
