@@ -59,7 +59,7 @@ const renderTemplate = async (templateName, data = {}) => {
     // Add common data
     const templateData = {
       ...data,
-      logoUrl: data.logoUrl || config.logoUrl || 'https://onushealth.com/logo.png',
+      logoUrl: data.logoUrl || `${config.frontendUrl}/logo-white.png`,
       year: new Date().getFullYear()
     };
     
