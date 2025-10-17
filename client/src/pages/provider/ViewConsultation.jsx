@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import styles from './ViewConsultation.module.css';
 import ApiService from '../../services/api.service';
 import FileService from '../../services/file.service';
+import { formatDate } from '../../utils/dateUtils';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -95,10 +96,6 @@ const ViewConsultation = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
-  };
 
   const formatValue = (value, unit = '') => {
     if (!value || value === '' || value === 'N/A') return 'N/A';

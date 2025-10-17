@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
 const User = require('../models/User');
 const Connection = require('../models/Connection');
+const { formatDate } = require('../utils/dateUtils');
 
 // Import medical record models
 const VitalsRecord = require('../models/VitalsRecord');
@@ -348,7 +349,7 @@ exports.updateConsultationSimple = async (req, res) => {
             {
               patientName: `${patient.firstName} ${patient.lastName}`,
               providerName: `${req.user.firstName} ${req.user.lastName}`,
-              consultationDate: consultation.createdAt.toLocaleDateString(),
+              consultationDate: formatDate(consultation.createdAt),
               consultationId: consultation._id
             },
             {

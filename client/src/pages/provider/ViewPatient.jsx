@@ -11,6 +11,7 @@ import Tabs from '../../components/common/Tabs';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
 import ApiService from '../../services/api.service';
+import { formatDate } from '../../utils/dateUtils';
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
@@ -90,7 +91,7 @@ const ProviderViewPatient = () => {
           // Profile data only available with full access
           gender: hasFullAccess ? (patientData.patientProfile?.gender || 'N/A') : 'Not available',
           dateOfBirth: hasFullAccess && patientData.patientProfile?.dateOfBirth ? 
-            new Date(patientData.patientProfile.dateOfBirth).toLocaleDateString() : 'Not available',
+            formatDate(patientData.patientProfile.dateOfBirth) : 'Not available',
           age: hasFullAccess ? calculateAge(patientData.patientProfile?.dateOfBirth) : 'Not available',
           phone: hasFullAccess ? (patientData.phone || 'N/A') : 'Not available',
           address: hasFullAccess && patientData.patientProfile?.address ? 
@@ -157,7 +158,7 @@ const ProviderViewPatient = () => {
       if (response && Array.isArray(response)) {
         const formattedConsultations = response.map(consultation => ({
           id: consultation._id,
-          date: consultation.date ? new Date(consultation.date).toLocaleDateString() : 'N/A',
+          date: consultation.date ? formatDate(consultation.date) : 'N/A',
           provider: consultation.general?.specialistName || 'Unknown Provider',
           specialty: consultation.general?.specialty || 'General',
           reason: consultation.general?.reasonForVisit || 'N/A',
@@ -202,7 +203,7 @@ const ProviderViewPatient = () => {
       if (response && response.records) {
         const formattedVitals = response.records.map(record => ({
           id: record._id,
-          date: record.date ? new Date(record.date).toLocaleDateString() : 'N/A',
+          date: record.date ? formatDate(record.date) : 'N/A',
           provider: record.createdByPatient ? 'Patient (Self)' : (record.provider?.firstName + ' ' + record.provider?.lastName || 'Unknown Provider'),
           heartRate: formatVitalValue(record.heartRate),
           bloodPressure: record.bloodPressure ? 
@@ -253,7 +254,7 @@ const ProviderViewPatient = () => {
     };
 
     consultations.forEach(consultation => {
-      const consultationDate = consultation.date ? new Date(consultation.date).toLocaleDateString() : 'N/A';
+      const consultationDate = consultation.date ? formatDate(consultation.date) : 'N/A';
       const provider = consultation.general?.specialistName || 'Unknown Provider';
 
       // Extract vitals
@@ -311,8 +312,8 @@ const ProviderViewPatient = () => {
             dosage: formatFieldValue(medication.dosage),
             frequency: formatFieldValue(medication.frequency),
             reason: formatFieldValue(medication.reasonForPrescription),
-            startDate: medication.startDate ? new Date(medication.startDate).toLocaleDateString() : 'N/A',
-            endDate: medication.endDate ? new Date(medication.endDate).toLocaleDateString() : 'N/A'
+            startDate: medication.startDate ? formatDate(medication.startDate) : 'N/A',
+            endDate: medication.endDate ? formatDate(medication.endDate) : 'N/A'
           });
         });
       }
@@ -335,10 +336,10 @@ const ProviderViewPatient = () => {
             provider: provider,
             vaccineName: formatFieldValue(immunization.vaccineName) || 'Unknown Vaccine',
             dateAdministered: immunization.dateAdministered ? 
-              new Date(immunization.dateAdministered).toLocaleDateString() : 'N/A',
+              formatDate(immunization.dateAdministered) : 'N/A',
             serialNumber: formatFieldValue(immunization.vaccineSerialNumber),
             nextDueDate: immunization.nextDueDate ? 
-              new Date(immunization.nextDueDate).toLocaleDateString() : 'N/A'
+              formatDate(immunization.nextDueDate) : 'N/A'
           });
         });
       }
@@ -361,7 +362,7 @@ const ProviderViewPatient = () => {
             provider: provider,
             testName: formatFieldValue(lab.testName) || 'Unknown Test',
             labName: formatFieldValue(lab.labName),
-            testDate: lab.dateOfTest ? new Date(lab.dateOfTest).toLocaleDateString() : 'N/A',
+            testDate: lab.dateOfTest ? formatDate(lab.dateOfTest) : 'N/A',
             results: formatFieldValue(lab.results),
             comments: formatFieldValue(lab.comments)
           });
@@ -385,7 +386,7 @@ const ProviderViewPatient = () => {
             date: consultationDate,
             provider: provider,
             scanType: formatFieldValue(radiology.typeOfScan) || 'Unknown Scan',
-            scanDate: radiology.date ? new Date(radiology.date).toLocaleDateString() : 'N/A',
+            scanDate: radiology.date ? formatDate(radiology.date) : 'N/A',
             bodyPart: formatFieldValue(radiology.bodyPartExamined),
             findings: formatFieldValue(radiology.findings),
             recommendations: formatFieldValue(radiology.recommendations)
@@ -420,9 +421,9 @@ const ProviderViewPatient = () => {
             provider: provider,
             hospitalName: formatFieldValue(hospital.hospitalName) || 'Unknown Hospital',
             admissionDate: hospital.admissionDate ? 
-              new Date(hospital.admissionDate).toLocaleDateString() : 'N/A',
+              formatDate(hospital.admissionDate) : 'N/A',
             dischargeDate: hospital.dischargeDate ? 
-              new Date(hospital.dischargeDate).toLocaleDateString() : 'N/A',
+              formatDate(hospital.dischargeDate) : 'N/A',
             reason: formatFieldValue(hospital.reasonForHospitalization),
             treatments: formatArrayValue(hospital.treatmentsReceived),
             attendingDoctors: formatArrayValue(hospital.attendingDoctors),
@@ -449,7 +450,7 @@ const ProviderViewPatient = () => {
             date: consultationDate,
             provider: provider,
             surgeryType: formatFieldValue(surgery.typeOfSurgery) || 'Unknown Surgery',
-            surgeryDate: surgery.date ? new Date(surgery.date).toLocaleDateString() : 'N/A',
+            surgeryDate: surgery.date ? formatDate(surgery.date) : 'N/A',
             reason: formatFieldValue(surgery.reason),
             complications: formatFieldValue(surgery.complications) || 'None reported',
             recoveryNotes: formatFieldValue(surgery.recoveryNotes)

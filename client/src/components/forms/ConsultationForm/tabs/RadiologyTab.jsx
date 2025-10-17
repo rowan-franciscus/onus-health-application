@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { formatDate } from '../../../../utils/dateUtils';
 import styles from './FormTabs.module.css';
 
 const RadiologyTab = ({
@@ -118,7 +119,7 @@ const RadiologyTab = ({
                 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Date</label>
-                  <p className={styles.formValue}>{new Date(report.date).toLocaleDateString()}</p>
+                  <p className={styles.formValue}>{formatDate(report.date)}</p>
                 </div>
                 
                 <div className={styles.formGroup}>

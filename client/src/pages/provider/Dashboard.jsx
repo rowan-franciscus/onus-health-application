@@ -8,6 +8,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import SearchBox from '../../components/common/SearchBox';
 import { toast } from 'react-toastify';
+import { formatDate } from '../../utils/dateUtils';
 import ApiService from '../../services/api.service';
 
 const ProviderDashboard = () => {
@@ -61,11 +62,7 @@ const ProviderDashboard = () => {
                 name: `${patient.firstName} ${patient.lastName}`,
                 age: patient.dateOfBirth ? calculateAge(patient.dateOfBirth) : 'N/A',
                 lastRecord: patient.lastConsultationDate 
-                  ? new Date(patient.lastConsultationDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })
+                  ? formatDate(patient.lastConsultationDate)
                   : 'No consultations yet',
                 email: patient.email,
                 phone: patient.phone || 'N/A'

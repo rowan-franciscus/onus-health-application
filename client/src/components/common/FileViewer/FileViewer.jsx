@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import Button from '../Button';
+import { formatDate } from '../../../utils/dateUtils';
 import styles from './FileViewer.module.css';
 
 const FileViewer = ({
@@ -135,7 +136,7 @@ const FileViewer = ({
                 <span className={styles.fileSize}>{formatFileSize(file.size)}</span>
                 {file.uploadDate && (
                   <span className={styles.fileDate}>
-                    {new Date(file.uploadDate).toLocaleDateString()}
+                    {formatDate(file.uploadDate)}
                   </span>
                 )}
               </div>

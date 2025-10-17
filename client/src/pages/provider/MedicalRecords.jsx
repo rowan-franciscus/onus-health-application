@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styles from './MedicalRecords.module.css';
 import ApiService from '../../services/api.service';
+import { formatDate } from '../../utils/dateUtils';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -211,7 +212,7 @@ const MedicalRecords = () => {
         header: 'Date',
         accessor: 'date',
         sortable: true,
-        render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A'
+        render: (value) => formatDate(value)
       }
     ];
 
@@ -275,7 +276,7 @@ const MedicalRecords = () => {
           { header: 'Vaccine', accessor: 'vaccine', sortable: true },
           { header: 'Serial Number', accessor: 'serialNumber', sortable: true },
           { header: 'Next Due Date', accessor: 'nextDueDate', sortable: true,
-            render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A' }
+            render: (value) => formatDate(value) }
         ];
         break;
       case 'lab-results':
@@ -296,7 +297,7 @@ const MedicalRecords = () => {
         specificColumns = [
           { header: 'Hospital', accessor: 'hospitalName', sortable: true },
           { header: 'Admission Date', accessor: 'admissionDate', sortable: true,
-            render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A' },
+            render: (value) => formatDate(value) },
           { header: 'Reason', accessor: 'reason', sortable: false }
         ];
         break;
@@ -304,7 +305,7 @@ const MedicalRecords = () => {
         specificColumns = [
           { header: 'Surgery Type', accessor: 'surgeryType', sortable: true },
           { header: 'Surgery Date', accessor: 'surgeryDate', sortable: true,
-            render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A' },
+            render: (value) => formatDate(value) },
           { header: 'Reason', accessor: 'reason', sortable: false }
         ];
         break;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { formatDate } from '../../../../utils/dateUtils';
 import styles from './FormTabs.module.css';
 
 const SurgeryTab = ({
@@ -95,7 +96,7 @@ const SurgeryTab = ({
             <div key={index} className={styles.fieldGroup}>
               <div className={styles.fieldGroupHeader}>
                 <h3 className={styles.fieldGroupTitle}>
-                  {record.type} - {new Date(record.date).toLocaleDateString()}
+                  {record.type} - {formatDate(record.date)}
                 </h3>
                 <button
                   type="button"
@@ -114,7 +115,7 @@ const SurgeryTab = ({
                 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Date</label>
-                  <p className={styles.formValue}>{new Date(record.date).toLocaleDateString()}</p>
+                  <p className={styles.formValue}>{formatDate(record.date)}</p>
                 </div>
               </div>
               

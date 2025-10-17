@@ -5,6 +5,7 @@ import styles from './HealthProviders.module.css';
 import Button from '../../components/common/Button';
 import SearchBox from '../../components/common/SearchBox';
 import Pagination from '../../components/common/Pagination';
+import { formatDate } from '../../utils/dateUtils';
 
 const HealthProviders = () => {
   const [providers, setProviders] = useState([]);
@@ -82,14 +83,6 @@ const HealthProviders = () => {
     navigate(`/admin/health-providers/verify/${id}`);
   };
 
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
 
   return (
     <div className={styles.container}>

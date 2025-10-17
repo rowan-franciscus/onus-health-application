@@ -8,6 +8,7 @@ const nodemailer = require('nodemailer');
 const config = require('../config/environment');
 const logger = require('../utils/logger');
 const { renderTemplate, getPlainTextFromHtml } = require('../utils/templateRenderer');
+const { formatDate } = require('../utils/dateUtils');
 const EmailQueue = require('../models/EmailQueue');
 
 // Initialize SendGrid if API key is provided
@@ -427,7 +428,7 @@ const sendConsultationNotificationEmail = async (patient, provider, consultation
       patientName: patient.firstName,
       providerName: `${provider.firstName} ${provider.lastName}`,
       specialty: provider.providerProfile?.specialty || 'Healthcare Provider',
-      consultationDate: new Date(consultation.date).toLocaleDateString(),
+      consultationDate: formatDate(consultation.date),
       reasonForVisit: consultation.general.reasonForVisit,
       consultationUrl,
       title: 'New Consultation - Onus Health'

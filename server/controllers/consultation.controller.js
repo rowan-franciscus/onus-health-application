@@ -5,6 +5,7 @@ const Connection = require('../models/Connection');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/environment');
+const { formatDate } = require('../utils/dateUtils');
 
 // Import medical record models
 const VitalsRecord = require('../models/VitalsRecord');
@@ -528,7 +529,7 @@ exports.createConsultation = async (req, res) => {
         {
           patientName: `${patientUser.firstName} ${patientUser.lastName}`,
           providerName: `${req.user.firstName} ${req.user.lastName}`,
-          consultationDate: new Date().toLocaleDateString(),
+          consultationDate: formatDate(new Date()),
           consultationId: consultation._id
         },
         {
@@ -869,7 +870,7 @@ exports.updateConsultation = async (req, res) => {
             {
               patientName: `${patient.firstName} ${patient.lastName}`,
               providerName: `${req.user.firstName} ${req.user.lastName}`,
-              consultationDate: consultation.createdAt.toLocaleDateString(),
+              consultationDate: formatDate(consultation.createdAt),
               consultationId: consultation._id
             },
             {
@@ -1093,11 +1094,7 @@ exports.getPatientConsultations = async (req, res) => {
       consultations: consultations.map(consultation => {
         // Format date properly
         const consultationDate = consultation.date || consultation.createdAt;
-        const formattedDate = consultationDate ? new Date(consultationDate).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }) : 'N/A';
+        const formattedDate = consultationDate ? formatDate(consultationDate) : 'N/A';
         
         return {
         id: consultation._id,

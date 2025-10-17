@@ -6,6 +6,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { toast } from 'react-toastify';
 import ConnectionService from '../../services/connection.service';
+import { formatDate } from '../../utils/dateUtils';
 
 // Icon imports
 import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
@@ -159,21 +160,6 @@ const PatientConnections = () => {
     }
   };
 
-  // Format date to readable string
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return 'Invalid date';
-    }
-  };
 
   // Get access level display text
   const getAccessLevelDisplay = (connection) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { formatDate } from '../../../../utils/dateUtils';
 import styles from './FormTabs.module.css';
 
 const MedicationTab = ({
@@ -177,13 +178,13 @@ const MedicationTab = ({
                 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Start Date</label>
-                  <p className={styles.formValue}>{new Date(medication.startDate).toLocaleDateString()}</p>
+                  <p className={styles.formValue}>{formatDate(medication.startDate)}</p>
                 </div>
                 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>End Date</label>
                   <p className={styles.formValue}>
-                    {medication.endDate ? new Date(medication.endDate).toLocaleDateString() : 'Ongoing'}
+                    {medication.endDate ? formatDate(medication.endDate) : 'Ongoing'}
                   </p>
                 </div>
               </div>

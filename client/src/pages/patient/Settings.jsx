@@ -8,6 +8,7 @@ import FileService from '../../services/file.service';
 import UserProfileService from '../../services/userProfile.service';
 import { logout, updateUser, authSuccess } from '../../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
+import { formatDate } from '../../utils/dateUtils';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -133,7 +134,7 @@ const PatientSettings = () => {
           if (!dateString) return '';
           const date = new Date(dateString);
           if (isNaN(date.getTime())) return '';
-          return date.toLocaleDateString('en-US');
+          return formatDate(date);
         };
         
         // Capitalize first letter of gender
@@ -197,7 +198,7 @@ const PatientSettings = () => {
             if (!dateString) return '';
             const date = new Date(dateString);
             if (isNaN(date.getTime())) return '';
-            return date.toLocaleDateString('en-US');
+            return formatDate(date);
           };
           
           // Capitalize first letter of gender
@@ -282,7 +283,7 @@ const PatientSettings = () => {
         if (!dateString) return '';
         const date = new Date(dateString);
         if (isNaN(date.getTime())) return '';
-        return date.toLocaleDateString('en-US');
+        return formatDate(date);
       };
       
       // Capitalize first letter of gender

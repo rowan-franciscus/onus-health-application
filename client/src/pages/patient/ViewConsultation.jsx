@@ -7,6 +7,7 @@ import Tabs from '../../components/common/Tabs';
 import ApiService from '../../services/api.service';
 import FileService from '../../services/file.service';
 import { exportAsJSON, exportAsCSV } from '../../utils/consultationExport';
+import { formatDate } from '../../utils/dateUtils';
 
 // Define tabs array outside component
 const tabs = [
@@ -101,11 +102,6 @@ const PatientViewConsultation = () => {
     setActiveTab(tabId);
   };
 
-  // Format date helper
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString();
-  };
 
   // Format value helper
   const formatValue = (value, unit = '') => {

@@ -4,6 +4,7 @@ import Button from '../../components/common/Button/Button';
 import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator';
 import { FaArrowLeft } from 'react-icons/fa';
 import adminService from '../../services/admin.service';
+import { formatDate } from '../../utils/dateUtils';
 import styles from './ViewPatient.module.css';
 
 const ViewPatient = () => {
@@ -95,7 +96,7 @@ const ViewPatient = () => {
           </div>
           <div className={styles.field}>
             <label>Date of Birth:</label>
-            <span>{patient.patientProfile?.dateOfBirth ? new Date(patient.patientProfile.dateOfBirth).toLocaleDateString() : '-'}</span>
+            <span>{patient.patientProfile?.dateOfBirth ? formatDate(patient.patientProfile.dateOfBirth) : '-'}</span>
           </div>
           <div className={styles.field}>
             <label>Gender:</label>

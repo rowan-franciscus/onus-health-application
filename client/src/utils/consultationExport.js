@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { formatDate as formatDateUtil } from './dateUtils';
 import 'jspdf-autotable';
 
 /**
@@ -375,7 +376,7 @@ export const exportAsPDF = (consultation) => {
     doc.setFontSize(9);
     doc.setTextColor(150);
     doc.text(`Page ${i} of ${pageCount}`, 105, 285, { align: 'center' });
-    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 20, 285);
+    doc.text(`Generated on ${formatDate(new Date())}`, 20, 285);
   }
   
     // Save the PDF
@@ -388,14 +389,7 @@ export const exportAsPDF = (consultation) => {
 
 // Helper functions
 const formatDate = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
+  return formatDateUtil(dateString) || '';
 };
 
 const formatDateForFilename = (dateString) => {

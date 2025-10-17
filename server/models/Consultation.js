@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { formatDate } = require('../utils/dateUtils');
 const Schema = mongoose.Schema;
 
 const ConsultationSchema = new Schema({
@@ -105,7 +106,7 @@ const ConsultationSchema = new Schema({
 
 // Virtual for consultation name/title (useful for display purposes)
 ConsultationSchema.virtual('title').get(function() {
-  return `${this.general.specialty} - ${new Date(this.date).toLocaleDateString()}`;
+  return `${this.general.specialty} - ${formatDate(this.date)}`;
 });
 
 // Index for faster queries

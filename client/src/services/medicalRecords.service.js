@@ -1,4 +1,5 @@
 import api from './api.service';
+import { formatDate } from '../utils/dateUtils';
 
 /**
  * Medical records service to handle all record type API calls
@@ -30,7 +31,7 @@ class MedicalRecordsService {
       
       if (response && Array.isArray(response)) {
         response.forEach(consultation => {
-          const consultationDate = consultation.date ? new Date(consultation.date).toLocaleDateString() : 'N/A';
+          const consultationDate = consultation.date ? formatDate(consultation.date) : 'N/A';
           const provider = consultation.general?.specialistName || 
             (consultation.provider ? `${consultation.provider.firstName} ${consultation.provider.lastName}` : 'Unknown Provider');
           

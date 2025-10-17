@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { formatDate } from '../../../../utils/dateUtils';
 import styles from './FormTabs.module.css';
 
 const HospitalTab = ({
@@ -105,8 +106,8 @@ const HospitalTab = ({
             <div key={index} className={styles.fieldGroup}>
               <div className={styles.fieldGroupHeader}>
                 <h3 className={styles.fieldGroupTitle}>
-                  {record.hospitalName || 'Hospital Stay'}: {new Date(record.admissionDate).toLocaleDateString()}
-                  {record.dischargeDate ? ` - ${new Date(record.dischargeDate).toLocaleDateString()}` : ' (Ongoing)'}
+                  {record.hospitalName || 'Hospital Stay'}: {formatDate(record.admissionDate)}
+                  {record.dischargeDate ? ` - ${formatDate(record.dischargeDate)}` : ' (Ongoing)'}
                 </h3>
                 <button
                   type="button"
@@ -125,13 +126,13 @@ const HospitalTab = ({
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Admission Date</label>
-                  <p className={styles.formValue}>{new Date(record.admissionDate).toLocaleDateString()}</p>
+                  <p className={styles.formValue}>{formatDate(record.admissionDate)}</p>
                 </div>
                 
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Discharge Date</label>
                   <p className={styles.formValue}>
-                    {record.dischargeDate ? new Date(record.dischargeDate).toLocaleDateString() : 'Not discharged'}
+                    {record.dischargeDate ? formatDate(record.dischargeDate) : 'Not discharged'}
                   </p>
                 </div>
               </div>

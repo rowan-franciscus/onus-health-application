@@ -6,6 +6,7 @@ import Button from '../../components/common/Button/Button';
 import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator';
 import { AiOutlineEye } from 'react-icons/ai';
 import adminService from '../../services/admin.service';
+import { formatDate } from '../../utils/dateUtils';
 import styles from './Patients.module.css';
 
 const Patients = () => {
@@ -93,7 +94,7 @@ const Patients = () => {
         // Use the most recent date between updatedAt and createdAt
         const lastUpdate = row.updatedAt || row.createdAt;
         if (!lastUpdate) return 'Never';
-        return new Date(lastUpdate).toLocaleDateString();
+        return formatDate(lastUpdate);
       },
       sortable: true,
     },

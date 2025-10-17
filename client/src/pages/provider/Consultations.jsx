@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styles from './Consultations.module.css';
+import { formatDate } from '../../utils/dateUtils';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -101,7 +102,7 @@ const Consultations = () => {
       render: (value, item) => {
         if (!item || !item.date || item.date === 'N/A') return 'Not set';
         try {
-          return new Date(item.date).toLocaleDateString();
+          return formatDate(item.date);
         } catch (error) {
           console.error('Error formatting date:', error);
           return item.date || 'Invalid date';
