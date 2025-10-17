@@ -253,8 +253,25 @@
   box-sizing: border-box;
 }
 
+/* When adminAuthCard is inside authPageContainer */
+.authPageContainer .adminAuthCard {
+  min-height: auto;
+  width: 510px;
+  max-width: 100%;
+  background-color: #ffffff;
+  padding: 3rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
 .adminAuthCard > * {
   width: 510px;
+  max-width: 100%;
+}
+
+/* When inside authPageContainer */
+.authPageContainer .adminAuthCard > * {
+  width: 100%;
   max-width: 100%;
 }
 
@@ -274,9 +291,22 @@
   padding-top: 20px;
 }
 
+/* When inside authPageContainer */
+.authPageContainer .adminAuthCard .logoContainer {
+  justify-content: center;
+  margin-bottom: 2rem;
+  margin-top: 0;
+  padding-top: 0;
+}
+
 .adminAuthCard .title {
   text-align: left;
   margin-bottom: 30px;
+}
+
+/* When inside authPageContainer */
+.authPageContainer .adminAuthCard .title {
+  text-align: center;
 }
 
 .adminAuthCard .formGroup {
@@ -544,7 +574,7 @@
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background-color: #f8f9ff;
+  background-color: #ffffff;
 }
 
 /* Responsive styles */
