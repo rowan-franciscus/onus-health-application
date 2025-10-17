@@ -9,6 +9,15 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import PatientDashboardService from '../../services/patientDashboard.service';
 
+// Import icons
+import vitalsIcon from '../../assets/icons/vitals-icon-large.svg';
+import medicationsIcon from '../../assets/icons/medications-icon-large.svg';
+import immunizationsIcon from '../../assets/icons/immunizations-icon-large.svg';
+import labResultsIcon from '../../assets/icons/lab-results-icon-large.svg';
+import radiologyIcon from '../../assets/icons/radiology-reports-icon-large.svg';
+import hospitalIcon from '../../assets/icons/hospital-icon-large.svg';
+import surgeryIcon from '../../assets/icons/surgery-icon-large.svg';
+
 const PatientDashboard = () => {
   const [recentConsultations, setRecentConsultations] = useState([]);
   const [recentVitals, setRecentVitals] = useState(null);
@@ -283,43 +292,43 @@ const PatientDashboard = () => {
           <div className={styles.recordsGrid}>
             <Link to="/patient/medical-records/vitals" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/vitals-icon.svg" alt="Vitals" />
+                <img src={vitalsIcon} alt="Vitals" />
               </div>
               <span>Vitals</span>
             </Link>
             <Link to="/patient/medical-records/medications" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/medications-icon.svg" alt="Medications" />
+                <img src={medicationsIcon} alt="Medications" />
               </div>
               <span>Medications</span>
             </Link>
             <Link to="/patient/medical-records/immunizations" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/immunizations-icon.svg" alt="Immunizations" />
+                <img src={immunizationsIcon} alt="Immunizations" />
               </div>
               <span>Immunizations</span>
             </Link>
             <Link to="/patient/medical-records/lab-results" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/lab-results-icon.svg" alt="Lab Results" />
+                <img src={labResultsIcon} alt="Lab Results" />
               </div>
               <span>Lab Results</span>
             </Link>
             <Link to="/patient/medical-records/radiology" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/radiology-icon.svg" alt="Radiology" />
+                <img src={radiologyIcon} alt="Radiology" />
               </div>
               <span>Radiology</span>
             </Link>
             <Link to="/patient/medical-records/hospital" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/hospital-icon.svg" alt="Hospital" />
+                <img src={hospitalIcon} alt="Hospital" />
               </div>
               <span>Hospital</span>
             </Link>
             <Link to="/patient/medical-records/surgery" className={styles.recordType}>
               <div className={styles.recordIcon}>
-                <img src="/icons/surgery-icon.svg" alt="Surgery" />
+                <img src={surgeryIcon} alt="Surgery" />
               </div>
               <span>Surgery</span>
             </Link>
