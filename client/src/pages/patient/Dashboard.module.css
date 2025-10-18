@@ -319,13 +319,43 @@
   }
 }
 
+@media (max-width: 768px) {
+  /* Stack card header elements vertically on mobile */
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .cardActions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+  
+  .addButton,
+  .viewAllLink {
+    flex: 0 0 auto;
+  }
+  
+  /* Change medical records to 2 columns on mobile */
+  .recordsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 576px) {
   .vitalsGrid {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .recordsGrid {
-    grid-template-columns: repeat(3, 1fr);
+  .consultationItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .consultationDate {
+    width: 100%;
   }
 }
 
