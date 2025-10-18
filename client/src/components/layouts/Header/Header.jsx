@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { Link } from 'react-router-dom';
 import { getUserInitials } from '../../../utils/initials';
+import MobileNav from '../MobileNav';
 import styles from './Header.module.css';
 
 /**
@@ -13,6 +14,9 @@ const Header = ({
   actions,
   user,
   onUserMenuClick,
+  logo,
+  navigationItems = [],
+  navigationFooterItems = [],
   className = '',
   ...props
 }) => {
@@ -35,6 +39,12 @@ const Header = ({
   return (
     <header className={classNames(styles.header, className)} {...props}>
       <div className={styles.titleContainer}>
+        <MobileNav 
+          logo={logo}
+          items={navigationItems}
+          footerItems={navigationFooterItems}
+          className={styles.mobileNav}
+        />
         {title && <h1 className={styles.title}>{title}</h1>}
       </div>
       <div className={styles.actions}>
@@ -106,6 +116,9 @@ Header.propTypes = {
     profileUrl: PropTypes.string,
   }),
   onUserMenuClick: PropTypes.func,
+  logo: PropTypes.node,
+  navigationItems: PropTypes.array,
+  navigationFooterItems: PropTypes.array,
   className: PropTypes.string,
 };
 

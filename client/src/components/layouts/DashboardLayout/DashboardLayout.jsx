@@ -149,6 +149,9 @@ const DashboardLayout = ({ role }) => {
       <div className={styles.mainContent}>
         <Header 
           user={getUserDisplay()}
+          logo={logo}
+          navigationItems={items}
+          navigationFooterItems={footerItems}
           className={styles.header}
         />
         <main className={styles.content}>
