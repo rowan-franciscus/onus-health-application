@@ -51,7 +51,7 @@ const MobileNav = ({
     <>
       {/* Burger menu button */}
       <button 
-        className={classNames(styles.burgerButton, className)} 
+        className={classNames(styles.burgerButton, className, { [styles.open]: isOpen })} 
         onClick={toggleMenu}
         aria-label="Toggle navigation menu"
         {...props}
