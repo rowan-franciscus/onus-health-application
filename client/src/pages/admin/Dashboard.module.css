@@ -175,6 +175,18 @@
   
   .datePickerWrapper {
     width: 100%;
+    justify-content: space-between;
+  }
+  
+  .datePicker {
+    flex: 1;
+    min-width: 0;
+    max-width: 45%;
+    font-size: 14px;
+  }
+  
+  .dateRangeSeparator {
+    flex-shrink: 0;
   }
   
   .refreshButton {
