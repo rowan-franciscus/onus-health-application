@@ -100,13 +100,13 @@ const AddConsultation = () => {
         labResults: consultationData.labResults?.map(lab => ({
           testName: lab.testName || '',
           labName: lab.labName || '',
-          date: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().split('T')[0] : '',',
+          date: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().split('T')[0] : '',
           results: lab.results || '',
           comments: lab.comments || ''
         })) || [],
         radiology: consultationData.radiologyReports?.map(rad => ({
           scanType: rad.typeOfScan || '',
-          date: rad.date ? new Date(rad.date).toISOString().split('T')[0] : '',',
+          date: rad.date ? new Date(rad.date).toISOString().split('T')[0] : '',
           bodyPart: rad.bodyPartExamined || '',
           findings: rad.findings || '',
           recommendations: rad.recommendations || ''
@@ -114,7 +114,7 @@ const AddConsultation = () => {
         hospital: consultationData.hospitalRecords?.map(hosp => ({
           hospitalName: hosp.hospitalName || '',
           admissionDate: hosp.admissionDate ? new Date(hosp.admissionDate).toISOString().split('T')[0] : '',
-          dischargeDate: hosp.dischargeDate ? new Date(hosp.dischargeDate).toISOString().split('T')[0] : '',',
+          dischargeDate: hosp.dischargeDate ? new Date(hosp.dischargeDate).toISOString().split('T')[0] : '',
           reason: hosp.reasonForHospitalization || '',
           treatments: Array.isArray(hosp.treatmentsReceived) ? hosp.treatmentsReceived.join(', ') : hosp.treatmentsReceived || '',
           attendingDoctors: Array.isArray(hosp.attendingDoctors) ? 
@@ -125,7 +125,7 @@ const AddConsultation = () => {
         })) || [],
         surgery: consultationData.surgeryRecords?.map(surg => ({
           type: surg.typeOfSurgery || '',
-          date: surg.date ? new Date(surg.date).toISOString().split('T')[0] : '',',
+          date: surg.date ? new Date(surg.date).toISOString().split('T')[0] : '',
           reason: surg.reason || '',
           complications: surg.complications || '',
           recoveryNotes: surg.recoveryNotes || ''
