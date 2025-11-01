@@ -599,6 +599,16 @@
     padding: 2rem 1.5rem;
     max-width: 100%;
   }
+  
+  /* Remove horizontal padding on mobile for consistent width */
+  .authPageContainer {
+    padding: 40px 0;
+  }
+  
+  /* Maintain some internal spacing for content */
+  .authPageContainer .adminAuthCard {
+    padding: 3rem 1.5rem;
+  }
 }
 
 .adminAuthCard .authFooter {
