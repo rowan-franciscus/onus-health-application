@@ -46,7 +46,7 @@ const ProviderDashboard = () => {
             setRecentConsultations(dashboardData.recentConsultations.map(consultation => ({
               id: consultation._id,
               patientName: consultation.patient ? `${consultation.patient.firstName} ${consultation.patient.lastName}` : 'Unknown Patient',
-              date: new Date(consultation.date).toISOString().split('T')[0],
+              date: formatDate(consultation.date),
               type: consultation.general?.specialty || 'Consultation',
               reason: consultation.general?.reasonForVisit || 'N/A'
             })));

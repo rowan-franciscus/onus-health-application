@@ -44,7 +44,7 @@ const Consultations = () => {
           patientName: consultation.patient ? 
             `${consultation.patient.firstName} ${consultation.patient.lastName}` : 
             'Unknown Patient',
-          date: consultation.date ? new Date(consultation.date).toISOString().split('T')[0] : 'N/A',
+          date: consultation.date ? formatDate(consultation.date) : 'N/A',
           reasonForVisit: consultation.general?.reasonForVisit || 'N/A',
           status: consultation.status || 'draft'
         }));

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import AuthService from '../../services/auth.service';
 import ApiService from '../../services/api.service';
+import { formatDate } from '../../utils/dateUtils';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -358,7 +359,7 @@ const PatientProfile = () => {
             <>
               {renderField('Title', profile.personalInfo.title)}
               {renderField('Name', `${profile.personalInfo.firstName} ${profile.personalInfo.lastName}`)}
-              {renderField('Date of Birth', profile.personalInfo.dateOfBirth)}
+              {renderField('Date of Birth', profile.personalInfo.dateOfBirth ? formatDate(profile.personalInfo.dateOfBirth) : '')}
               {renderField('Gender', profile.personalInfo.gender)}
               {renderField('Email', profile.personalInfo.email)}
               {renderField('Phone', profile.personalInfo.phone)}

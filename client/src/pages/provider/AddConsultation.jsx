@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom'
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import styles from './AddConsultation.module.css';
+import { formatDate } from '../../utils/dateUtils';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -57,7 +58,7 @@ const AddConsultation = () => {
       // When editing, populate with existing consultation data
       return {
         general: {
-          date: consultationData.date ? new Date(consultationData.date).toISOString().substr(0, 10) : new Date().toISOString().substr(0, 10),
+          date: consultationData.date ? new Date(consultationData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           specialistName: consultationData.general?.specialistName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
           specialty: consultationData.general?.specialty || providerProfile?.specialty || '',
           practiceName: consultationData.general?.practice || providerProfile?.practiceInfo?.name || '',
@@ -87,33 +88,33 @@ const AddConsultation = () => {
           },
           frequency: med.frequency || '',
           reason: med.reasonForPrescription || '',
-          startDate: med.startDate ? new Date(med.startDate).toISOString().substr(0, 10) : '',
-          endDate: med.endDate ? new Date(med.endDate).toISOString().substr(0, 10) : ''
+          startDate: med.startDate ? new Date(med.startDate).toISOString().split('T')[0] : '',
+          endDate: med.endDate ? new Date(med.endDate).toISOString().split('T')[0] : ''
         })) || [],
         immunization: consultationData.immunizations?.map(imm => ({
           name: imm.vaccineName || '',
-          date: imm.dateAdministered ? new Date(imm.dateAdministered).toISOString().substr(0, 10) : '',
+          date: imm.dateAdministered ? new Date(imm.dateAdministered).toISOString().split('T')[0] : '',
           serialNumber: imm.vaccineSerialNumber || '',
-          nextDueDate: imm.nextDueDate ? new Date(imm.nextDueDate).toISOString().substr(0, 10) : ''
+          nextDueDate: imm.nextDueDate ? new Date(imm.nextDueDate).toISOString().split('T')[0] : ''
         })) || [],
         labResults: consultationData.labResults?.map(lab => ({
           testName: lab.testName || '',
           labName: lab.labName || '',
-          date: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().substr(0, 10) : '',
+          date: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().split('T')[0] : '',',
           results: lab.results || '',
           comments: lab.comments || ''
         })) || [],
         radiology: consultationData.radiologyReports?.map(rad => ({
           scanType: rad.typeOfScan || '',
-          date: rad.date ? new Date(rad.date).toISOString().substr(0, 10) : '',
+          date: rad.date ? new Date(rad.date).toISOString().split('T')[0] : '',',
           bodyPart: rad.bodyPartExamined || '',
           findings: rad.findings || '',
           recommendations: rad.recommendations || ''
         })) || [],
         hospital: consultationData.hospitalRecords?.map(hosp => ({
           hospitalName: hosp.hospitalName || '',
-          admissionDate: hosp.admissionDate ? new Date(hosp.admissionDate).toISOString().substr(0, 10) : '',
-          dischargeDate: hosp.dischargeDate ? new Date(hosp.dischargeDate).toISOString().substr(0, 10) : '',
+          admissionDate: hosp.admissionDate ? new Date(hosp.admissionDate).toISOString().split('T')[0] : '',
+          dischargeDate: hosp.dischargeDate ? new Date(hosp.dischargeDate).toISOString().split('T')[0] : '',',
           reason: hosp.reasonForHospitalization || '',
           treatments: Array.isArray(hosp.treatmentsReceived) ? hosp.treatmentsReceived.join(', ') : hosp.treatmentsReceived || '',
           attendingDoctors: Array.isArray(hosp.attendingDoctors) ? 
@@ -124,7 +125,7 @@ const AddConsultation = () => {
         })) || [],
         surgery: consultationData.surgeryRecords?.map(surg => ({
           type: surg.typeOfSurgery || '',
-          date: surg.date ? new Date(surg.date).toISOString().substr(0, 10) : '',
+          date: surg.date ? new Date(surg.date).toISOString().split('T')[0] : '',',
           reason: surg.reason || '',
           complications: surg.complications || '',
           recoveryNotes: surg.recoveryNotes || ''
@@ -135,7 +136,7 @@ const AddConsultation = () => {
       // When creating new, use provider profile defaults
       return {
         general: {
-          date: new Date().toISOString().substr(0, 10),
+          date: new Date().toISOString().split('T')[0],
           specialistName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
           specialty: providerProfile?.specialty || '',
           practiceName: providerProfile?.practiceInfo?.name || '',

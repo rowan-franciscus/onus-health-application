@@ -6,6 +6,7 @@ import Select from '../../components/common/Select/Select';
 import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator';
 import { FaArrowLeft } from 'react-icons/fa';
 import adminService from '../../services/admin.service';
+import { formatDate } from '../../utils/dateUtils';
 import styles from './EditPatient.module.css';
 
 const EditPatient = () => {

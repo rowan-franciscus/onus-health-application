@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
+import { formatDateTime } from '../../utils/dateUtils';
 import adminService from '../../services/admin.service';
 import styles from './Dashboard.module.css';
 
@@ -25,7 +25,7 @@ const ActivityItem = ({ activity }) => {
   return (
     <div className={styles.activityItem}>
       <span className={styles.activityTime}>
-        {format(new Date(activity.timestamp), 'MMM dd, yyyy - HH:mm')}
+        {formatDateTime(activity.timestamp)}
       </span>
       <span className={styles.activityText}>{getActivityText()}</span>
     </div>

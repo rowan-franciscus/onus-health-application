@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import * as Yup from 'yup';
 import { Formik, Form } from 'formik';
 import styles from './AddVitals.module.css';
+import { formatDate } from '../../utils/dateUtils';
 
 // Components
 import PageContainer from '../../components/layouts/PageContainer';
