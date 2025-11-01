@@ -602,12 +602,13 @@
   
   /* Remove horizontal padding on mobile for consistent width */
   .authPageContainer {
-    padding: 40px 0;
+    padding: 20px 0;
+    align-items: flex-start;
   }
   
   /* Maintain some internal spacing for content */
   .authPageContainer .adminAuthCard {
-    padding: 3rem 1.5rem;
+    padding: 2rem 1.5rem;
   }
 }
 
