@@ -618,7 +618,7 @@
   
   /* Ensure logo has space at the top on mobile */
   .authPageContainer .adminAuthCard .logoContainer {
-    padding-top: 1.5rem;
+    padding-top: 200px;
     margin-top: 0;
   }
 }
