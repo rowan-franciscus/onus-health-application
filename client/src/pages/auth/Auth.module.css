@@ -610,6 +610,12 @@
   .authPageContainer .adminAuthCard {
     padding: 2rem 1.5rem;
   }
+  
+  /* Ensure logo has space at the top on mobile */
+  .authPageContainer .adminAuthCard .logoContainer {
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+  }
 }
 
 .adminAuthCard .authFooter {
