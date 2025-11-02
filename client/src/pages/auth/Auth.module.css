@@ -485,6 +485,7 @@
   cursor: pointer;
   transition: all 0.2s;
   font-weight: 500;
+  color: #333;
 }
 
 .roleButtonActive {
