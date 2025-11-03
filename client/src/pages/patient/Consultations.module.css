@@ -147,9 +147,9 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 992px) {
+@media (max-width: 1200px) {
   .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 0.75fr 0.75fr;
+    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 1.5fr 0.75fr minmax(110px, max-content);
   }
   
   .reason {
@@ -157,23 +157,95 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 1.5fr 0.75fr 0.75fr;
+    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr minmax(110px, max-content);
   }
   
-  .clinic {
+  .reason,
+  .status {
     display: none;
   }
 }
 
-@media (max-width: 576px) {
-  .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 0.75fr 0.75fr;
+@media (max-width: 768px) {
+  .consultationsHeader {
+    display: none;
   }
   
-  .specialist {
-    display: none;
+  .consultationRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background-color: #fff;
+  }
+  
+  .consultationRow:hover {
+    background-color: #f9f7fe;
+    border-color: #d5ccf5;
+  }
+  
+  .consultationRow:last-child {
+    border-bottom: 1px solid #e5e5e5;
+    margin-bottom: 0;
+  }
+  
+  .consultationRow > div {
+    display: block;
+    overflow: visible;
+  }
+  
+  .date {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .type::before {
+    content: "Type: ";
+    color: #666;
+    font-weight: normal;
+  }
+  
+  .specialist::before {
+    content: "Specialist: ";
+    color: #666;
+    font-weight: normal;
+  }
+  
+  .clinic::before {
+    content: "Clinic: ";
+    color: #666;
+    font-weight: normal;
+  }
+  
+  .reason::before {
+    content: "Reason: ";
+    color: #666;
+    font-weight: normal;
+  }
+  
+  .reason {
+    display: block;
+    white-space: normal;
+    margin: 0.5rem 0;
+  }
+  
+  .status {
+    display: inline-block;
+    margin: 0.5rem 0;
+  }
+  
+  .actions {
+    margin-top: 0.75rem;
+  }
+  
+  .viewButton {
+    width: 100%;
+    padding: 0.75rem 1rem;
   }
 }
 

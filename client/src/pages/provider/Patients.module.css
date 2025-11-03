@@ -240,10 +240,21 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 2.5fr 0.75fr 0.75fr 1.75fr 2.5fr minmax(180px, max-content);
+  }
+}
+
 @media (max-width: 1024px) {
   .tableHeader,
   .tableRow {
-    grid-template-columns: 3fr 1fr 1fr 2fr 3fr 2fr;
+    grid-template-columns: 2.5fr 0.75fr 1fr 2.5fr minmax(150px, max-content);
+  }
+  
+  .colAge {
+    display: none;
   }
 }
 

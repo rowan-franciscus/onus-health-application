@@ -537,7 +537,7 @@
 
 .consultationsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 24px;
 }
 
@@ -734,5 +734,18 @@
   
   .recordsGrid {
     grid-template-columns: 1fr;
+  }
+  
+  .consultationCardHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .consultationActions {
+    width: 100%;
+  }
+  
+  .consultationActions button {
+    flex: 1;
   }
 } 
