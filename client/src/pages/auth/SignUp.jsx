@@ -125,7 +125,7 @@ const SignUp = () => {
 
   return (
     <div className={styles.authPageContainer}>
-      <div className={styles.adminAuthCard}>
+      <div className={`${styles.adminAuthCard} ${styles.signUpCard}`}>
         <div className={styles.logoContainer}>
           <OnusLogo className={styles.logo} />
         </div>

@@ -622,6 +622,11 @@
     padding-top: 0;
     margin-top: 0;
   }
+  
+  /* Sign Up page specific - add extra spacing above logo on mobile */
+  .authPageContainer .signUpCard .logoContainer {
+    padding-top: 200px;
+  }
 }
 
 .adminAuthCard .authFooter {
