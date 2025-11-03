@@ -1,8 +1,7 @@
 .layout {
   display: flex;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh; /* Changed from height to min-height */
 }
 
 .sidebar {
@@ -14,7 +13,7 @@
   display: flex;
   flex-direction: column;
   margin-left: var(--sidebar-width);
-  overflow: hidden;
+  min-height: 100vh; /* Ensure minimum height */
 }
 
 .header {
@@ -33,7 +32,17 @@
 
 /* Responsive for mobile */
 @media (max-width: 768px) {
+  .layout {
+    min-height: auto; /* Allow natural height on mobile */
+    height: auto;
+  }
+  
   .mainContent {
     margin-left: 60px; /* Match collapsed sidebar width */
+    min-height: auto;
+  }
+  
+  .content {
+    overflow-y: visible; /* Allow natural scrolling on mobile */
   }
 } 

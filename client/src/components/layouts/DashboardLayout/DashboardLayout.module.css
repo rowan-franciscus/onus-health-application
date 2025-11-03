@@ -15,10 +15,9 @@
 
 .dashboardLayout {
   display: flex;
-  height: 100vh;
+  min-height: 100vh; /* Changed from height to min-height */
   width: 100%;
   font-family: 'DM Sans', sans-serif;
-  overflow: hidden;
   background-color: #f9f9fb;
 }
 
@@ -42,8 +41,7 @@
   padding-left: 250px;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100vh; /* Changed from height: 100% to min-height */
 }
 
 .header {
@@ -83,12 +81,22 @@
 
 /* Responsive adjustments */
 @media screen and (max-width: 768px) {
+  .dashboardLayout {
+    min-height: auto;
+    height: auto;
+  }
+  
   .sidebar {
     transform: translateX(-250px);
   }
   
   .mainContent {
     padding-left: 0;
+    min-height: auto;
+  }
+  
+  .content {
+    overflow-y: visible; /* Allow natural scrolling on mobile */
   }
   
   .sidebar.open {

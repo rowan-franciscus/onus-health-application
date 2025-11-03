@@ -1,6 +1,6 @@
 .onboardingContainer {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh; /* Changed from height to min-height */
   display: flex;
   flex-direction: column;
   background-color: #f9f9f9;
@@ -8,7 +8,6 @@
   background-size: 900px;
   background-repeat: repeat;
   position: relative;
-  overflow: hidden;
 }
 
 .header {
@@ -69,7 +68,17 @@
 }
 
 @media (max-width: 480px) {
+  .onboardingContainer {
+    min-height: auto; /* Allow natural height on very small screens */
+    height: auto;
+  }
+  
   .header {
+    padding: 1rem 0;
+  }
+  
+  .formContainer {
+    overflow-y: visible; /* Allow natural scrolling on mobile */
     padding: 1rem 0;
   }
   
@@ -77,6 +86,7 @@
     width: 100%;
     padding: 1rem;
     border-radius: 0;
+    margin-bottom: 1rem;
   }
   
   .logo img {
