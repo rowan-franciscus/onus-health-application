@@ -117,18 +117,19 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  /* Hide the progress bar on mobile */
   .steps {
-    overflow-x: auto;
-    padding-bottom: 1rem;
-    justify-content: flex-start; /* For proper mobile display of steps */
-    padding-left: 1rem;
-    padding-right: 1rem;
-    margin-left: -1rem;
-    margin-right: -1rem;
-    width: calc(100% + 2rem);
+    display: none;
   }
   
-  .stepIndicator {
-    margin: 0 0.5rem;
+  /* Adjust current step title for mobile */
+  .currentStep {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .currentStep h4 {
+    font-size: 1.125rem;
   }
 } 
