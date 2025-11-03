@@ -149,7 +149,7 @@
 /* Responsive adjustments */
 @media (max-width: 1200px) {
   .consultationsHeader, .consultationRow {
-    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 1.5fr 0.75fr minmax(110px, max-content);
+    grid-template-columns: 0.75fr 1fr 1.5fr 1.5fr 0.75fr minmax(110px, max-content);
   }
   
   .reason {
