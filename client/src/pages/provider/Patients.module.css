@@ -4,6 +4,18 @@
   margin: 0 auto;
 }
 
+@media (max-width: 768px) {
+  .patientsContainer {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .patientsContainer {
+    padding: 0.75rem;
+  }
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -23,6 +35,16 @@
   margin: 0;
 }
 
+@media (max-width: 480px) {
+  .titleSection h1 {
+    font-size: 1.4rem;
+  }
+  
+  .titleSection p {
+    font-size: 0.9rem;
+  }
+}
+
 .actionSection {
   display: flex;
   align-items: center;
@@ -36,6 +58,18 @@
 
 .patientsCard {
   padding: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .patientsCard {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .patientsCard {
+    padding: 0.75rem;
+  }
 }
 
 .filterSection {
@@ -265,13 +299,22 @@
     gap: 1rem;
   }
   
+  .addPatientBtn {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    font-size: 0.95rem;
+  }
+  
   .tableHeader,
   .tableRow {
-    grid-template-columns: 3fr 1fr 2fr 2fr;
+    grid-template-columns: 2fr 1.5fr minmax(140px, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem 0.5rem;
   }
   
   .colAge,
-  .colEmail {
+  .colEmail,
+  .colId {
     display: none;
   }
   
@@ -279,31 +322,98 @@
     overflow-x: auto;
     padding-bottom: 0.5rem;
     flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
   }
   
   .categoryButton {
     white-space: nowrap;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
   }
 }
 
 @media (max-width: 480px) {
-  .tableHeader,
-  .tableRow {
-    grid-template-columns: 3fr 2fr 2fr;
+  .header {
+    margin-bottom: 1rem;
   }
   
-  .colId {
+  .tableHeader,
+  .tableRow {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .tableHeader {
     display: none;
   }
   
-  .actionButtons {
+  .tableRow {
+    display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background-color: white;
+  }
+  
+  .tableRow:last-child {
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .tableRow:hover {
+    background-color: #f9f7fe;
+  }
+  
+  .colName,
+  .colId,
+  .colAge,
+  .colAccess,
+  .colEmail,
+  .colActions {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    white-space: normal;
+    word-break: break-word;
+  }
+  
+  .colName {
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .colAccess {
+    margin-bottom: 0.75rem;
+  }
+  
+  .colActions {
+    margin-top: 0.5rem;
+  }
+  
+  .actionButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
   }
   
   .viewDetailsButton,
   .newConsultationButton,
   .requestAccessButton {
     width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .filterSection {
+    margin-bottom: 1rem;
+  }
+  
+  .categoriesContainer {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 } 

@@ -50,4 +50,20 @@
 
 .clearButton:hover {
   color: #6039cc;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .searchIcon {
+    padding: 0 0.5rem;
+  }
+  
+  .searchInput {
+    padding: 0.6rem 0;
+    font-size: 0.9rem;
+  }
+  
+  .clearButton {
+    padding: 0 0.5rem;
+  }
 } 

@@ -52,4 +52,20 @@
   padding: var(--spacing-md);
   border-top: 1px solid var(--border-color);
   background-color: #fafafa;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 0.75rem;
+    border-radius: 4px;
+  }
 } 
