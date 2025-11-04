@@ -50,7 +50,7 @@ const PatientViewConsultation = () => {
           // Transform the data to match our component's expected format
           const formattedConsultation = {
             id: consultationData._id,
-            date: consultationData.date || consultationData.createdAt,
+            date: formatDate(consultationData.date || consultationData.createdAt),
             type: consultationData.general?.specialty || 'General',
             specialist: consultationData.general?.specialistName || 
                        (consultationData.provider ? 
