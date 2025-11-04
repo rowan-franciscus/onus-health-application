@@ -1,6 +1,8 @@
 .consultationContainer {
   padding: 1.5rem;
   max-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .header {
@@ -57,6 +59,8 @@
 
 .consultationSummary {
   margin-bottom: 1.5rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .summaryGrid {
@@ -80,6 +84,9 @@
 
 .consultationDetails {
   margin-bottom: 2rem;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 !important;
 }
 
 .tabsContainer {
@@ -88,6 +95,8 @@
 
 .tabContent {
   padding: 1rem 0;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 /* General Info Styles */
@@ -351,24 +360,197 @@
 }
 
 @media (max-width: 768px) {
+  .consultationContainer {
+    padding: 0.75rem;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
   .header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .backLink {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .downloadContainer {
+    width: 100%;
+  }
+  
+  .downloadButton {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .consultationSummary {
+    margin-bottom: 1rem;
+    max-width: calc(100vw - 1.5rem);
+    margin-left: auto;
+    margin-right: auto;
   }
   
   .summaryGrid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .summaryItem h3 {
+    font-size: 0.8125rem;
+  }
+  
+  .summaryItem p {
+    font-size: 0.9375rem;
+  }
+  
+  .consultationDetails {
+    margin-bottom: 0.5rem;
+    padding: 0 !important;
+    overflow: hidden;
+    max-width: calc(100vw - 1.5rem);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .tabContent {
+    padding: 1rem;
+  }
+  
+  /* Ensure tabs container fits mobile viewport */
+  .consultationDetails :global(.tabsContainer) {
+    margin-bottom: 0;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+  
+  .consultationDetails :global(.tabsList) {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .consultationDetails :global(.tabsList)::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .consultationDetails :global(.tabsList)::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .consultationDetails :global(.tabsList)::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+  
+  .consultationDetails :global(.tabButton) {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .infoItem h3,
+  .vitalItem h3 {
+    font-size: 0.8125rem;
+  }
+  
+  .infoItem p,
+  .vitalItem p {
+    font-size: 0.9375rem;
+  }
+  
+  .vitalItem {
+    padding: 1rem;
+  }
+  
+  .medicationItem,
+  .immunizationItem,
+  .labResultItem,
+  .radiologyItem,
+  .hospitalItem,
+  .surgeryItem,
+  .fileItem {
+    padding: 1rem;
+  }
+  
+  .medicationItem h3,
+  .immunizationItem h3,
+  .labResultItem h3,
+  .radiologyItem h3,
+  .hospitalItem h3,
+  .surgeryItem h3,
+  .fileItem h3 {
+    font-size: 1.0625rem;
+  }
+  
+  .medicationDetail,
+  .immunizationDetail,
+  .labResultDetail,
+  .radiologyDetail,
+  .hospitalDetail,
+  .surgeryDetail {
+    font-size: 0.875rem;
+  }
+  
+  .observationsSection h3 {
+    font-size: 0.875rem;
+  }
+  
+  .observationsSection p {
+    font-size: 0.9375rem;
   }
   
   .fileItem {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .fileIcon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+  
+  .fileIcon img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .fileDetails h3 {
+    font-size: 0.9375rem;
   }
   
   .fileInfo {
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
+    font-size: 0.8125rem;
+  }
+  
+  .noData {
+    padding: 2rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  /* Ensure viewport width is not exceeded */
+  body {
+    overflow-x: hidden;
   }
 }
 
@@ -376,6 +558,16 @@
   .summaryGrid,
   .infoGrid,
   .vitalsGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .medicationDetails,
+  .immunizationDetails,
+  .labResultDetails,
+  .radiologyDetails,
+  .hospitalDetails,
+  .surgeryDetails {
     grid-template-columns: 1fr;
   }
 }
