@@ -87,16 +87,20 @@
   }
   
   .sidebar {
+    min-width: 0;
     transform: translateX(-250px);
   }
   
   .mainContent {
     padding-left: 0;
     min-height: auto;
+    width: 100%;
+    max-width: 100%;
   }
   
   .content {
     overflow-y: visible; /* Allow natural scrolling on mobile */
+    padding: 15px;
   }
   
   .sidebar.open {

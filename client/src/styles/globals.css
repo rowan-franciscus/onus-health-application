@@ -254,4 +254,16 @@ button {
     --spacing-lg: 18px;
     --spacing-xl: 24px;
   }
+}
+
+@media (max-width: 390px) {
+  body {
+    font-size: 14px;
+  }
+  
+  :root {
+    --spacing-md: 10px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+  }
 } 

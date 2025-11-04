@@ -2,17 +2,21 @@
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
   .patientsContainer {
     padding: 1rem;
+    max-width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   .patientsContainer {
     padding: 0.75rem;
+    max-width: 100%;
   }
 }
 
@@ -58,6 +62,8 @@
 
 .patientsCard {
   padding: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
@@ -74,10 +80,14 @@
 
 .filterSection {
   margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .searchContainer {
   margin-bottom: 1rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .categoriesContainer {
@@ -85,6 +95,8 @@
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .categoryButton {
@@ -112,6 +124,7 @@
 .patientsTable {
   width: 100%;
   border-collapse: collapse;
+  overflow-x: auto;
 }
 
 .tableHeader {
@@ -123,11 +136,15 @@
   border-radius: 8px 8px 0 0;
   font-weight: 600;
   color: #333;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tableBody {
   display: flex;
   flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tableRow {
@@ -137,6 +154,8 @@
   padding: 1rem;
   border-bottom: 1px solid #f0f0f0;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tableRow:last-child {
@@ -415,5 +434,43 @@
   .categoriesContainer {
     gap: 0.5rem;
     margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .patientsContainer {
+    padding: 0.5rem;
+  }
+  
+  .patientsCard {
+    padding: 0.5rem;
+  }
+  
+  .header {
+    gap: 0.75rem;
+  }
+  
+  .titleSection h1 {
+    font-size: 1.25rem;
+  }
+  
+  .titleSection p {
+    font-size: 0.85rem;
+  }
+  
+  .tableRow {
+    padding: 0.75rem;
+  }
+  
+  .categoryButton {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .viewDetailsButton,
+  .newConsultationButton,
+  .requestAccessButton {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
   }
 } 
