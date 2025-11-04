@@ -335,6 +335,9 @@
     gap: 0.75rem;
     margin-bottom: 1rem;
     border-radius: 0.5rem;
+    max-width: calc(100vw - 1.5rem);
+    margin-left: auto;
+    margin-right: auto;
   }
   
   .patientAvatar {
@@ -396,7 +399,10 @@
     border-radius: 0.5rem;
     margin-bottom: 0.5rem;
     padding: 0 !important;
-    overflow-x: hidden;
+    overflow: hidden;
+    max-width: calc(100vw - 1.5rem);
+    margin-left: auto;
+    margin-right: auto;
   }
   
   .notesField {
@@ -410,7 +416,7 @@
   }
   
   .attachmentsSection {
-    padding: 1rem 0.75rem;
+    padding: 0.75rem;
   }
   
   .attachmentsSection h3 {
@@ -435,16 +441,53 @@
   /* Ensure tabs container fits mobile viewport */
   .consultationCard :global(.tabsContainer) {
     margin-bottom: 0;
-    overflow-x: auto;
     width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
   
   .consultationCard :global(.tabsList) {
     width: 100%;
-    min-width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  .consultationCard :global(.tabsList)::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .consultationCard :global(.tabsList)::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .consultationCard :global(.tabsList)::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+  
+  .consultationCard :global(.tabButton) {
+    flex-shrink: 0;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8125rem;
   }
   
   .tabContent {
-    min-height: 200px;
+    min-height: 150px;
+  }
+  
+  /* Ensure viewport width is not exceeded */
+  body {
+    overflow-x: hidden;
+  }
+  
+  .viewContainer {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 } 
