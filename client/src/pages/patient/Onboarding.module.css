@@ -35,6 +35,8 @@
   font-size: 1.75rem;
   color: #333;
   font-weight: 600;
+  margin: 0;
+  line-height: 1;
 }
 
 .formContainer {
@@ -64,6 +66,8 @@
   
   .logo h1 {
     font-size: 1.5rem;
+    margin: 0;
+    line-height: 1;
   }
 }
 
@@ -95,5 +99,7 @@
   
   .logo h1 {
     font-size: 1.25rem;
+    margin: 0;
+    line-height: 1;
   }
 } 
