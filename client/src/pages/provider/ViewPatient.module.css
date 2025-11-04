@@ -6,6 +6,7 @@
   padding: 24px 32px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* Header styles */
@@ -708,44 +709,282 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
+  .viewPatientContainer {
+    padding: 16px;
+  }
+  
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .patientName {
+    font-size: 20px;
+  }
+  
+  .actionButtons {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .actionButtons button {
+    width: 100%;
+  }
+  
   .overviewTab {
     grid-template-columns: 1fr;
+    gap: 16px;
+    grid-template-areas:
+      "info"
+      "history"
+      "emergency"
+      "lifestyle"
+      "medications"
+      "immunization"
+      "consultations";
   }
   
   .patientDetailsGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .medicalHistoryGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .emergencyContactDetails {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .lifestyleGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .medicationsGrid {
     grid-template-columns: 1fr;
   }
   
   .vitalsGrid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
   
   .consultationsGrid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
   
   .recordsGrid {
     grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 0 16px 16px;
+  }
+  
+  .recordsList {
+    padding: 0 16px 16px;
+  }
+  
+  .recordsHeader {
+    padding: 0 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
   
   .consultationCardHeader {
     flex-direction: column;
     gap: 12px;
+    align-items: flex-start;
   }
   
   .consultationActions {
     width: 100%;
+    display: flex;
+    gap: 8px;
   }
   
   .consultationActions button {
     flex: 1;
+  }
+  
+  .infoCard, .medicalHistoryCard, .emergencyContactCard, 
+  .consultationsCard, .medicalRecordCard, .lifestyleCard, 
+  .medicationsCard, .immunizationCard {
+    padding: 16px;
+  }
+  
+  .detailLabel {
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .viewPatientContainer {
+    padding: 12px;
+  }
+  
+  .header {
+    margin-bottom: 16px;
+  }
+  
+  .breadcrumb {
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  
+  .patientName {
+    font-size: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .accessBadge, .pendingBadge {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+  
+  .patientBasicInfo {
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  
+  .actionButtons {
+    gap: 8px;
+  }
+  
+  .tabsContainer {
+    margin-bottom: 16px;
+  }
+  
+  .overviewTab {
+    gap: 12px;
+  }
+  
+  .patientDetailsGrid {
+    gap: 10px;
+  }
+  
+  .vitalsGrid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .vitalItem {
+    padding: 8px 0;
+  }
+  
+  .consultationItem {
+    padding: 10px;
+  }
+  
+  .consultationHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .recordCard {
+    padding: 16px;
+  }
+  
+  .recordHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .detailRow {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+  
+  .detailLabel {
+    min-width: 0;
+    margin-right: 0;
+    font-weight: 600;
+  }
+  
+  .detailValue {
+    padding-left: 0;
+  }
+  
+  .infoCard, .medicalHistoryCard, .emergencyContactCard, 
+  .consultationsCard, .medicalRecordCard, .lifestyleCard, 
+  .medicationsCard, .immunizationCard {
+    padding: 12px;
+  }
+  
+  .recordsGrid {
+    padding: 0 12px 12px;
+    gap: 12px;
+  }
+  
+  .recordsList {
+    padding: 0 12px 12px;
+    gap: 12px;
+  }
+  
+  .recordsHeader {
+    padding: 0 12px;
+    margin-bottom: 16px;
+  }
+  
+  .recordsHeader h3 {
+    font-size: 18px;
+  }
+  
+  .consultationCardHeader {
+    gap: 8px;
+  }
+  
+  .consultationActions {
+    flex-direction: column;
+  }
+  
+  .consultationActions button {
+    width: 100%;
+  }
+  
+  .consultationMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 390px) {
+  .viewPatientContainer {
+    padding: 10px;
+  }
+  
+  .patientName {
+    font-size: 16px;
+  }
+  
+  .patientBasicInfo {
+    font-size: 12px;
+  }
+  
+  .infoCard, .medicalHistoryCard, .emergencyContactCard, 
+  .consultationsCard, .medicalRecordCard, .lifestyleCard, 
+  .medicationsCard, .immunizationCard {
+    padding: 10px;
+  }
+  
+  .recordCard {
+    padding: 12px;
+  }
+  
+  .recordsGrid, .recordsList, .recordsHeader {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 } 

@@ -41,4 +41,26 @@
     padding: 0.75rem 1rem;
     font-size: 0.9rem;
   }
+  
+  .tabsList {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabsContainer {
+    margin-bottom: 1rem;
+  }
+  
+  .tabButton {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .tabButton {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
 } 
