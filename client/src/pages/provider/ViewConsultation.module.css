@@ -113,15 +113,19 @@
   overflow: hidden;
   box-sizing: border-box;
   width: 100%;
+  padding: 0 !important;
 }
 
 .tabContentWrapper {
   padding: 2rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 /* Tab Content */
 .tabContent {
   min-height: 300px;
+  box-sizing: border-box;
 }
 
 .fieldGrid {
@@ -388,13 +392,11 @@
     font-size: 1rem;
   }
   
-  .tabContentWrapper {
-    padding: 0.75rem;
-  }
-  
   .consultationCard {
     border-radius: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    padding: 0 !important;
+    overflow-x: hidden;
   }
   
   .notesField {
@@ -422,5 +424,27 @@
   .emptyState {
     padding: 2rem 1rem;
     font-size: 0.875rem;
+  }
+  
+  .tabContentWrapper {
+    padding: 0.75rem;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  
+  /* Ensure tabs container fits mobile viewport */
+  .consultationCard :global(.tabsContainer) {
+    margin-bottom: 0;
+    overflow-x: auto;
+    width: 100%;
+  }
+  
+  .consultationCard :global(.tabsList) {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .tabContent {
+    min-height: 200px;
   }
 } 
