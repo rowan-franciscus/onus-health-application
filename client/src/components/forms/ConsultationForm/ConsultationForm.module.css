@@ -111,4 +111,110 @@
 .saveDraftButton,
 .submitButton {
   min-width: 120px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tabContent {
+    padding: 1rem;
+  }
+  
+  .formActions {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .fileUploadSection {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+  }
+  
+  .fileUploadSection h3 {
+    font-size: 1.1rem;
+  }
+  
+  .attachmentsList h4 {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabContent {
+    padding: 0.75rem;
+  }
+  
+  .formActions {
+    padding: 0.75rem;
+    gap: 0.5rem;
+    flex-direction: column;
+  }
+  
+  .saveDraftButton,
+  .submitButton {
+    width: 100%;
+    min-width: 0;
+  }
+  
+  .fileUploadSection {
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+  
+  .fileUploadSection h3 {
+    font-size: 1rem;
+  }
+  
+  .fileUploadSection p {
+    font-size: 0.9rem;
+  }
+  
+  .attachmentsList {
+    margin-top: 1rem;
+  }
+  
+  .attachmentsList h4 {
+    font-size: 0.95rem;
+  }
+  
+  .existingAttachments,
+  .newAttachments {
+    padding: 0.75rem;
+  }
+  
+  .fileItem {
+    padding: 0.5rem 0.75rem;
+    flex-wrap: wrap;
+  }
+  
+  .fileName {
+    flex-basis: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .fileSize {
+    margin: 0;
+    font-size: 0.8rem;
+  }
+  
+  .removeButton {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 390px) {
+  .tabContent {
+    padding: 0.5rem;
+  }
+  
+  .formActions {
+    padding: 0.5rem;
+  }
+  
+  .fileUploadSection h3 {
+    font-size: 0.95rem;
+  }
+  
+  .fileItem {
+    padding: 0.5rem;
+  }
 } 

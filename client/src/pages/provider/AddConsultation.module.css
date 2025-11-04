@@ -1,6 +1,7 @@
 .consultationContainer {
   padding: 1.5rem;
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 .header {
@@ -118,4 +119,131 @@
 .loadingContainer p {
   margin-top: 1rem;
   color: #666;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .consultationContainer {
+    padding: 1rem;
+  }
+  
+  .header {
+    margin-bottom: 1.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .header p {
+    font-size: 0.9rem;
+  }
+  
+  .patientInfo {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .patientAvatar {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .avatarIcon {
+    width: 25px;
+    height: 25px;
+  }
+  
+  .patientDetails h2 {
+    font-size: 1.1rem;
+  }
+  
+  .patientMetadata {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .patientMetadata span {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .consultationContainer {
+    padding: 0.75rem;
+  }
+  
+  .header {
+    margin-bottom: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.3rem;
+  }
+  
+  .header p {
+    font-size: 0.85rem;
+  }
+  
+  .backLink {
+    font-size: 0.9rem;
+  }
+  
+  .patientInfo {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem;
+  }
+  
+  .patientAvatar {
+    width: 60px;
+    height: 60px;
+    margin-right: 0;
+    margin-bottom: 0.75rem;
+  }
+  
+  .patientDetails {
+    width: 100%;
+  }
+  
+  .patientDetails h2 {
+    font-size: 1rem;
+  }
+  
+  .patientMetadata {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .patientMetadata span {
+    font-size: 0.8rem;
+  }
+  
+  .formCard {
+    border-radius: 6px;
+  }
+}
+
+@media (max-width: 390px) {
+  .consultationContainer {
+    padding: 0.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.2rem;
+  }
+  
+  .patientInfo {
+    padding: 0.5rem;
+  }
+  
+  .patientAvatar {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .avatarIcon {
+    width: 20px;
+    height: 20px;
+  }
 } 
