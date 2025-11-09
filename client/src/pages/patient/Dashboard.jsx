@@ -9,6 +9,9 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import PatientDashboardService from '../../services/patientDashboard.service';
 
+// Utility imports
+import { formatDate } from '../../utils/dateUtils';
+
 // Import icons
 import vitalsIcon from '../../assets/icons/vitals-icon-large.svg';
 import medicationsIcon from '../../assets/icons/medications-icon-large.svg';
@@ -193,7 +196,7 @@ const PatientDashboard = () => {
               </div>
               {recentVitals.lastUpdated && (
                 <div className={styles.lastUpdated}>
-                  Last updated: {recentVitals.lastUpdated}
+                  Last updated: {formatDate(recentVitals.lastUpdated)}
                 </div>
               )}
             </>
