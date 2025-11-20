@@ -14,10 +14,10 @@ Edit your `.env` file and update the MongoDB Atlas URI to include the database n
 
 ```
 # Original
-MONGODB_ATLAS_URI=mongodb+srv://rowanfranciscus:SJnMcNnrX2Sar2AJ@onus-health-application.nxqgbsi.mongodb.net/?retryWrites=true&w=majority&appName=onus-health-application
+MONGODB_ATLAS_URI=mongodb+srv://username:password@cluster.mongodb.net/onus-health?retryWrites=true&w=majority
 
 # Updated (adding "onus-health" after .net/)
-MONGODB_ATLAS_URI=mongodb+srv://rowanfranciscus:SJnMcNnrX2Sar2AJ@onus-health-application.nxqgbsi.mongodb.net/onus-health?retryWrites=true&w=majority&appName=onus-health-application
+MONGODB_ATLAS_URI=mongodb+srv://username:password@cluster.mongodb.net/onus-health?retryWrites=true&w=majority
 ```
 
 The key change is adding `/onus-health` before the question mark in the connection string.
@@ -56,7 +56,7 @@ To ensure your application is using the correct database and has the test users 
 
 1. Make sure your `.env` file contains a MongoDB Atlas connection string:
    ```
-   MONGODB_ATLAS_URI=mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority
+MONGODB_ATLAS_URI=mongodb+srv://username:password@cluster.mongodb.net/onus-health?retryWrites=true&w=majority
    ```
 
 2. Run the consolidation script:
