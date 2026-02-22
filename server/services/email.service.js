@@ -3,20 +3,25 @@
  * Handles email sending functionality with multiple providers, retry logic, and queue
  */
 
-const sgMail = require('@sendgrid/mail');
-const nodemailer = require('nodemailer');
-const config = require('../config/environment');
-const logger = require('../utils/logger');
-const { renderTemplate, getPlainTextFromHtml } = require('../utils/templateRenderer');
-const { formatDate } = require('../utils/dateUtils');
-const EmailQueue = require('../models/EmailQueue');
+const sgMail = require("@sendgrid/mail");
+const nodemailer = require("nodemailer");
+const config = require("../config/environment");
+const logger = require("../utils/logger");
+const {
+  renderTemplate,
+  getPlainTextFromHtml,
+} = require("../utils/templateRenderer");
+const { formatDate } = require("../utils/dateUtils");
+const EmailQueue = require("../models/EmailQueue");
 
 // Initialize SendGrid if API key is provided
-if (config.sendgridApiKey && config.sendgridApiKey.startsWith('SG.')) {
+if (config.sendgridApiKey && config.sendgridApiKey.startsWith("SG.")) {
   sgMail.setApiKey(config.sendgridApiKey);
 } else {
   // Log warning but don't crash
-  console.warn('Valid SendGrid API key not provided. Email sending via SendGrid will be disabled.');
+  console.warn(
+    "Valid SendGrid API key not provided. Email sending via SendGrid will be disabled.",
+  );
 }
 
 // Initialize nodemailer transporter
@@ -28,8 +33,8 @@ if (config.smtp && config.smtp.host) {
     secure: config.smtp.secure,
     auth: {
       user: config.smtp.auth.user,
-      pass: config.smtp.auth.pass
-    }
+      pass: config.smtp.auth.pass,
+    },
   });
 }
 
@@ -41,7 +46,10 @@ if (config.smtp && config.smtp.host) {
 const sendEmail = async (emailData) => {
   // Skip sending in test mode unless force is specified
   if (config.testMode && !emailData.force) {
-    logger.info('Test mode: Email sending skipped', { to: emailData.to, subject: emailData.subject });
+    logger.info("Test mode: Email sending skipped", {
+      to: emailData.to,
+      subject: emailData.subject,
+    });
     return true;
   }
 
@@ -49,7 +57,7 @@ const sendEmail = async (emailData) => {
     // Add default from address if not specified
     const email = {
       ...emailData,
-      from: emailData.from || config.emailFrom
+      from: emailData.from || config.emailFrom,
     };
 
     // Add plain text version if not provided
@@ -60,65 +68,72 @@ const sendEmail = async (emailData) => {
     // Determine which provider to use
     const provider = emailData.provider || config.mailProvider;
 
-    if (provider === 'sendgrid' && config.sendgridApiKey && config.sendgridApiKey.startsWith('SG.')) {
+    if (
+      provider === "sendgrid" &&
+      config.sendgridApiKey &&
+      config.sendgridApiKey.startsWith("SG.")
+    ) {
       // Disable click tracking to prevent SSL certificate issues
       const sendGridEmail = {
         ...email,
         trackingSettings: {
           clickTracking: {
             enable: false,
-            enableText: false
+            enableText: false,
           },
           openTracking: {
-            enable: false
-          }
-        }
+            enable: false,
+          },
+        },
       };
       await sgMail.send(sendGridEmail);
       logger.info(`Email sent successfully via SendGrid to ${email.to}`);
       return true;
-    } else if (provider === 'nodemailer' && transporter) {
+    } else if (provider === "nodemailer" && transporter) {
       await transporter.sendMail(email);
       logger.info(`Email sent successfully via Nodemailer to ${email.to}`);
       return true;
     } else {
       // If we're in test or development mode, just log the email
-      if (config.env === 'development' || config.env === 'test') {
-        logger.info(`[DEV MODE] Email would have been sent to: ${email.to}`, { 
+      if (config.env === "development" || config.env === "test") {
+        logger.info(`[DEV MODE] Email would have been sent to: ${email.to}`, {
           subject: email.subject,
-          text: email.text.substring(0, 100) + '...' 
+          text: email.text.substring(0, 100) + "...",
         });
         return true;
       }
-      throw new Error('No email provider configured correctly');
+      throw new Error("No email provider configured correctly");
     }
   } catch (error) {
-    logger.error('Error sending email:', error);
-    
+    logger.error("Error sending email:", error);
+
     // Try fallback provider if available
-    if (emailData.provider !== 'fallback') {
+    if (emailData.provider !== "fallback") {
       try {
-        logger.info('Attempting to send email using fallback provider');
-        
+        logger.info("Attempting to send email using fallback provider");
+
         // Switch providers
-        const fallbackProvider = config.mailProvider === 'sendgrid' ? 'nodemailer' : 'sendgrid';
-        
+        const fallbackProvider =
+          config.mailProvider === "sendgrid" ? "nodemailer" : "sendgrid";
+
         // Check if fallback provider is available
         if (
-          (fallbackProvider === 'sendgrid' && config.sendgridApiKey && config.sendgridApiKey.startsWith('SG.')) || 
-          (fallbackProvider === 'nodemailer' && transporter)
+          (fallbackProvider === "sendgrid" &&
+            config.sendgridApiKey &&
+            config.sendgridApiKey.startsWith("SG.")) ||
+          (fallbackProvider === "nodemailer" && transporter)
         ) {
           return await sendEmail({
             ...emailData,
-            provider: 'fallback',
-            fallbackProvider
+            provider: "fallback",
+            fallbackProvider,
           });
         }
       } catch (fallbackError) {
-        logger.error('Fallback email provider also failed:', fallbackError);
+        logger.error("Fallback email provider also failed:", fallbackError);
       }
     }
-    
+
     return false;
   }
 };
@@ -142,16 +157,16 @@ const queueEmail = async (emailData, options = {}) => {
       userId: options.userId,
       template: options.template,
       templateData: options.templateData,
-      maxAttempts: options.maxAttempts || config.emailQueueSettings.maxAttempts
+      maxAttempts: options.maxAttempts || config.emailQueueSettings.maxAttempts,
     });
-    
+
     // Save to database
     await queueEntry.save();
     logger.info(`Email queued successfully to ${emailData.to}`);
-    
+
     return queueEntry;
   } catch (error) {
-    logger.error('Error queueing email:', error);
+    logger.error("Error queueing email:", error);
     throw error;
   }
 };
@@ -163,24 +178,26 @@ const queueEmail = async (emailData, options = {}) => {
 const processEmailQueue = async () => {
   const now = new Date();
   let processedCount = 0;
-  
+
   try {
     // Find emails that are pending and due for processing
     const pendingEmails = await EmailQueue.find({
-      status: 'pending',
+      status: "pending",
       $or: [
         { nextAttempt: { $lte: now } },
-        { nextAttempt: { $exists: false } }
-      ]
-    }).sort({ priority: -1, createdAt: 1 }).limit(10);
-    
+        { nextAttempt: { $exists: false } },
+      ],
+    })
+      .sort({ priority: -1, createdAt: 1 })
+      .limit(10);
+
     for (const email of pendingEmails) {
       // Update status to processing
-      email.status = 'processing';
+      email.status = "processing";
       email.lastAttempt = now;
       email.attempts += 1;
       await email.save();
-      
+
       try {
         // Send the email
         const success = await sendEmail({
@@ -188,48 +205,57 @@ const processEmailQueue = async () => {
           from: email.from,
           subject: email.subject,
           html: email.html,
-          text: email.text
+          text: email.text,
         });
-        
+
         if (success) {
           // Mark as sent
-          email.status = 'sent';
+          email.status = "sent";
           await email.save();
           processedCount++;
         } else {
           // Handle failure
           if (email.attempts >= email.maxAttempts) {
-            email.status = 'failed';
-            email.error = 'Max retry attempts reached';
+            email.status = "failed";
+            email.error = "Max retry attempts reached";
           } else {
-            email.status = 'pending';
+            email.status = "pending";
             // Calculate next retry time based on attempts
-            const retryIndex = Math.min(email.attempts - 1, config.emailQueueSettings.retryIntervals.length - 1);
-            const retryMinutes = config.emailQueueSettings.retryIntervals[retryIndex];
+            const retryIndex = Math.min(
+              email.attempts - 1,
+              config.emailQueueSettings.retryIntervals.length - 1,
+            );
+            const retryMinutes =
+              config.emailQueueSettings.retryIntervals[retryIndex];
             email.nextAttempt = new Date(now.getTime() + retryMinutes * 60000);
-            email.error = 'Failed to send, will retry';
+            email.error = "Failed to send, will retry";
           }
           await email.save();
         }
       } catch (error) {
         // Handle unexpected errors
         logger.error(`Error processing email queue item ${email._id}:`, error);
-        email.status = email.attempts >= email.maxAttempts ? 'failed' : 'pending';
+        email.status =
+          email.attempts >= email.maxAttempts ? "failed" : "pending";
         email.error = error.message;
-        
-        if (email.status === 'pending') {
-          const retryIndex = Math.min(email.attempts - 1, config.emailQueueSettings.retryIntervals.length - 1);
-          const retryMinutes = config.emailQueueSettings.retryIntervals[retryIndex];
+
+        if (email.status === "pending") {
+          const retryIndex = Math.min(
+            email.attempts - 1,
+            config.emailQueueSettings.retryIntervals.length - 1,
+          );
+          const retryMinutes =
+            config.emailQueueSettings.retryIntervals[retryIndex];
           email.nextAttempt = new Date(now.getTime() + retryMinutes * 60000);
         }
-        
+
         await email.save();
       }
     }
-    
+
     return processedCount;
   } catch (error) {
-    logger.error('Error processing email queue:', error);
+    logger.error("Error processing email queue:", error);
     return 0;
   }
 };
@@ -239,15 +265,17 @@ const processEmailQueue = async () => {
  */
 const startEmailQueueProcessor = () => {
   const processInterval = config.emailQueueSettings.processInterval;
-  
+
   // Don't start processor in test mode
   if (config.testMode) {
-    logger.info('Test mode: Email queue processor not started');
+    logger.info("Test mode: Email queue processor not started");
     return null;
   }
-  
-  logger.info(`Starting email queue processor with interval: ${processInterval}ms`);
-  
+
+  logger.info(
+    `Starting email queue processor with interval: ${processInterval}ms`,
+  );
+
   const intervalId = setInterval(async () => {
     try {
       const processed = await processEmailQueue();
@@ -255,10 +283,10 @@ const startEmailQueueProcessor = () => {
         logger.info(`Processed ${processed} emails from queue`);
       }
     } catch (error) {
-      logger.error('Error in email queue processor:', error);
+      logger.error("Error in email queue processor:", error);
     }
   }, processInterval);
-  
+
   return intervalId;
 };
 
@@ -270,29 +298,34 @@ const startEmailQueueProcessor = () => {
  * @param {Object} options - Additional options (subject, from, queue, etc.)
  * @returns {Promise<boolean>} Success status
  */
-const sendTemplateEmail = async (to, templateName, templateData, options = {}) => {
+const sendTemplateEmail = async (
+  to,
+  templateName,
+  templateData,
+  options = {},
+) => {
   try {
     // Render the template
     const html = await renderTemplate(templateName, templateData);
-    
+
     if (!html) {
       throw new Error(`Failed to render template: ${templateName}`);
     }
-    
+
     const emailData = {
       to,
-      subject: options.subject || 'Onus Health Notification',
+      subject: options.subject || "Onus Health Notification",
       html,
-      from: options.from || config.emailFrom
+      from: options.from || config.emailFrom,
     };
-    
+
     // Queue the email or send immediately
     if (options.queue) {
       await queueEmail(emailData, {
         priority: options.priority,
         userId: options.userId,
         template: templateName,
-        templateData
+        templateData,
       });
       return true;
     } else {
@@ -312,54 +345,26 @@ const sendTemplateEmail = async (to, templateName, templateData, options = {}) =
  * @returns {Promise<boolean>} Success status
  */
 const sendVerificationEmail = async (user, token, options = {}) => {
-      // Use backend verification endpoint for proper redirect flow
-      let backendUrl = config.backendUrl;
-      
-      // If backendUrl is not configured, try to construct it
-      if (!backendUrl) {
-        if (config.env === 'production') {
-          // IMPORTANT: For Render deployments where frontend and backend are on different domains,
-          // you have two options:
-          // Option 1: Set BACKEND_URL environment variable to your backend URL (e.g., https://onus-backend.onrender.com)
-          // Option 2: Use the automatic detection below (if your backend is at onus-backend.onrender.com)
-          
-          // For Render deployment, try to use a known backend URL
-          if (config.frontendUrl && config.frontendUrl.includes('.onrender.com')) {
-            // Use the known Render backend URL
-            backendUrl = 'https://onus-backend.onrender.com';
-            logger.info('Using Render backend URL for email verification: ' + backendUrl);
-          } else if (config.frontendUrl) {
-            // For other production deployments, assume backend is at the same domain
-            backendUrl = config.frontendUrl;
-          } else {
-            // Fallback to a reasonable default
-            logger.warn('No backend URL configured for production. Email verification may not work correctly.');
-            logger.warn('Please set BACKEND_URL environment variable to your backend URL.');
-            backendUrl = 'https://onus-backend.onrender.com'; // Use known URL as last resort
-          }
-        } else {
-          // For development, replace port 3000 with 5000
-          backendUrl = (config.frontendUrl || 'http://localhost:3000').replace(':3000', ':5000');
-        }
-      }
-      
-      const verificationUrl = `${backendUrl}/api/auth/verify/${token}`;
-  
+  // Use frontend verification route - the VerifyEmail.jsx component handles
+  // token verification via POST and properly stores auth tokens before redirecting
+  const frontendUrl = config.frontendUrl || "http://localhost:3000";
+  const verificationUrl = `${frontendUrl}/verify-email/${token}`;
+
   return await sendTemplateEmail(
     user.email,
-    'verification',
+    "verification",
     {
       firstName: user.firstName,
       verificationUrl,
-      title: 'Verify Your Email - Onus Health'
+      title: "Verify Your Email - Onus Health",
     },
     {
-      subject: 'Verify Your Email - Onus Health',
+      subject: "Verify Your Email - Onus Health",
       userId: user._id,
       priority: 1, // High priority
       queue: options.queue !== false, // Queue by default
-      ...options
-    }
+      ...options,
+    },
   );
 };
 
@@ -372,23 +377,23 @@ const sendVerificationEmail = async (user, token, options = {}) => {
  */
 const sendPasswordResetEmail = async (user, token, options = {}) => {
   const resetUrl = `${config.frontendUrl}/reset-password/${token}`;
-  
+
   return await sendTemplateEmail(
     user.email,
-    'passwordReset',
+    "passwordReset",
     {
       firstName: user.firstName,
       resetUrl,
-      title: 'Reset Your Password - Onus Health',
-      expiryTime: '1 hour'
+      title: "Reset Your Password - Onus Health",
+      expiryTime: "1 hour",
     },
     {
-      subject: 'Password Reset - Onus Health',
+      subject: "Password Reset - Onus Health",
       userId: user._id,
       priority: 1, // High priority
       queue: options.queue !== false, // Queue by default
-      ...options
-    }
+      ...options,
+    },
   );
 };
 
@@ -401,25 +406,25 @@ const sendPasswordResetEmail = async (user, token, options = {}) => {
  */
 const sendConnectionRequestEmail = async (patient, provider, options = {}) => {
   const connectionUrl = `${config.frontendUrl}/dashboard/connections`;
-  
+
   return await sendTemplateEmail(
     patient.email,
-    'accessRequest',
+    "accessRequest",
     {
       patientName: patient.firstName,
       providerName: `${provider.firstName} ${provider.lastName}`,
-      title: provider.title || 'Dr.',
-      specialty: provider.providerProfile?.specialty || 'Healthcare Provider',
-      practiceName: provider.providerProfile?.practiceInfo?.name || '',
+      title: provider.title || "Dr.",
+      specialty: provider.providerProfile?.specialty || "Healthcare Provider",
+      practiceName: provider.providerProfile?.practiceInfo?.name || "",
       connectionUrl,
-      title: 'Connection Request - Onus Health'
+      title: "Connection Request - Onus Health",
     },
     {
-      subject: 'New Connection Request - Onus Health',
+      subject: "New Connection Request - Onus Health",
       userId: patient._id,
       queue: options.queue !== false, // Queue by default
-      ...options
-    }
+      ...options,
+    },
   );
 };
 
@@ -431,27 +436,32 @@ const sendConnectionRequestEmail = async (patient, provider, options = {}) => {
  * @param {Object} options - Additional options
  * @returns {Promise<boolean>} Success status
  */
-const sendConsultationNotificationEmail = async (patient, provider, consultation, options = {}) => {
+const sendConsultationNotificationEmail = async (
+  patient,
+  provider,
+  consultation,
+  options = {},
+) => {
   const consultationUrl = `${config.frontendUrl}/dashboard/consultations/${consultation._id}`;
-  
+
   return await sendTemplateEmail(
     patient.email,
-    'consultationNotification',
+    "consultationNotification",
     {
       patientName: patient.firstName,
       providerName: `${provider.firstName} ${provider.lastName}`,
-      specialty: provider.providerProfile?.specialty || 'Healthcare Provider',
+      specialty: provider.providerProfile?.specialty || "Healthcare Provider",
       consultationDate: formatDate(consultation.date),
       reasonForVisit: consultation.general.reasonForVisit,
       consultationUrl,
-      title: 'New Consultation - Onus Health'
+      title: "New Consultation - Onus Health",
     },
     {
-      subject: 'New Medical Consultation - Onus Health',
+      subject: "New Medical Consultation - Onus Health",
       userId: patient._id,
       queue: options.queue !== false, // Queue by default
-      ...options
-    }
+      ...options,
+    },
   );
 };
 
@@ -462,55 +472,62 @@ const sendConsultationNotificationEmail = async (patient, provider, consultation
  */
 const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
   if (!provider) {
-    throw new Error('Provider information is required');
+    throw new Error("Provider information is required");
   }
 
   // Admin emails
-  const adminEmails = ['rowan.franciscus.2@gmail.com', 'julian@onus.health'];
+  const adminEmails = ["rowan.franciscus.2@gmail.com", "julian@onus.health"];
   // Use the first admin email for now (can be extended to send to all admins)
   const adminEmail = adminEmails[0];
-  
-  logger.info(`Sending provider verification request to admin email: ${adminEmail}`);
-  
+
+  logger.info(
+    `Sending provider verification request to admin email: ${adminEmail}`,
+  );
+
   // Link to the provider verification requests page instead of dashboard
   const adminUrl = `${config.frontendUrl}/admin/provider-verifications`;
-  
+
   const templateData = {
-    adminName: 'Admin',
+    adminName: "Admin",
     providerName: `${provider.firstName} ${provider.lastName}`,
     providerEmail: provider.email,
-    specialty: provider.providerProfile?.specialty || 'Not specified',
-    practiceName: provider.providerProfile?.practiceInfo?.name || 'Not specified',
-    experience: provider.providerProfile?.yearsOfExperience || 'Not specified',
+    specialty: provider.providerProfile?.specialty || "Not specified",
+    practiceName:
+      provider.providerProfile?.practiceInfo?.name || "Not specified",
+    experience: provider.providerProfile?.yearsOfExperience || "Not specified",
     verificationLink: adminUrl,
-    appName: 'Onus Health',
-    supportEmail: config.supportEmail || 'support@onus.health'
+    appName: "Onus Health",
+    supportEmail: config.supportEmail || "support@onus.health",
   };
 
   try {
     // Force send the email immediately instead of queuing
     const sent = await sendEmail({
       to: adminEmail,
-      subject: 'New Provider Verification Request',
+      subject: "New Provider Verification Request",
       html: `
         <h1>New Provider Verification Request</h1>
         <p>A new provider has submitted a verification request:</p>
         <ul>
           <li><strong>Name:</strong> ${provider.firstName} ${provider.lastName}</li>
           <li><strong>Email:</strong> ${provider.email}</li>
-          <li><strong>Specialty:</strong> ${provider.providerProfile?.specialty || 'Not specified'}</li>
-          <li><strong>Practice:</strong> ${provider.providerProfile?.practiceInfo?.name || 'Not specified'}</li>
+          <li><strong>Specialty:</strong> ${provider.providerProfile?.specialty || "Not specified"}</li>
+          <li><strong>Practice:</strong> ${provider.providerProfile?.practiceInfo?.name || "Not specified"}</li>
         </ul>
         <p>Please <a href="${adminUrl}">click here</a> to review provider verification requests.</p>
       `,
-      force: true // Force send even in test mode
+      force: true, // Force send even in test mode
     });
-    
-    logger.info(`Admin notification ${sent ? 'sent successfully' : 'failed to send'} to ${adminEmail}`);
-    
+
+    logger.info(
+      `Admin notification ${sent ? "sent successfully" : "failed to send"} to ${adminEmail}`,
+    );
+
     return sent;
   } catch (error) {
-    logger.error(`Failed to send provider verification email to admin: ${error.message}`);
+    logger.error(
+      `Failed to send provider verification email to admin: ${error.message}`,
+    );
     return false;
   }
 };
@@ -519,35 +536,45 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
  * Send provider verification approval email
  * @param {Object} provider - Provider user document
  */
-const sendProviderVerificationApprovalEmail = async (provider, options = {}) => {
+const sendProviderVerificationApprovalEmail = async (
+  provider,
+  options = {},
+) => {
   if (!provider) {
-    throw new Error('Provider information is required');
+    throw new Error("Provider information is required");
   }
 
-  logger.info(`Sending provider verification approval email to ${provider.email}`);
-  
+  logger.info(
+    `Sending provider verification approval email to ${provider.email}`,
+  );
+
   const loginUrl = `${config.frontendUrl}/sign-in`;
-  
+
   const templateData = {
     providerName: provider.firstName,
     loginLink: loginUrl,
-    appName: 'Onus Health',
-    supportEmail: config.supportEmail || 'support@onus.health'
+    appName: "Onus Health",
+    supportEmail: config.supportEmail || "support@onus.health",
   };
 
   try {
     // Force send the email immediately without queuing to ensure it gets sent
     const result = await sendEmail({
       to: provider.email,
-      subject: 'Your Provider Account Has Been Approved',
-      html: await renderTemplate('providerVerificationApproval', templateData),
-      force: true // Force send even in test mode
+      subject: "Your Provider Account Has Been Approved",
+      html: await renderTemplate("providerVerificationApproval", templateData),
+      force: true, // Force send even in test mode
     });
-    
-    logger.info(`Provider approval email ${result ? 'sent successfully' : 'failed'} to ${provider.email}`);
+
+    logger.info(
+      `Provider approval email ${result ? "sent successfully" : "failed"} to ${provider.email}`,
+    );
     return result;
   } catch (error) {
-    logger.error(`Failed to send provider approval email: ${error.message}`, error);
+    logger.error(
+      `Failed to send provider approval email: ${error.message}`,
+      error,
+    );
     return false;
   }
 };
@@ -557,36 +584,49 @@ const sendProviderVerificationApprovalEmail = async (provider, options = {}) => 
  * @param {Object} provider - Provider user document
  * @param {String} rejectionReason - Reason for rejecting verification
  */
-const sendProviderVerificationRejectionEmail = async (provider, rejectionReason, options = {}) => {
+const sendProviderVerificationRejectionEmail = async (
+  provider,
+  rejectionReason,
+  options = {},
+) => {
   if (!provider) {
-    throw new Error('Provider information is required');
+    throw new Error("Provider information is required");
   }
 
-  logger.info(`Sending provider verification rejection email to ${provider.email}`);
-  
+  logger.info(
+    `Sending provider verification rejection email to ${provider.email}`,
+  );
+
   const contactUrl = `${config.frontendUrl}/contact`;
-  
+
   const templateData = {
     providerName: provider.firstName,
-    rejectionReason: rejectionReason || 'Your application did not meet our current requirements',
+    rejectionReason:
+      rejectionReason ||
+      "Your application did not meet our current requirements",
     contactLink: contactUrl,
-    appName: 'Onus Health',
-    supportEmail: config.supportEmail || 'support@onus.health'
+    appName: "Onus Health",
+    supportEmail: config.supportEmail || "support@onus.health",
   };
 
   try {
     // Force send the email immediately without queuing to ensure it gets sent
     const result = await sendEmail({
       to: provider.email,
-      subject: 'Your Provider Verification Status',
-      html: await renderTemplate('providerVerificationRejection', templateData),
-      force: true // Force send even in test mode
+      subject: "Your Provider Verification Status",
+      html: await renderTemplate("providerVerificationRejection", templateData),
+      force: true, // Force send even in test mode
     });
-    
-    logger.info(`Provider rejection email ${result ? 'sent successfully' : 'failed'} to ${provider.email}`);
+
+    logger.info(
+      `Provider rejection email ${result ? "sent successfully" : "failed"} to ${provider.email}`,
+    );
     return result;
   } catch (error) {
-    logger.error(`Failed to send provider rejection email: ${error.message}`, error);
+    logger.error(
+      `Failed to send provider rejection email: ${error.message}`,
+      error,
+    );
     return false;
   }
 };
@@ -596,17 +636,25 @@ const sendProviderVerificationRejectionEmail = async (provider, rejectionReason,
  * @returns {Object} Service status information
  */
 const getEmailServiceStatus = async () => {
-  const pendingCount = await EmailQueue.countDocuments({ status: 'pending' });
-  const processingCount = await EmailQueue.countDocuments({ status: 'processing' });
-  const sentCount = await EmailQueue.countDocuments({ status: 'sent' });
-  const failedCount = await EmailQueue.countDocuments({ status: 'failed' });
-  
+  const pendingCount = await EmailQueue.countDocuments({ status: "pending" });
+  const processingCount = await EmailQueue.countDocuments({
+    status: "processing",
+  });
+  const sentCount = await EmailQueue.countDocuments({ status: "sent" });
+  const failedCount = await EmailQueue.countDocuments({ status: "failed" });
+
   // Check providers
   const providersStatus = {
-    sendgrid: !!config.sendgridApiKey && config.sendgridApiKey.startsWith('SG.'),
-    nodemailer: !!(config.smtp && config.smtp.host && config.smtp.auth && config.smtp.auth.user)
+    sendgrid:
+      !!config.sendgridApiKey && config.sendgridApiKey.startsWith("SG."),
+    nodemailer: !!(
+      config.smtp &&
+      config.smtp.host &&
+      config.smtp.auth &&
+      config.smtp.auth.user
+    ),
   };
-  
+
   return {
     providers: providersStatus,
     testMode: config.testMode,
@@ -615,67 +663,89 @@ const getEmailServiceStatus = async () => {
       processing: processingCount,
       sent: sentCount,
       failed: failedCount,
-      total: pendingCount + processingCount + sentCount + failedCount
-    }
+      total: pendingCount + processingCount + sentCount + failedCount,
+    },
   };
 };
 
 // Create a mock email service for testing
 const mockEmailService = {
   sendEmail: async (emailData) => {
-    logger.info('MOCK: Email would be sent', { to: emailData.to, subject: emailData.subject });
+    logger.info("MOCK: Email would be sent", {
+      to: emailData.to,
+      subject: emailData.subject,
+    });
     return true;
   },
   sendVerificationEmail: async (user, token) => {
-    logger.info(`MOCK: Verification email would be sent to ${user.email} with token: ${token}`);
+    logger.info(
+      `MOCK: Verification email would be sent to ${user.email} with token: ${token}`,
+    );
     return true;
   },
   sendPasswordResetEmail: async (user, token) => {
-    logger.info(`MOCK: Password reset email would be sent to ${user.email} with token: ${token}`);
+    logger.info(
+      `MOCK: Password reset email would be sent to ${user.email} with token: ${token}`,
+    );
     return true;
   },
   sendConnectionRequestEmail: async (patient, provider) => {
-    logger.info(`MOCK: Connection request email would be sent to ${patient.email} from provider ${provider.firstName} ${provider.lastName}`);
+    logger.info(
+      `MOCK: Connection request email would be sent to ${patient.email} from provider ${provider.firstName} ${provider.lastName}`,
+    );
     return true;
   },
-  sendConsultationNotificationEmail: async (patient, provider, consultation) => {
-    logger.info(`MOCK: Consultation notification email would be sent to ${patient.email}`);
+  sendConsultationNotificationEmail: async (
+    patient,
+    provider,
+    consultation,
+  ) => {
+    logger.info(
+      `MOCK: Consultation notification email would be sent to ${patient.email}`,
+    );
     return true;
   },
   sendProviderVerificationRequestEmail: async (provider) => {
-    logger.info(`MOCK: Provider verification request email would be sent for ${provider.email}`);
+    logger.info(
+      `MOCK: Provider verification request email would be sent for ${provider.email}`,
+    );
     return true;
   },
   queueEmail: async (emailData) => {
-    logger.info('MOCK: Email would be queued', { to: emailData.to, subject: emailData.subject });
-    return { _id: 'mock-id', ...emailData };
+    logger.info("MOCK: Email would be queued", {
+      to: emailData.to,
+      subject: emailData.subject,
+    });
+    return { _id: "mock-id", ...emailData };
   },
   processEmailQueue: async () => {
-    logger.info('MOCK: Email queue would be processed');
+    logger.info("MOCK: Email queue would be processed");
     return 0;
   },
   getEmailServiceStatus: async () => {
     return {
       providers: { sendgrid: false, nodemailer: false },
       testMode: true,
-      queueStats: { pending: 0, processing: 0, sent: 0, failed: 0, total: 0 }
+      queueStats: { pending: 0, processing: 0, sent: 0, failed: 0, total: 0 },
     };
-  }
+  },
 };
 
 // Export the actual service or mock service based on config
-module.exports = config.testMode ? mockEmailService : {
-  sendEmail,
-  sendVerificationEmail,
-  sendPasswordResetEmail,
-  sendConnectionRequestEmail,
-  sendConsultationNotificationEmail,
-  sendProviderVerificationRequestEmail,
-  sendProviderVerificationApprovalEmail,
-  sendProviderVerificationRejectionEmail,
-  sendTemplateEmail,
-  queueEmail,
-  processEmailQueue,
-  startEmailQueueProcessor,
-  getEmailServiceStatus
-}; 
+module.exports = config.testMode
+  ? mockEmailService
+  : {
+      sendEmail,
+      sendVerificationEmail,
+      sendPasswordResetEmail,
+      sendConnectionRequestEmail,
+      sendConsultationNotificationEmail,
+      sendProviderVerificationRequestEmail,
+      sendProviderVerificationApprovalEmail,
+      sendProviderVerificationRejectionEmail,
+      sendTemplateEmail,
+      queueEmail,
+      processEmailQueue,
+      startEmailQueueProcessor,
+      getEmailServiceStatus,
+    };

@@ -1,39 +1,43 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { authSuccess } from '../../store/slices/authSlice';
-import AuthService from '../../services/auth.service';
-import styles from './Auth.module.css';
+import React, { useEffect, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { authSuccess } from "../../store/slices/authSlice";
+import AuthService from "../../services/auth.service";
+import styles from "./Auth.module.css";
 
 // Logo and icons
-import { ReactComponent as OnusLogo } from '../../assets/logos/onus-logo.svg';
-import { ReactComponent as MedicalPattern } from '../../assets/patterns/medical-pattern.svg';
+import { ReactComponent as OnusLogo } from "../../assets/logos/onus-logo.svg";
+import { ReactComponent as MedicalPattern } from "../../assets/patterns/medical-pattern.svg";
 
 const VerifyEmail = () => {
   const { token } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     const verifyEmailToken = async () => {
       if (!token) {
-        setError('Invalid verification link');
+        setError("Invalid verification link");
         setLoading(false);
         return;
       }
 
       try {
+        // Clear any stale tokens before verification to prevent
+        // the Axios interceptor from attaching an expired token
+        AuthService.logout();
+
         // Call API to verify email token
         const response = await AuthService.verifyEmail(token);
-        
+
         if (response.success) {
           setSuccess(true);
-          
+
           // Store the authentication token and update Redux store
           if (response.token && response.user) {
             // Set tokens in localStorage
@@ -41,31 +45,45 @@ const VerifyEmail = () => {
             if (response.refreshToken) {
               AuthService.setRefreshToken(response.refreshToken);
             }
-            
+
             // Update Redux store with user data
             await dispatch(authSuccess(response.user));
-            
+
             // Enhanced debugging
-            console.log('=== Email Verification Response ===');
-            console.log('Full response:', response);
-            console.log('User object:', response.user);
-            console.log('onboardingCompleted value:', response.user.onboardingCompleted);
-            console.log('isProfileCompleted value:', response.user.isProfileCompleted);
-            console.log('Type of onboardingCompleted:', typeof response.user.onboardingCompleted);
-            console.log('Type of isProfileCompleted:', typeof response.user.isProfileCompleted);
-            console.log('Role:', response.user.role);
-            console.log('Token stored:', !!AuthService.getToken());
-            
+            console.log("=== Email Verification Response ===");
+            console.log("Full response:", response);
+            console.log("User object:", response.user);
+            console.log(
+              "onboardingCompleted value:",
+              response.user.onboardingCompleted,
+            );
+            console.log(
+              "isProfileCompleted value:",
+              response.user.isProfileCompleted,
+            );
+            console.log(
+              "Type of onboardingCompleted:",
+              typeof response.user.onboardingCompleted,
+            );
+            console.log(
+              "Type of isProfileCompleted:",
+              typeof response.user.isProfileCompleted,
+            );
+            console.log("Role:", response.user.role);
+            console.log("Token stored:", !!AuthService.getToken());
+
             // Force a small delay to ensure all state updates propagate
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
+            await new Promise((resolve) => setTimeout(resolve, 500));
+
             // Set redirecting state
             setRedirecting(true);
-            
+
             // Determine redirect URL
-            const needsOnboarding = !response.user.onboardingCompleted || !response.user.isProfileCompleted;
-            console.log('Needs onboarding?', needsOnboarding);
-            
+            const needsOnboarding =
+              !response.user.onboardingCompleted ||
+              !response.user.isProfileCompleted;
+            console.log("Needs onboarding?", needsOnboarding);
+
             // If successful, redirect to appropriate page after a delay
             setTimeout(() => {
               if (response.user && response.user.role) {
@@ -73,42 +91,46 @@ const VerifyEmail = () => {
                 if (needsOnboarding) {
                   // User needs onboarding - use window.location to force a full page load
                   // This ensures the app reinitializes with the authenticated state
-                  if (response.user.role === 'patient') {
-                    console.log('==> Redirecting to patient onboarding');
-                    window.location.href = '/patient/onboarding';
-                  } else if (response.user.role === 'provider') {
-                    console.log('==> Redirecting to provider onboarding');
-                    window.location.href = '/provider/onboarding';
+                  if (response.user.role === "patient") {
+                    console.log("==> Redirecting to patient onboarding");
+                    window.location.href = "/patient/onboarding";
+                  } else if (response.user.role === "provider") {
+                    console.log("==> Redirecting to provider onboarding");
+                    window.location.href = "/provider/onboarding";
                   } else {
-                    console.log('==> Unknown role, redirecting to sign-in');
-                    window.location.href = '/sign-in';
+                    console.log("==> Unknown role, redirecting to sign-in");
+                    window.location.href = "/sign-in";
                   }
                 } else {
                   // User has completed onboarding, go to dashboard
-                  console.log('==> User has completed onboarding, going to dashboard');
-                  if (response.user.role === 'patient') {
-                    window.location.href = '/patient/dashboard';
-                  } else if (response.user.role === 'provider') {
-                    window.location.href = '/provider/dashboard';
+                  console.log(
+                    "==> User has completed onboarding, going to dashboard",
+                  );
+                  if (response.user.role === "patient") {
+                    window.location.href = "/patient/dashboard";
+                  } else if (response.user.role === "provider") {
+                    window.location.href = "/provider/dashboard";
                   } else {
-                    window.location.href = '/sign-in';
+                    window.location.href = "/sign-in";
                   }
                 }
               } else {
-                console.log('==> No user or role, redirecting to sign-in');
-                window.location.href = '/sign-in';
+                console.log("==> No user or role, redirecting to sign-in");
+                window.location.href = "/sign-in";
               }
             }, 2400); // Slightly less to account for the 500ms wait
           } else {
             // No token or user in response
-            setError('Verification succeeded but no authentication data received');
-            setTimeout(() => navigate('/sign-in'), 3000);
+            setError(
+              "Verification succeeded but no authentication data received",
+            );
+            setTimeout(() => navigate("/sign-in"), 3000);
           }
         } else {
-          setError(response.message || 'Email verification failed');
+          setError(response.message || "Email verification failed");
         }
       } catch (err) {
-        setError(err.message || 'An error occurred during verification');
+        setError(err.message || "An error occurred during verification");
       } finally {
         setLoading(false);
       }
@@ -120,13 +142,13 @@ const VerifyEmail = () => {
   return (
     <div className={styles.authContainer}>
       <MedicalPattern className={styles.patternBackground} />
-      
+
       <div className={styles.logoContainer}>
         <OnusLogo className={styles.logo} />
       </div>
-      
+
       <h1 className={styles.title}>Verify Your Email</h1>
-      
+
       {loading ? (
         <div className={styles.verificationCard}>
           <div className={styles.verificationTitle}>Verifying your email</div>
@@ -136,25 +158,30 @@ const VerifyEmail = () => {
         </div>
       ) : success ? (
         <div className={styles.verificationCard}>
-          <div className={styles.verificationTitle}>Thank You for Verifying!</div>
+          <div className={styles.verificationTitle}>
+            Thank You for Verifying!
+          </div>
           <p className={styles.verificationText}>
             Your email has been successfully verified.
-            <br /><br />
-            {redirecting ? 'Redirecting...' : 'You will be redirected to the next step shortly.'}
+            <br />
+            <br />
+            {redirecting
+              ? "Redirecting..."
+              : "You will be redirected to the next step shortly."}
           </p>
         </div>
       ) : (
         <div className={styles.verificationCard}>
           <div className={styles.verificationTitle}>Verification Failed</div>
           <p className={styles.verificationText}>
-            {error || 'The verification link is invalid or has expired.'}
+            {error || "The verification link is invalid or has expired."}
           </p>
           <Link to="/sign-in" className={styles.backButton}>
             Back to Sign In
           </Link>
         </div>
       )}
-      
+
       <div className={styles.copyright}>
         © 2025 Onus Technologies Namibia. All Rights Reserved.
       </div>
@@ -162,4 +189,4 @@ const VerifyEmail = () => {
   );
 };
 
-export default VerifyEmail; 
+export default VerifyEmail;
