@@ -30,6 +30,7 @@ yarn-error.log*
 # IDE/Editors
 .idea/
 .vscode/
+.history/
 *.swp
 *.swo
 

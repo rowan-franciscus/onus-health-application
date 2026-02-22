@@ -3,11 +3,11 @@
  * Handles user authentication-related operations
  */
 
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const config = require('../config/environment');
-const { validationResult } = require('express-validator');
-const logger = require('../utils/logger');
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const config = require("../config/environment");
+const { validationResult } = require("express-validator");
+const logger = require("../utils/logger");
 
 /**
  * Register a new user
@@ -15,11 +15,15 @@ const logger = require('../utils/logger');
 exports.register = async (req, res) => {
   try {
     // Log the incoming request for debugging
-    logger.debug(`Registration attempt with payload: ${JSON.stringify(req.body)}`);
-    
+    logger.debug(
+      `Registration attempt with payload: ${JSON.stringify(req.body)}`,
+    );
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      logger.warn(`Registration validation failed: ${JSON.stringify(errors.array())}`);
+      logger.warn(
+        `Registration validation failed: ${JSON.stringify(errors.array())}`,
+      );
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -28,8 +32,10 @@ exports.register = async (req, res) => {
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
-      logger.warn(`Registration failed: User already exists with email ${email}`);
-      return res.status(400).json({ message: 'User already exists' });
+      logger.warn(
+        `Registration failed: User already exists with email ${email}`,
+      );
+      return res.status(400).json({ message: "User already exists" });
     }
 
     // Create new user
@@ -38,33 +44,39 @@ exports.register = async (req, res) => {
       password,
       firstName,
       lastName,
-      role: role || 'patient'
+      role: role || "patient",
     });
 
     await user.save();
     logger.info(`User created with ID ${user._id} and email ${email}`);
 
     // Generate verification token
-    const verificationToken = jwt.sign(
-      { id: user._id },
-      config.jwtSecret,
-      { expiresIn: '24h' }
-    );
+    const verificationToken = jwt.sign({ id: user._id }, config.jwtSecret, {
+      expiresIn: "24h",
+    });
     logger.debug(`Generated verification token for ${email}`);
 
     // Send verification email
     try {
-      const emailService = require('../services/email.service');
-      const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
-      logger.info(`Verification email sent to ${email}: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
-      
+      const emailService = require("../services/email.service");
+      const emailSent = await emailService.sendVerificationEmail(
+        user,
+        verificationToken,
+      );
+      logger.info(
+        `Verification email sent to ${email}: ${emailSent ? "SUCCESS" : "FAILED"}`,
+      );
+
       // For debugging: log verification URL
-      if (config.env === 'development') {
+      if (config.env === "development") {
         const verificationUrl = `${config.frontendUrl}/verify-email/${verificationToken}`;
         logger.debug(`Development verification URL: ${verificationUrl}`);
       }
     } catch (emailError) {
-      logger.error(`Failed to send verification email to ${email}:`, emailError);
+      logger.error(
+        `Failed to send verification email to ${email}:`,
+        emailError,
+      );
       // Continue with the registration process even if email sending fails
     }
 
@@ -72,10 +84,13 @@ exports.register = async (req, res) => {
     const authToken = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
 
-    logger.info(`User registered successfully: ${email} (${role || 'patient'})`);
+    logger.info(
+      `User registered successfully: ${email} (${role || "patient"})`,
+    );
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please check your email for verification.',
+      message:
+        "User registered successfully. Please check your email for verification.",
       user: {
         id: user._id,
         email: user.email,
@@ -85,12 +100,12 @@ exports.register = async (req, res) => {
       },
       tokens: {
         authToken,
-        refreshToken
-      }
+        refreshToken,
+      },
     });
   } catch (error) {
     logger.error(`Registration error: ${error.message}`, { error });
-    res.status(500).json({ message: 'Server error during registration' });
+    res.status(500).json({ message: "Server error during registration" });
   }
 };
 
@@ -110,34 +125,39 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       logger.warn(`Login attempt failed: user not found with email ${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       logger.warn(`Login attempt failed: invalid password for user ${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Check if email is verified
     if (!user.isEmailVerified && !user.googleId && !user.facebookId) {
       logger.info(`Login attempt failed: unverified email for user ${email}`);
-      return res.status(403).json({ 
-        message: 'Email not verified. Please verify your email before logging in.',
-        code: 'EMAIL_NOT_VERIFIED' 
+      return res.status(403).json({
+        message:
+          "Email not verified. Please verify your email before logging in.",
+        code: "EMAIL_NOT_VERIFIED",
       });
     }
 
     // Check if provider is verified by admin
-    if (user.role === 'provider' && user.isProfileCompleted) {
+    if (user.role === "provider" && user.isProfileCompleted) {
       // Only check verification status after onboarding is completed
-      const isVerified = user.providerProfile && user.providerProfile.isVerified;
+      const isVerified =
+        user.providerProfile && user.providerProfile.isVerified;
       if (!isVerified) {
-        logger.info(`Login attempt failed: provider account not verified by admin for user ${email}`);
+        logger.info(
+          `Login attempt failed: provider account not verified by admin for user ${email}`,
+        );
         return res.status(403).json({
-          message: 'Your provider account is pending verification. Please wait for admin approval.',
-          code: 'PROVIDER_NOT_VERIFIED'
+          message:
+            "Your provider account is pending verification. Please wait for admin approval.",
+          code: "PROVIDER_NOT_VERIFIED",
         });
       }
     }
@@ -161,24 +181,25 @@ exports.login = async (req, res) => {
       role: user.role,
       isProfileCompleted: user.isProfileCompleted,
       onboardingCompleted: user.isProfileCompleted, // Include this for frontend compatibility
-      profileImage: user.profileImage // Include profile image
+      profileImage: user.profileImage, // Include profile image
     };
 
     // Add isVerified flag for providers
-    if (user.role === 'provider') {
-      userData.isVerified = user.providerProfile && user.providerProfile.isVerified === true;
+    if (user.role === "provider") {
+      userData.isVerified =
+        user.providerProfile && user.providerProfile.isVerified === true;
     }
 
     res.json({
       user: userData,
       tokens: {
         authToken,
-        refreshToken
-      }
+        refreshToken,
+      },
     });
   } catch (error) {
-    logger.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+    logger.error("Login error:", error);
+    res.status(500).json({ message: "Server error during login" });
   }
 };
 
@@ -188,9 +209,9 @@ exports.login = async (req, res) => {
 exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
-    
+
     if (!refreshToken) {
-      return res.status(400).json({ message: 'Refresh token is required' });
+      return res.status(400).json({ message: "Refresh token is required" });
     }
 
     // Verify refresh token
@@ -198,33 +219,40 @@ exports.refreshToken = async (req, res) => {
     try {
       user = await User.verifyRefreshToken(refreshToken);
     } catch (error) {
-      return res.status(401).json({ message: 'Invalid refresh token' });
+      return res.status(401).json({ message: "Invalid refresh token" });
     }
 
     // Check if there's an existing auth token and if it has session timeout
     const authHeader = req.headers.authorization;
     if (authHeader) {
-      const token = authHeader.split(' ')[1];
+      const token = authHeader.split(" ")[1];
       if (token) {
         try {
-          const payload = jwt.verify(token, config.jwtSecret, { ignoreExpiration: true });
-          
+          const payload = jwt.verify(token, config.jwtSecret, {
+            ignoreExpiration: true,
+          });
+
           // Calculate time since token was issued
           const currentTime = Math.floor(Date.now() / 1000);
           const tokenIssueTime = payload.iat;
-          const minutesSinceIssue = Math.floor((currentTime - tokenIssueTime) / 60);
-          
+          const minutesSinceIssue = Math.floor(
+            (currentTime - tokenIssueTime) / 60,
+          );
+
           // If the previous token's session has timed out, don't allow refresh
           if (minutesSinceIssue >= config.sessionTimeout) {
             return res.status(401).json({
               success: false,
-              message: 'Session timeout',
-              code: 'SESSION_TIMEOUT'
+              message: "Session timeout",
+              code: "SESSION_TIMEOUT",
             });
           }
         } catch (error) {
           // If we can't verify the old token, continue with refresh
-          console.log('Could not verify old auth token during refresh:', error.message);
+          console.log(
+            "Could not verify old auth token during refresh:",
+            error.message,
+          );
         }
       }
     }
@@ -237,12 +265,12 @@ exports.refreshToken = async (req, res) => {
       success: true,
       tokens: {
         authToken: newAuthToken,
-        refreshToken: newRefreshToken
-      }
+        refreshToken: newRefreshToken,
+      },
     });
   } catch (error) {
-    console.error('Token refresh error:', error);
-    res.status(500).json({ message: 'Server error during token refresh' });
+    console.error("Token refresh error:", error);
+    res.status(500).json({ message: "Server error during token refresh" });
   }
 };
 
@@ -252,16 +280,16 @@ exports.refreshToken = async (req, res) => {
 exports.getCurrentUser = async (req, res) => {
   try {
     // User is available from auth middleware
-    const user = await User.findById(req.user.id).select('-password');
-    
+    const user = await User.findById(req.user.id).select("-password");
+
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
     res.json({ success: true, user });
   } catch (error) {
-    console.error('Get current user error:', error);
-    res.status(500).json({ message: 'Server error while fetching user data' });
+    console.error("Get current user error:", error);
+    res.status(500).json({ message: "Server error while fetching user data" });
   }
 };
 
@@ -272,9 +300,11 @@ exports.verifyEmail = async (req, res) => {
   try {
     // Get token from either params (GET request) or body (POST request)
     const token = req.params.token || (req.body && req.body.token);
-    
+
     if (!token) {
-      return res.status(400).json({ message: 'Verification token is required' });
+      return res
+        .status(400)
+        .json({ message: "Verification token is required" });
     }
 
     // Verify the token
@@ -283,64 +313,74 @@ exports.verifyEmail = async (req, res) => {
       decoded = jwt.verify(token, config.jwtSecret);
     } catch (error) {
       // For GET requests, redirect to error page
-      if (req.method === 'GET') {
+      if (req.method === "GET") {
         return res.redirect(`${config.frontendUrl}/verification-error`);
       }
       // For POST requests, return JSON error
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid or expired verification token' 
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification token",
       });
     }
 
     // Find and update user
     const user = await User.findById(decoded.id);
-    
+
     if (!user) {
       // For GET requests, redirect to error page
-      if (req.method === 'GET') {
+      if (req.method === "GET") {
         return res.redirect(`${config.frontendUrl}/verification-error`);
       }
       // For POST requests, return JSON error
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
     if (user.isEmailVerified) {
       // If already verified
-      
+
       // For GET requests, redirect to app
-      if (req.method === 'GET') {
+      if (req.method === "GET") {
         let redirectUrl;
         if (user.isProfileCompleted) {
           // Redirect to role-specific dashboard
-          redirectUrl = user.role === 'patient' 
-            ? `${config.frontendUrl}/patient/dashboard`
-            : user.role === 'provider'
-            ? `${config.frontendUrl}/provider/dashboard`
-            : `${config.frontendUrl}/sign-in`;
+          redirectUrl =
+            user.role === "patient"
+              ? `${config.frontendUrl}/patient/dashboard`
+              : user.role === "provider"
+                ? `${config.frontendUrl}/provider/dashboard`
+                : `${config.frontendUrl}/sign-in`;
         } else {
           // Redirect to role-specific onboarding
-          redirectUrl = user.role === 'patient' 
-            ? `${config.frontendUrl}/patient/onboarding`
-            : `${config.frontendUrl}/provider/onboarding`;
+          redirectUrl =
+            user.role === "patient"
+              ? `${config.frontendUrl}/patient/onboarding`
+              : `${config.frontendUrl}/provider/onboarding`;
         }
-        
+
         return res.redirect(redirectUrl);
       }
-      
-      // For POST requests, return success
+
+      // For POST requests, generate tokens and return success so the user can be logged in
+      const authToken = user.generateAuthToken();
+      const refreshToken = user.generateRefreshToken();
       return res.json({
         success: true,
-        message: 'Email already verified',
+        message: "Email already verified",
         user: {
           id: user._id,
           email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
           role: user.role,
-          onboardingCompleted: user.isProfileCompleted
-        }
+          onboardingCompleted: user.isProfileCompleted,
+          isEmailVerified: true,
+          isProfileCompleted: user.isProfileCompleted,
+        },
+        token: authToken,
+        refreshToken: refreshToken,
       });
     }
 
@@ -349,41 +389,49 @@ exports.verifyEmail = async (req, res) => {
     await user.save();
 
     logger.info(`Email verified successfully for user: ${user.email}`);
-    logger.info(`User profile status - isProfileCompleted: ${user.isProfileCompleted}, role: ${user.role}`);
-    
+    logger.info(
+      `User profile status - isProfileCompleted: ${user.isProfileCompleted}, role: ${user.role}`,
+    );
+
     // Generate new tokens for auto-login
     const authToken = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
-    
+
     // For GET requests, redirect to onboarding with proper role path
-    if (req.method === 'GET') {
+    if (req.method === "GET") {
       // Always redirect new users to onboarding after email verification
       // They should have isProfileCompleted = false at this point
       let redirectUrl;
-      
+
       if (!user.isProfileCompleted) {
         // New user - needs onboarding
-        redirectUrl = user.role === 'patient' 
-          ? `${config.frontendUrl}/patient/onboarding?token=${authToken}`
-          : `${config.frontendUrl}/provider/onboarding?token=${authToken}`;
-        logger.info(`Redirecting new ${user.role} to onboarding: ${redirectUrl}`);
+        redirectUrl =
+          user.role === "patient"
+            ? `${config.frontendUrl}/patient/onboarding?token=${authToken}`
+            : `${config.frontendUrl}/provider/onboarding?token=${authToken}`;
+        logger.info(
+          `Redirecting new ${user.role} to onboarding: ${redirectUrl}`,
+        );
       } else {
         // Existing user who somehow is verifying email again
-        redirectUrl = user.role === 'patient' 
-          ? `${config.frontendUrl}/patient/dashboard`
-          : user.role === 'provider'
-          ? `${config.frontendUrl}/provider/dashboard`
-          : `${config.frontendUrl}/sign-in`;
-        logger.info(`Redirecting existing ${user.role} to dashboard: ${redirectUrl}`);
+        redirectUrl =
+          user.role === "patient"
+            ? `${config.frontendUrl}/patient/dashboard`
+            : user.role === "provider"
+              ? `${config.frontendUrl}/provider/dashboard`
+              : `${config.frontendUrl}/sign-in`;
+        logger.info(
+          `Redirecting existing ${user.role} to dashboard: ${redirectUrl}`,
+        );
       }
-      
+
       return res.redirect(redirectUrl);
     }
-    
+
     // For POST requests, return success JSON
     return res.json({
       success: true,
-      message: 'Email verified successfully',
+      message: "Email verified successfully",
       user: {
         id: user._id,
         email: user.email,
@@ -392,23 +440,23 @@ exports.verifyEmail = async (req, res) => {
         role: user.role,
         onboardingCompleted: user.isProfileCompleted,
         isEmailVerified: true,
-        isProfileCompleted: user.isProfileCompleted
+        isProfileCompleted: user.isProfileCompleted,
       },
       token: authToken,
-      refreshToken: refreshToken
+      refreshToken: refreshToken,
     });
   } catch (error) {
-    logger.error('Email verification error:', error);
-    
+    logger.error("Email verification error:", error);
+
     // For GET requests, redirect to error page
-    if (req.method === 'GET') {
+    if (req.method === "GET") {
       return res.redirect(`${config.frontendUrl}/verification-error`);
     }
-    
+
     // For POST requests, return error JSON
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server error during email verification' 
+    return res.status(500).json({
+      success: false,
+      message: "Server error during email verification",
     });
   }
 };
@@ -426,17 +474,21 @@ exports.adminLogin = async (req, res) => {
     const { email, password } = req.body;
 
     // Find admin user by email
-    const user = await User.findOne({ email, role: 'admin' });
+    const user = await User.findOne({ email, role: "admin" });
     if (!user) {
-      logger.warn(`Admin login attempt failed: admin not found with email ${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      logger.warn(
+        `Admin login attempt failed: admin not found with email ${email}`,
+      );
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      logger.warn(`Admin login attempt failed: invalid password for admin ${email}`);
-      return res.status(400).json({ message: 'Invalid credentials' });
+      logger.warn(
+        `Admin login attempt failed: invalid password for admin ${email}`,
+      );
+      return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Update last login timestamp
@@ -457,16 +509,16 @@ exports.adminLogin = async (req, res) => {
         role: user.role,
         isProfileCompleted: user.isProfileCompleted,
         onboardingCompleted: user.isProfileCompleted, // Include this for frontend compatibility
-        profileImage: user.profileImage // Include profile image
+        profileImage: user.profileImage, // Include profile image
       },
       tokens: {
         authToken,
-        refreshToken
-      }
+        refreshToken,
+      },
     });
   } catch (error) {
-    logger.error('Admin login error:', error);
-    res.status(500).json({ message: 'Server error during admin login' });
+    logger.error("Admin login error:", error);
+    res.status(500).json({ message: "Server error during admin login" });
   }
 };
 
@@ -480,15 +532,17 @@ exports.forgotPassword = async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(200).json({ message: 'If the email exists, a password reset link will be sent' });
+      return res
+        .status(200)
+        .json({
+          message: "If the email exists, a password reset link will be sent",
+        });
     }
 
     // Generate password reset token
-    const resetToken = jwt.sign(
-      { id: user._id },
-      config.jwtSecret,
-      { expiresIn: '1h' }
-    );
+    const resetToken = jwt.sign({ id: user._id }, config.jwtSecret, {
+      expiresIn: "1h",
+    });
 
     // Store token hash in user document
     user.resetPasswordToken = resetToken;
@@ -496,17 +550,23 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     // Import email service
-    const emailService = require('../services/email.service');
-    
+    const emailService = require("../services/email.service");
+
     // Send password reset email using the email service
     await emailService.sendPasswordResetEmail(user, resetToken, {
-      queue: true // Queue the email
+      queue: true, // Queue the email
     });
 
-    return res.status(200).json({ message: 'If the email exists, a password reset link will be sent' });
+    return res
+      .status(200)
+      .json({
+        message: "If the email exists, a password reset link will be sent",
+      });
   } catch (error) {
-    console.error('Password reset request error:', error);
-    res.status(500).json({ message: 'Server error during password reset request' });
+    console.error("Password reset request error:", error);
+    res
+      .status(500)
+      .json({ message: "Server error during password reset request" });
   }
 };
 
@@ -522,18 +582,22 @@ exports.resetPassword = async (req, res) => {
     try {
       decoded = jwt.verify(token, config.jwtSecret);
     } catch (error) {
-      return res.status(400).json({ message: 'Invalid or expired reset token' });
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
     }
 
     // Find user by ID and token
     const user = await User.findOne({
       _id: decoded.id,
       resetPasswordToken: token,
-      resetPasswordExpires: { $gt: Date.now() }
+      resetPasswordExpires: { $gt: Date.now() },
     });
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired reset token' });
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
     }
 
     // Set new password
@@ -543,27 +607,29 @@ exports.resetPassword = async (req, res) => {
     await user.save();
 
     // Import email service
-    const emailService = require('../services/email.service');
-    
+    const emailService = require("../services/email.service");
+
     // Send confirmation email using the email service
     await emailService.sendTemplateEmail(
       user.email,
-      'passwordResetSuccess',
+      "passwordResetSuccess",
       {
         firstName: user.firstName,
-        frontendUrl: config.frontendUrl
+        frontendUrl: config.frontendUrl,
       },
       {
-        subject: 'Password Reset Successful',
+        subject: "Password Reset Successful",
         userId: user._id,
-        queue: true
-      }
+        queue: true,
+      },
     );
 
-    return res.status(200).json({ message: 'Password has been reset successfully' });
+    return res
+      .status(200)
+      .json({ message: "Password has been reset successfully" });
   } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json({ message: 'Server error during password reset' });
+    console.error("Password reset error:", error);
+    res.status(500).json({ message: "Server error during password reset" });
   }
 };
 
@@ -574,19 +640,19 @@ exports.checkSessionStatus = async (req, res) => {
   try {
     // User is already verified by auth middleware
     const user = req.user;
-    
+
     // Generate a new auth token with updated issue time to keep session alive
     const newAuthToken = user.generateAuthToken();
-    
-    res.json({ 
-      success: true, 
-      message: 'Session is active',
+
+    res.json({
+      success: true,
+      message: "Session is active",
       userId: user._id,
-      token: newAuthToken // Return new token to refresh the session
+      token: newAuthToken, // Return new token to refresh the session
     });
   } catch (error) {
-    console.error('Session status check error:', error);
-    res.status(500).json({ message: 'Error checking session status' });
+    console.error("Session status check error:", error);
+    res.status(500).json({ message: "Error checking session status" });
   }
 };
 
@@ -596,65 +662,71 @@ exports.checkSessionStatus = async (req, res) => {
 exports.resendVerificationEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
+      return res.status(400).json({ message: "Email is required" });
     }
-    
+
     // Find the user
     const user = await User.findOne({ email });
     if (!user) {
       // For security reasons, don't reveal that the user doesn't exist
-      return res.status(200).json({ 
+      return res.status(200).json({
         success: true,
-        message: 'If the email exists, a verification link will be sent' 
+        message: "If the email exists, a verification link will be sent",
       });
     }
-    
+
     // Don't resend if already verified
     if (user.isEmailVerified) {
-      return res.status(200).json({ 
+      return res.status(200).json({
         success: true,
-        message: 'Email already verified. Please sign in.' 
+        message: "Email already verified. Please sign in.",
       });
     }
-    
+
     // Generate a new verification token
-    const verificationToken = jwt.sign(
-      { id: user._id },
-      config.jwtSecret,
-      { expiresIn: '24h' }
-    );
-    
+    const verificationToken = jwt.sign({ id: user._id }, config.jwtSecret, {
+      expiresIn: "24h",
+    });
+
     // Send the verification email
     try {
-      const emailService = require('../services/email.service');
-      const emailSent = await emailService.sendVerificationEmail(user, verificationToken);
-      
-      logger.info(`Resent verification email to ${email}: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
-      
+      const emailService = require("../services/email.service");
+      const emailSent = await emailService.sendVerificationEmail(
+        user,
+        verificationToken,
+      );
+
+      logger.info(
+        `Resent verification email to ${email}: ${emailSent ? "SUCCESS" : "FAILED"}`,
+      );
+
       // For debugging: log verification URL
-      if (config.env === 'development') {
+      if (config.env === "development") {
         const verificationUrl = `${config.frontendUrl}/verify-email/${verificationToken}`;
         logger.debug(`Development verification URL: ${verificationUrl}`);
       }
-      
+
       return res.status(200).json({
         success: true,
-        message: 'Verification email has been sent'
+        message: "Verification email has been sent",
       });
     } catch (emailError) {
-      logger.error(`Failed to resend verification email to ${email}:`, emailError);
-      return res.status(500).json({ 
+      logger.error(
+        `Failed to resend verification email to ${email}:`,
+        emailError,
+      );
+      return res.status(500).json({
         success: false,
-        message: 'Failed to send verification email. Please try again later.' 
+        message: "Failed to send verification email. Please try again later.",
       });
     }
   } catch (error) {
-    logger.error('Resend verification email error:', error);
-    return res.status(500).json({ 
+    logger.error("Resend verification email error:", error);
+    return res.status(500).json({
       success: false,
-      message: 'Server error during email verification' 
+      message: "Server error during email verification",
     });
   }
-}; 
+};
