@@ -77,7 +77,7 @@ const DashboardLayout = ({ role }) => {
   // Get user information based on role
   const getUserDisplay = () => {
     const profileUrlMap = {
-      admin: '/admin/profile',
+      admin: '/admin/settings',
       provider: '/provider/profile',
       patient: '/patient/profile'
     };
