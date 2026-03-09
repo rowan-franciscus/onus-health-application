@@ -44,7 +44,7 @@ const Consultations = () => {
           patientName: consultation.patient ? 
             `${consultation.patient.firstName} ${consultation.patient.lastName}` : 
             'Unknown Patient',
-          date: consultation.date ? formatDate(consultation.date) : 'N/A',
+          date: consultation.date || null,
           reasonForVisit: consultation.general?.reasonForVisit || 'N/A',
           status: consultation.status || 'draft'
         }));
@@ -100,12 +100,13 @@ const Consultations = () => {
       dataIndex: 'date',
       sortable: true,
       render: (value, item) => {
-        if (!item || !item.date || item.date === 'N/A') return 'Not set';
+        if (!item || !item.date) return 'Not set';
         try {
-          return formatDate(item.date);
+          const formatted = formatDate(item.date);
+          return formatted === 'Invalid date' ? 'Not set' : formatted;
         } catch (error) {
           console.error('Error formatting date:', error);
-          return item.date || 'Invalid date';
+          return 'Not set';
         }
       }
     },
