@@ -283,7 +283,7 @@ const SignIn = () => {
       </div>
       
       <div className={styles.copyright}>
-        © 2026 Onus Technologies Namibia. All Rights Reserved.
+        © {new Date().getFullYear()} Onus Technologies Namibia. All Rights Reserved.
       </div>
       </div>
     </div>

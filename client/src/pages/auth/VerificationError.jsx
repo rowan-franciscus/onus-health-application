@@ -31,7 +31,7 @@ const VerificationError = () => {
       </div>
       
       <div className={styles.copyright}>
-        © 2025 Onus Technologies Namibia. All Rights Reserved.
+        © {new Date().getFullYear()} Onus Technologies Namibia. All Rights Reserved.
       </div>
     </div>
   );
