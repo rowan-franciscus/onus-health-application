@@ -103,7 +103,8 @@ const Consultations = () => {
         if (!item || !item.date) return 'Not set';
         try {
           const formatted = formatDate(item.date);
-          return formatted === 'Invalid date' ? 'Not set' : formatted;
+          const invalidSentinels = ['Invalid date', 'Error', 'N/A'];
+          return !formatted || invalidSentinels.includes(formatted) ? 'Not set' : formatted;
         } catch (error) {
           console.error('Error formatting date:', error);
           return 'Not set';
