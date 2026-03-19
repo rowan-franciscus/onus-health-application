@@ -95,6 +95,7 @@ const environments = {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || defaultConfig.maxFileSize),
     logLevel: 'debug',
     mongoDbName: 'onus-health',
+    adminEmail: process.env.ADMIN_EMAIL || 'rowan.franciscus.2@gmail.com',
     sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || 30), // Session timeout in minutes
     
     // Email settings
@@ -159,6 +160,7 @@ const environments = {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || defaultConfig.maxFileSize),
     logLevel: 'warn',
     mongoDbName: 'onus-health',
+    adminEmail: process.env.ADMIN_EMAIL || 'rowan.franciscus.2@gmail.com',
     sessionTimeout: parseInt(process.env.SESSION_TIMEOUT || 30) // Session timeout in minutes
   }
 };

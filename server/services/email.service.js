@@ -475,22 +475,29 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
     throw new Error("Provider information is required");
   }
 
-  // Admin emails
-  const adminEmails = ["rowan.franciscus.2@gmail.com", "julian@onus.health"];
-  // Use the first admin email for now (can be extended to send to all admins)
-  const adminEmail = adminEmails[0];
+  // Use configurable admin email from environment
+  const adminEmail = config.adminEmail || "rowan.franciscus.2@gmail.com";
 
   logger.info(
     `Sending provider verification request to admin email: ${adminEmail}`,
   );
 
-  // Link to the provider verification requests page instead of dashboard
+  // Link to the provider verification requests page
   const adminUrl = `${config.frontendUrl}/admin/provider-verifications`;
+
+  // Format the registration date/time
+  const registrationDate = provider.createdAt
+    ? formatDate(provider.createdAt)
+    : new Date().toLocaleString("en-ZA", {
+        dateStyle: "full",
+        timeStyle: "short",
+      });
 
   const templateData = {
     adminName: "Admin",
     providerName: `${provider.firstName} ${provider.lastName}`,
     providerEmail: provider.email,
+    registrationDate,
     specialty: provider.providerProfile?.specialty || "Not specified",
     practiceName:
       provider.providerProfile?.practiceInfo?.name || "Not specified",
@@ -498,26 +505,20 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
     verificationLink: adminUrl,
     appName: "Onus Health",
     supportEmail: config.supportEmail || "support@onus.health",
+    title: "New Provider Verification Request - Onus Health",
   };
 
   try {
-    // Force send the email immediately instead of queuing
-    const sent = await sendEmail({
-      to: adminEmail,
-      subject: "New Provider Verification Request",
-      html: `
-        <h1>New Provider Verification Request</h1>
-        <p>A new provider has submitted a verification request:</p>
-        <ul>
-          <li><strong>Name:</strong> ${provider.firstName} ${provider.lastName}</li>
-          <li><strong>Email:</strong> ${provider.email}</li>
-          <li><strong>Specialty:</strong> ${provider.providerProfile?.specialty || "Not specified"}</li>
-          <li><strong>Practice:</strong> ${provider.providerProfile?.practiceInfo?.name || "Not specified"}</li>
-        </ul>
-        <p>Please <a href="${adminUrl}">click here</a> to review provider verification requests.</p>
-      `,
-      force: true, // Force send even in test mode
-    });
+    const sent = await sendTemplateEmail(
+      adminEmail,
+      "providerVerificationRequest",
+      templateData,
+      {
+        subject: "New Provider Verification Request - Onus Health",
+        priority: 1,
+        queue: false, // Send immediately
+      },
+    );
 
     logger.info(
       `Admin notification ${sent ? "sent successfully" : "failed to send"} to ${adminEmail}`,

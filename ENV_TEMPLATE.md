@@ -27,6 +27,9 @@ SUPPORT_PHONE=081 000 0000
 # SendGrid
 SENDGRID_API_KEY=SG.your_sendgrid_api_key_here
 
+# Admin email for provider verification notifications
+ADMIN_EMAIL=admin@example.com
+
 # Frontend URL (for CORS and email links)
 FRONTEND_URL=http://localhost:3000
 
@@ -55,6 +58,7 @@ REACT_APP_SESSION_TIMEOUT=1800000
 - `EMAIL_FROM=no-reply@onus.health`
 - `SUPPORT_EMAIL=support@onus.health`
 - `SUPPORT_PHONE=081 000 0000`
+- `ADMIN_EMAIL=admin@onus.health`
 - `FRONTEND_URL=https://your-frontend-url.onrender.com`
 - `SESSION_TIMEOUT=30`
 

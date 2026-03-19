@@ -80,6 +80,21 @@ exports.register = async (req, res) => {
       // Continue with the registration process even if email sending fails
     }
 
+    // If the new user is a provider, notify the admin immediately
+    if (user.role === "provider") {
+      try {
+        const emailService = require("../services/email.service");
+        await emailService.sendProviderVerificationRequestEmail(user);
+        logger.info(`Admin notified about new provider registration: ${email}`);
+      } catch (adminEmailError) {
+        logger.error(
+          `Failed to send admin notification for new provider ${email}:`,
+          adminEmailError,
+        );
+        // Continue with registration even if admin notification fails
+      }
+    }
+
     // Generate tokens
     const authToken = user.generateAuthToken();
     const refreshToken = user.generateRefreshToken();
