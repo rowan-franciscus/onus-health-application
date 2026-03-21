@@ -475,15 +475,20 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
     throw new Error("Provider information is required");
   }
 
-  // Use configurable admin email from environment
-  const adminEmail = config.adminEmail || "rowan.franciscus.2@gmail.com";
+  // Use admin email from environment config (ADMIN_EMAIL in .env)
+  const adminEmail = config.adminEmail;
+
+  if (!adminEmail) {
+    logger.error("ADMIN_EMAIL is not configured in environment variables");
+    return false;
+  }
 
   logger.info(
     `Sending provider verification request to admin email: ${adminEmail}`,
   );
 
-  // Link to the provider verification requests page
-  const adminUrl = `${config.frontendUrl}/admin/provider-verifications`;
+  // Link to the admin login page so the admin can log in and review
+  const adminUrl = `${config.frontendUrl}/admin/login`;
 
   // Format the registration date/time
   const registrationDate = provider.createdAt
