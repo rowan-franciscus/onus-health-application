@@ -487,8 +487,8 @@ const sendProviderVerificationRequestEmail = async (provider, options = {}) => {
     `Sending provider verification request to admin email: ${adminEmail}`,
   );
 
-  // Link to the admin login page so the admin can log in and review
-  const adminUrl = `${config.frontendUrl}/admin/login`;
+  // Link to the sign-in page so the admin can log in and review
+  const adminUrl = `${config.frontendUrl}/sign-in`;
 
   // Format the registration date/time
   const registrationDate = provider.createdAt
