@@ -50,5 +50,8 @@ Thumbs.db
 .cache/
 dist/
 build/ 
+# Security documentation
+docs/SECURITY_MEASURES.md
+
 # User uploads
 server/uploads/
