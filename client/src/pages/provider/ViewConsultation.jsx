@@ -5,6 +5,7 @@ import styles from './ViewConsultation.module.css';
 import ApiService from '../../services/api.service';
 import FileService from '../../services/file.service';
 import { formatDate } from '../../utils/dateUtils';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Component imports
 import Card from '../../components/common/Card';
@@ -17,6 +18,7 @@ const ViewConsultation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [consultation, setConsultation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('general');
@@ -496,11 +498,13 @@ const ViewConsultation = () => {
           <p>Consultation details for {consultation.patient?.firstName} {consultation.patient?.lastName}</p>
         </div>
         
-        <div className={styles.headerActions}>
-          <Button onClick={handleEdit} variant="primary">
-            Edit Consultation
-          </Button>
-        </div>
+        {consultation.provider?._id === user?.id && (
+          <div className={styles.headerActions}>
+            <Button onClick={handleEdit} variant="primary">
+              Edit Consultation
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Patient Information Bar */}
