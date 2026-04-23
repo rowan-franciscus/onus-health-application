@@ -235,6 +235,27 @@ class MedicalRecordsService {
   }
 
   /**
+   * Create a standalone immunization record (not tied to a consultation).
+   */
+  async createImmunization(patientId, data) {
+    return api.post('/medical-records/provider/immunizations', { patientId, ...data });
+  }
+
+  /**
+   * Create a standalone hospital record (not tied to a consultation).
+   */
+  async createHospitalRecord(patientId, data) {
+    return api.post('/medical-records/provider/hospital-records', { patientId, ...data });
+  }
+
+  /**
+   * Create a standalone surgery record (not tied to a consultation).
+   */
+  async createSurgery(patientId, data) {
+    return api.post('/medical-records/provider/surgery-records', { patientId, ...data });
+  }
+
+  /**
    * Get all medications records
    * @param {Object} params - Query parameters
    * @returns {Promise} Promise with the response data

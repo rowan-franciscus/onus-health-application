@@ -29,9 +29,15 @@ router.get('/test', (req, res) => {
 router.get('/patient/vitals/recent', authenticateJWT, isPatient, medicalRecordController.getPatientRecentVitals);
 
 // Patient create vitals route
-router.post('/patient/vitals', authenticateJWT, isPatient, 
+router.post('/patient/vitals', authenticateJWT, isPatient,
   require('../controllers/medicalRecords/vitals.controller').createPatientVitals
 );
+
+// Provider standalone record creation (independent of consultations)
+const standaloneRecordController = require('../controllers/medicalRecords/standaloneRecord.controller');
+router.post('/provider/immunizations', authenticateJWT, isProvider, standaloneRecordController.createImmunization);
+router.post('/provider/hospital-records', authenticateJWT, isProvider, standaloneRecordController.createHospitalRecord);
+router.post('/provider/surgery-records', authenticateJWT, isProvider, standaloneRecordController.createSurgeryRecord);
 
 // Get single vitals record by ID
 router.get('/vitals/:id', authenticateJWT, require('../controllers/medicalRecords/vitals.controller').getVitalsById);
