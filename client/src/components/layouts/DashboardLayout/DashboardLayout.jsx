@@ -17,6 +17,9 @@ import patientsIcon from '../../../assets/icons/patients-icon.svg';
 import settingsIcon from '../../../assets/icons/settings-icon.svg';
 import consultationsIcon from '../../../assets/icons/consultations-icon.svg';
 import medicalRecordsIcon from '../../../assets/icons/medical-records-icon.svg';
+import immunizationsIcon from '../../../assets/icons/immunizations-icon.svg';
+import hospitalIcon from '../../../assets/icons/hospital-icon.svg';
+import surgeryIcon from '../../../assets/icons/surgery-icon.svg';
 import connectionsIcon from '../../../assets/icons/connections-icon.svg';
 import profileIcon from '../../../assets/icons/profile-icon.svg';
 import signOutIcon from '../../../assets/icons/sign-out-icon.svg';
@@ -35,9 +38,9 @@ const getNavItems = (role, logoutFn) => {
       { to: '/provider/dashboard', label: 'Dashboard', icon: <img src={analyticsIcon} alt="Dashboard" /> },
       { to: '/provider/patients', label: 'Patients', icon: <img src={patientsIcon} alt="Patients" /> },
       { to: '/provider/consultations', label: 'Consultations', icon: <img src={consultationsIcon} alt="Consultations" /> },
-      { to: '/provider/immunizations', label: 'Immunizations', icon: <img src={medicalRecordsIcon} alt="Immunizations" /> },
-      { to: '/provider/hospital-records', label: 'Hospital Records', icon: <img src={medicalRecordsIcon} alt="Hospital Records" /> },
-      { to: '/provider/surgeries', label: 'Surgeries', icon: <img src={medicalRecordsIcon} alt="Surgeries" /> },
+      { to: '/provider/immunizations', label: 'Immunizations', icon: <img src={immunizationsIcon} alt="Immunizations" /> },
+      { to: '/provider/hospital-records', label: 'Hospital Records', icon: <img src={hospitalIcon} alt="Hospital Records" /> },
+      { to: '/provider/surgeries', label: 'Surgeries', icon: <img src={surgeryIcon} alt="Surgeries" /> },
       { to: '/provider/profile', label: 'Profile', icon: <img src={profileIcon} alt="Profile" /> },
       { to: '/provider/settings', label: 'Settings', icon: <img src={settingsIcon} alt="Settings" /> },
     ],

@@ -85,10 +85,10 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
         
         // If provider has full approved access, they can see all records
         if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
-          query.patient = mongoose.Types.ObjectId(patientId);
+          query.patient = new mongoose.Types.ObjectId(patientId);
         } else {
           // Limited access - only see records they created
-          query.patient = mongoose.Types.ObjectId(patientId);
+          query.patient = new mongoose.Types.ObjectId(patientId);
           query.provider = req.user._id;
         }
       } else {
@@ -97,8 +97,8 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
       }
     } else if (req.user.role === 'admin') {
       // Admins can filter by patient and provider
-      if (patientId) query.patient = mongoose.Types.ObjectId(patientId);
-      if (req.query.providerId) query.provider = mongoose.Types.ObjectId(req.query.providerId);
+      if (patientId) query.patient = new mongoose.Types.ObjectId(patientId);
+      if (req.query.providerId) query.provider = new mongoose.Types.ObjectId(req.query.providerId);
     }
 
     // Add date range filter
@@ -228,7 +228,7 @@ exports.getMedicalRecordStatistics = async (req, res, next) => {
     
     // Add patient filter
     if (patientId) {
-      query.patient = mongoose.Types.ObjectId(patientId);
+      query.patient = new mongoose.Types.ObjectId(patientId);
     }
 
     // Add date range filter
@@ -340,7 +340,7 @@ exports.getProviderVitals = async (req, res) => {
     if (patientId) {
       const connection = await Connection.findOne({
         provider: providerId,
-        patient: new mongoose.Types.ObjectId(patientId)
+        patient: new new mongoose.Types.ObjectId(patientId)
       });
       
       if (!connection) {
@@ -352,10 +352,10 @@ exports.getProviderVitals = async (req, res) => {
       
       // If provider has full approved access, they can see all vitals for this patient
       if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
-        query.patient = new mongoose.Types.ObjectId(patientId);
+        query.patient = new new mongoose.Types.ObjectId(patientId);
       } else {
         // Limited access - only see vitals they created for this patient
-        query.patient = new mongoose.Types.ObjectId(patientId);
+        query.patient = new new mongoose.Types.ObjectId(patientId);
         query.provider = providerId;
       }
     } else {
@@ -437,7 +437,7 @@ exports.getRadiologyReports = async (req, res) => {
     if (patientId) {
       if (req.user.role === 'provider') {
         // Provider can filter by patient they have access to
-        query.patient = mongoose.Types.ObjectId(patientId);
+        query.patient = new mongoose.Types.ObjectId(patientId);
       } else if (req.user.role === 'patient' && patientId !== req.user._id.toString()) {
         // Patients can't access other patients' records
         return res.status(403).json({
