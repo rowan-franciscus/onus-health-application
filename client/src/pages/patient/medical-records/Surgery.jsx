@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
+import RecordDetailModal from '../../../components/medical-records/RecordDetailModal';
 import styles from './Surgery.module.css';
 
 const SurgeryRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,6 +67,9 @@ const SurgeryRecords = () => {
     navigate(`/patient/consultations/${consultationId}?tab=surgery`);
   };
 
+  const handleOpenDetails = (record) => setSelectedRecord(record);
+  const handleCloseDetails = () => setSelectedRecord(null);
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
@@ -92,9 +97,9 @@ const SurgeryRecords = () => {
         <td title={record.reason}>{truncateText(record.reason)}</td>
         <td title={record.complications}>{truncateText(record.complications) || 'None'}</td>
         <td>
-          <button 
+          <button
             className={styles.viewButton}
-            onClick={() => handleViewConsultation(record.consultationId)}
+            onClick={() => handleOpenDetails(record)}
           >
             View
           </button>
@@ -104,17 +109,26 @@ const SurgeryRecords = () => {
   };
 
   return (
-    <MedicalRecordTypeView
-      title="Surgery Records"
-      recordType="surgery-records"
-      records={records}
-      isLoading={isLoading}
-      error={error}
-      renderTableHeaders={renderTableHeaders}
-      renderRecordContent={renderRecordContent}
-      searchFields={['date', 'provider', 'typeOfSurgery', 'reason', 'complications', 'recoveryNotes']}
-      noRecordsMessage="No surgery records found. Your health provider will add surgery records during consultations."
-    />
+    <>
+      <MedicalRecordTypeView
+        title="Surgery Records"
+        recordType="surgery-records"
+        records={records}
+        isLoading={isLoading}
+        error={error}
+        renderTableHeaders={renderTableHeaders}
+        renderRecordContent={renderRecordContent}
+        searchFields={['date', 'provider', 'typeOfSurgery', 'reason', 'complications', 'recoveryNotes']}
+        noRecordsMessage="No surgery records found. Your health provider will add surgery records during consultations."
+      />
+      <RecordDetailModal
+        isOpen={!!selectedRecord}
+        onClose={handleCloseDetails}
+        record={selectedRecord}
+        recordType="surgery-records"
+        onViewConsultation={handleViewConsultation}
+      />
+    </>
   );
 };
 

@@ -20,6 +20,78 @@ class MedicalRecordsService {
         const response = await api.get(`/medical-records/vitals`);
         return response;
       }
+
+      // For immunizations / hospital-records / surgery-records, fetch from the
+      // authoritative endpoint (returns both consultation-attached AND standalone
+      // records since they share one discriminator collection). Map server fields
+      // into the shape the existing patient record pages expect.
+      if (type === 'immunizations' || type === 'hospital-records' || type === 'surgery-records') {
+        const response = await api.get(`/medical-records/${type}`, { limit: 100 });
+        const rawRecords = (response && Array.isArray(response.records)) ? response.records : [];
+
+        const providerLabel = (r) =>
+          r.provider ? `${r.provider.firstName || ''} ${r.provider.lastName || ''}`.trim() || 'Unknown Provider' :
+          (r.consultation?.general?.specialistName || 'Unknown Provider');
+
+        const mapped = rawRecords.map(r => {
+          const base = {
+            _id: r._id,
+            consultationId: r.consultation?._id || r.consultation || null,
+            date: r.date || r.createdAt,
+            provider: providerLabel(r)
+          };
+
+          if (type === 'immunizations') {
+            return {
+              ...base,
+              vaccineName: r.vaccineName || 'N/A',
+              dateAdministered: r.dateAdministered,
+              vaccineSerialNumber: r.vaccineSerialNumber || 'N/A',
+              nextDueDate: r.nextDueDate
+            };
+          }
+
+          if (type === 'hospital-records') {
+            const doctorsArr = Array.isArray(r.attendingDoctors)
+              ? r.attendingDoctors.map(d => (d && d.name) ? d.name : d).filter(Boolean)
+              : [];
+            return {
+              ...base,
+              admissionDate: r.admissionDate,
+              dischargeDate: r.dischargeDate,
+              // Support both British and American spellings (schema uses ...ization)
+              reasonForHospitalisation: r.reasonForHospitalization || r.reasonForHospitalisation || 'N/A',
+              reasonForHospitalization: r.reasonForHospitalization || r.reasonForHospitalisation || 'N/A',
+              treatmentsReceived: Array.isArray(r.treatmentsReceived) ? r.treatmentsReceived.join(', ') : (r.treatmentsReceived || 'N/A'),
+              attendingDoctors: doctorsArr.join(', ') || 'N/A',
+              dischargeSummary: r.dischargeSummary || '',
+              investigationsDone: Array.isArray(r.investigationsDone) ? r.investigationsDone.join(', ') : (r.investigationsDone || '')
+            };
+          }
+
+          // surgery-records
+          return {
+            ...base,
+            typeOfSurgery: r.typeOfSurgery || 'N/A',
+            dateOfSurgery: r.date,
+            reason: r.reason || 'N/A',
+            complications: r.complications || 'None',
+            recoveryNotes: r.recoveryNotes || ''
+          };
+        });
+
+        mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        return {
+          records: mapped,
+          pagination: {
+            total: mapped.length,
+            page: 1,
+            limit: mapped.length,
+            pages: 1
+          }
+        };
+      }
       
       // Fetch all completed consultations for the patient
       const response = await api.get('/consultations', {
