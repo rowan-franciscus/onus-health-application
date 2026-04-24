@@ -41,7 +41,21 @@ const ConsultationSchema = new Schema({
     },
     notes: {
       type: String
+    },
+    diagnosis: {
+      type: String
     }
+  },
+
+  // Narrative sections (free-form text)
+  history: {
+    type: String
+  },
+  physicalExamination: {
+    type: String
+  },
+  management: {
+    type: String
   },
   
   // References to associated medical records

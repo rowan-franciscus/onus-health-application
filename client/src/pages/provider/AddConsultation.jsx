@@ -43,19 +43,17 @@ const AddConsultation = () => {
   // Define the form tabs
   const formTabs = [
     { id: 'general', label: 'General' },
-    { id: 'vitals', label: 'Vitals' },
-    { id: 'medication', label: 'Medication' },
-    { id: 'immunization', label: 'Immunization' },
-    { id: 'labResults', label: 'Lab Results' },
-    { id: 'radiology', label: 'Radiology' },
-    { id: 'hospital', label: 'Hospital' },
-    { id: 'surgery', label: 'Surgery' }
+    { id: 'history', label: 'History' },
+    { id: 'physical', label: 'Physical' },
+    { id: 'labResults', label: 'Lab Investigation' },
+    { id: 'radiology', label: 'Imaging' },
+    { id: 'management', label: 'Management' }
   ];
   
   // Function to create initial form values with provider profile data
   const getInitialFormValues = () => {
     if (isEditing && consultationData) {
-      // When editing, populate with existing consultation data
+      const firstMed = (consultationData.medications && consultationData.medications[0]) || {};
       return {
         general: {
           date: consultationData.date ? new Date(consultationData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -63,8 +61,12 @@ const AddConsultation = () => {
           specialty: consultationData.general?.specialty || providerProfile?.specialty || '',
           practiceName: consultationData.general?.practice || providerProfile?.practiceInfo?.name || '',
           reasonForVisit: consultationData.general?.reasonForVisit || '',
+          diagnosis: consultationData.general?.diagnosis || '',
           notes: consultationData.general?.notes || ''
         },
+        history: consultationData.history || '',
+        physicalExamination: consultationData.physicalExamination || '',
+        management: consultationData.management || '',
         vitals: {
           heartRate: consultationData.vitals?.heartRate?.value || '',
           bloodPressure: {
@@ -80,23 +82,11 @@ const AddConsultation = () => {
           weight: consultationData.vitals?.weight?.value || '',
           height: consultationData.vitals?.height?.value || ''
         },
-        medication: consultationData.medications?.map(med => ({
-          name: med.name || '',
-          dosage: {
-            value: med.dosage?.value || '',
-            unit: med.dosage?.unit || ''
-          },
-          frequency: med.frequency || '',
-          reason: med.reasonForPrescription || '',
-          startDate: med.startDate ? new Date(med.startDate).toISOString().split('T')[0] : '',
-          endDate: med.endDate ? new Date(med.endDate).toISOString().split('T')[0] : ''
-        })) || [],
-        immunization: consultationData.immunizations?.map(imm => ({
-          name: imm.vaccineName || '',
-          date: imm.dateAdministered ? new Date(imm.dateAdministered).toISOString().split('T')[0] : '',
-          serialNumber: imm.vaccineSerialNumber || '',
-          nextDueDate: imm.nextDueDate ? new Date(imm.nextDueDate).toISOString().split('T')[0] : ''
-        })) || [],
+        medication: {
+          reason: firstMed.reasonForPrescription || '',
+          startDate: firstMed.startDate ? new Date(firstMed.startDate).toISOString().split('T')[0] : '',
+          endDate: firstMed.endDate ? new Date(firstMed.endDate).toISOString().split('T')[0] : ''
+        },
         labResults: consultationData.labResults?.map(lab => ({
           testName: lab.testName || '',
           labName: lab.labName || '',
@@ -111,29 +101,9 @@ const AddConsultation = () => {
           findings: rad.findings || '',
           recommendations: rad.recommendations || ''
         })) || [],
-        hospital: consultationData.hospitalRecords?.map(hosp => ({
-          hospitalName: hosp.hospitalName || '',
-          admissionDate: hosp.admissionDate ? new Date(hosp.admissionDate).toISOString().split('T')[0] : '',
-          dischargeDate: hosp.dischargeDate ? new Date(hosp.dischargeDate).toISOString().split('T')[0] : '',
-          reason: hosp.reasonForHospitalization || '',
-          treatments: Array.isArray(hosp.treatmentsReceived) ? hosp.treatmentsReceived.join(', ') : hosp.treatmentsReceived || '',
-          attendingDoctors: Array.isArray(hosp.attendingDoctors) ? 
-            hosp.attendingDoctors.map(doc => doc.name || doc).join(', ') : 
-            hosp.attendingDoctors || '',
-          dischargeSummary: hosp.dischargeSummary || '',
-          investigations: Array.isArray(hosp.investigationsDone) ? hosp.investigationsDone.join(', ') : hosp.investigationsDone || ''
-        })) || [],
-        surgery: consultationData.surgeryRecords?.map(surg => ({
-          type: surg.typeOfSurgery || '',
-          date: surg.date ? new Date(surg.date).toISOString().split('T')[0] : '',
-          reason: surg.reason || '',
-          complications: surg.complications || '',
-          recoveryNotes: surg.recoveryNotes || ''
-        })) || [],
         attachments: consultationData.attachments || []
       };
     } else {
-      // When creating new, use provider profile defaults
       return {
         general: {
           date: new Date().toISOString().split('T')[0],
@@ -141,8 +111,12 @@ const AddConsultation = () => {
           specialty: providerProfile?.specialty || '',
           practiceName: providerProfile?.practiceInfo?.name || '',
           reasonForVisit: '',
+          diagnosis: '',
           notes: ''
         },
+        history: '',
+        physicalExamination: '',
+        management: '',
         vitals: {
           heartRate: '',
           bloodPressure: { systolic: '', diastolic: '' },
@@ -155,12 +129,9 @@ const AddConsultation = () => {
           weight: '',
           height: ''
         },
-        medication: [],
-        immunization: [],
+        medication: { reason: '', startDate: '', endDate: '' },
         labResults: [],
         radiology: [],
-        hospital: [],
-        surgery: [],
         attachments: []
       };
     }
@@ -357,12 +328,9 @@ const AddConsultation = () => {
     setIsSaving(true);
     try {
       console.log('handleSaveDraft called with formData:', formData);
-      
-      // Extract date from general and move to top level
+
       const { date, ...generalWithoutDate } = formData.general;
-      
-      // Transform vitals data to match backend schema
-      // Always include value objects even for empty strings to ensure vitals are saved
+
       const transformedVitals = formData.vitals ? {
         heartRate: { value: formData.vitals.heartRate || '' },
         bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
@@ -375,26 +343,19 @@ const AddConsultation = () => {
         weight: { value: formData.vitals.weight || '' },
         height: { value: formData.vitals.height || '' }
       } : {};
-      
-      // Transform medication data to match backend schema
-      const transformedMedication = formData.medication.map(med => ({
-        name: med.name,
-        dosage: med.dosage, // Keep dosage as object with value and unit
-        frequency: med.frequency,
-        reasonForPrescription: med.reason,
-        startDate: med.startDate,
-        endDate: med.endDate
-      }));
-      
-      // Transform immunization data to match backend schema
-      const transformedImmunization = formData.immunization.map(imm => ({
-        vaccineName: imm.name || imm.vaccineName,
-        dateAdministered: imm.date || imm.dateAdministered,
-        vaccineSerialNumber: imm.serialNumber || imm.vaccineSerialNumber,
-        nextDueDate: imm.nextDueDate
-      }));
-      
-      // Transform lab results data to match backend schema
+
+      // Medication is now a single object with reason/dates; the free-form plan lives in `management`.
+      const medObj = formData.medication || {};
+      const hasMedicationData = formData.management || medObj.reason || medObj.startDate || medObj.endDate;
+      const transformedMedication = hasMedicationData
+        ? [{
+            name: formData.management ? '(see management plan)' : '',
+            reasonForPrescription: medObj.reason || '',
+            startDate: medObj.startDate || undefined,
+            endDate: medObj.endDate || undefined
+          }]
+        : [];
+
       const transformedLabResults = formData.labResults.map(lab => ({
         testName: lab.testName,
         labName: lab.labName,
@@ -402,8 +363,7 @@ const AddConsultation = () => {
         results: lab.results,
         comments: lab.comments
       }));
-      
-      // Transform radiology data to match backend schema
+
       const transformedRadiology = formData.radiology.map(rad => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
@@ -411,48 +371,24 @@ const AddConsultation = () => {
         findings: rad.findings,
         recommendations: rad.recommendations
       }));
-      
-      // Transform hospital data to match backend schema
-      const transformedHospital = formData.hospital.map(hosp => ({
-        ...hosp,
-        hospitalName: hosp.hospitalName || 'Not specified',
-        reasonForHospitalization: hosp.reason,
-        treatmentsReceived: hosp.treatments ? hosp.treatments.split(',').map(t => t.trim()) : [],
-        investigationsDone: hosp.investigations ? hosp.investigations.split(',').map(i => i.trim()) : [],
-        attendingDoctors: hosp.attendingDoctors ? [{name: hosp.attendingDoctors}] : [],
-        reason: undefined,
-        treatments: undefined,
-        investigations: undefined
-      }));
-      
-      // Transform surgery data to match backend schema
-      const transformedSurgery = formData.surgery.map(surg => ({
-        typeOfSurgery: surg.type || surg.surgeryType || surg.typeOfSurgery,
-        date: surg.date,
-        reason: surg.reason,
-        complications: surg.complications,
-        recoveryNotes: surg.recoveryNotes
-      }));
-      
-      // Store files separately - we'll upload them after consultation creation
+
       const filesToUpload = formData.attachments || [];
       console.log('Files to upload:', filesToUpload.length, filesToUpload.map(f => f instanceof File ? f.name : 'existing'));
-      
-      // Restructure the form data to match backend expectations (without attachments)
+
       const consultationData = {
         ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
-        date: date, // Date at top level
+        date: date,
         general: {
           ...generalWithoutDate,
-          practice: generalWithoutDate.practiceName // Map practiceName to practice
+          practice: generalWithoutDate.practiceName
         },
+        history: formData.history || '',
+        physicalExamination: formData.physicalExamination || '',
+        management: formData.management || '',
         vitals: transformedVitals,
         medication: transformedMedication,
-        immunization: transformedImmunization,
         labResults: transformedLabResults,
         radiology: transformedRadiology,
-        hospital: transformedHospital,
-        surgery: transformedSurgery,
         status: 'draft'
       };
       
@@ -556,11 +492,8 @@ const AddConsultation = () => {
         return;
       }
       
-      // Extract date from general and move to top level
       const { date, ...generalWithoutDate } = formData.general;
-      
-      // Transform vitals data to match backend schema
-      // Always include value objects even for empty strings to ensure vitals are saved
+
       const transformedVitals = formData.vitals ? {
         heartRate: { value: formData.vitals.heartRate || '' },
         bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
@@ -573,26 +506,18 @@ const AddConsultation = () => {
         weight: { value: formData.vitals.weight || '' },
         height: { value: formData.vitals.height || '' }
       } : {};
-      
-      // Transform medication data to match backend schema
-      const transformedMedication = formData.medication.map(med => ({
-        name: med.name,
-        dosage: med.dosage, // Keep dosage as object with value and unit
-        frequency: med.frequency,
-        reasonForPrescription: med.reason,
-        startDate: med.startDate,
-        endDate: med.endDate
-      }));
-      
-      // Transform immunization data to match backend schema
-      const transformedImmunization = formData.immunization.map(imm => ({
-        vaccineName: imm.name || imm.vaccineName,
-        dateAdministered: imm.date || imm.dateAdministered,
-        vaccineSerialNumber: imm.serialNumber || imm.vaccineSerialNumber,
-        nextDueDate: imm.nextDueDate
-      }));
-      
-      // Transform lab results data to match backend schema
+
+      const medObj = formData.medication || {};
+      const hasMedicationData = formData.management || medObj.reason || medObj.startDate || medObj.endDate;
+      const transformedMedication = hasMedicationData
+        ? [{
+            name: formData.management ? '(see management plan)' : '',
+            reasonForPrescription: medObj.reason || '',
+            startDate: medObj.startDate || undefined,
+            endDate: medObj.endDate || undefined
+          }]
+        : [];
+
       const transformedLabResults = formData.labResults.map(lab => ({
         testName: lab.testName,
         labName: lab.labName,
@@ -600,8 +525,7 @@ const AddConsultation = () => {
         results: lab.results,
         comments: lab.comments
       }));
-      
-      // Transform radiology data to match backend schema
+
       const transformedRadiology = formData.radiology.map(rad => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
@@ -609,48 +533,24 @@ const AddConsultation = () => {
         findings: rad.findings,
         recommendations: rad.recommendations
       }));
-      
-      // Transform hospital data to match backend schema
-      const transformedHospital = formData.hospital.map(hosp => ({
-        ...hosp,
-        hospitalName: hosp.hospitalName || 'Not specified',
-        reasonForHospitalization: hosp.reason,
-        treatmentsReceived: hosp.treatments ? hosp.treatments.split(',').map(t => t.trim()) : [],
-        investigationsDone: hosp.investigations ? hosp.investigations.split(',').map(i => i.trim()) : [],
-        attendingDoctors: hosp.attendingDoctors ? [{name: hosp.attendingDoctors}] : [],
-        reason: undefined,
-        treatments: undefined,
-        investigations: undefined
-      }));
-      
-      // Transform surgery data to match backend schema
-      const transformedSurgery = formData.surgery.map(surg => ({
-        typeOfSurgery: surg.type || surg.surgeryType || surg.typeOfSurgery,
-        date: surg.date,
-        reason: surg.reason,
-        complications: surg.complications,
-        recoveryNotes: surg.recoveryNotes
-      }));
-      
-      // Store files separately - we'll upload them after consultation creation
+
       const filesToUpload = formData.attachments || [];
       console.log('Files to upload:', filesToUpload.length, filesToUpload.map(f => f instanceof File ? f.name : 'existing'));
-      
-      // Restructure the form data to match backend expectations (without attachments)
+
       const consultationData = {
         ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
-        date: date, // Date at top level
+        date: date,
         general: {
           ...generalWithoutDate,
-          practice: generalWithoutDate.practiceName // Map practiceName to practice
+          practice: generalWithoutDate.practiceName
         },
+        history: formData.history || '',
+        physicalExamination: formData.physicalExamination || '',
+        management: formData.management || '',
         vitals: transformedVitals,
         medication: transformedMedication,
-        immunization: transformedImmunization,
         labResults: transformedLabResults,
         radiology: transformedRadiology,
-        hospital: transformedHospital,
-        surgery: transformedSurgery,
         status: 'completed'
       };
       

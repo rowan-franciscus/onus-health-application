@@ -9,13 +9,14 @@ const VitalsTab = ({
   touched,
   handleChange,
   handleBlur,
-  setFieldValue
+  setFieldValue,
+  physicalExamination = ''
 }) => {
   return (
     <div className={styles.tabContainer}>
-      <h2 className={styles.tabTitle}>Vitals</h2>
+      <h2 className={styles.tabTitle}>Physical Examination</h2>
       <p className={styles.tabDescription}>
-        Record patient's vital signs and measurements
+        Record patient's vital signs and physical.
       </p>
       
       <div className={styles.formGrid}>
@@ -304,6 +305,21 @@ const VitalsTab = ({
           )}
         </div>
       </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="physicalExamination" className={styles.formLabel}>
+          Physical Examination
+        </label>
+        <textarea
+          id="physicalExamination"
+          name="physicalExamination"
+          value={physicalExamination}
+          onChange={(e) => setFieldValue('physicalExamination', e.target.value)}
+          placeholder="Enter physical examination findings..."
+          className={styles.textarea}
+          style={{ minHeight: 140 }}
+        />
+      </div>
     </div>
   );
 };
@@ -314,7 +330,8 @@ VitalsTab.propTypes = {
   touched: PropTypes.object,
   handleChange: PropTypes.func.isRequired,
   handleBlur: PropTypes.func.isRequired,
-  setFieldValue: PropTypes.func.isRequired
+  setFieldValue: PropTypes.func.isRequired,
+  physicalExamination: PropTypes.string
 };
 
 export default VitalsTab; 

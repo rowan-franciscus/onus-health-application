@@ -6,13 +6,11 @@ import styles from './ConsultationForm.module.css';
 
 // Import tab content components
 import GeneralTab from './tabs/GeneralTab';
+import HistoryTab from './tabs/HistoryTab';
 import VitalsTab from './tabs/VitalsTab';
-import MedicationTab from './tabs/MedicationTab';
-import ImmunizationTab from './tabs/ImmunizationTab';
+import ManagementTab from './tabs/ManagementTab';
 import LabResultsTab from './tabs/LabResultsTab';
 import RadiologyTab from './tabs/RadiologyTab';
-import HospitalTab from './tabs/HospitalTab';
-import SurgeryTab from './tabs/SurgeryTab';
 
 // Import common components
 import Button from '../../common/Button';
@@ -62,7 +60,15 @@ const ConsultationForm = ({
             setFieldValue={setFieldValue}
           />
         );
-      case 'vitals':
+      case 'history':
+        return (
+          <HistoryTab
+            values={values}
+            handleChange={handleChange}
+            handleBlur={handleBlur}
+          />
+        );
+      case 'physical':
         return (
           <VitalsTab
             values={values.vitals}
@@ -71,24 +77,7 @@ const ConsultationForm = ({
             handleChange={handleChange}
             handleBlur={handleBlur}
             setFieldValue={setFieldValue}
-          />
-        );
-      case 'medication':
-        return (
-          <MedicationTab
-            medications={values.medication}
-            errors={errors.medication || {}}
-            touched={touched.medication || {}}
-            setFieldValue={setFieldValue}
-          />
-        );
-      case 'immunization':
-        return (
-          <ImmunizationTab
-            immunizations={values.immunization}
-            errors={errors.immunization || {}}
-            touched={touched.immunization || {}}
-            setFieldValue={setFieldValue}
+            physicalExamination={values.physicalExamination || ''}
           />
         );
       case 'labResults':
@@ -109,21 +98,11 @@ const ConsultationForm = ({
             setFieldValue={setFieldValue}
           />
         );
-      case 'hospital':
+      case 'management':
         return (
-          <HospitalTab
-            hospitalRecords={values.hospital}
-            errors={errors.hospital || {}}
-            touched={touched.hospital || {}}
-            setFieldValue={setFieldValue}
-          />
-        );
-      case 'surgery':
-        return (
-          <SurgeryTab
-            surgeryRecords={values.surgery}
-            errors={errors.surgery || {}}
-            touched={touched.surgery || {}}
+          <ManagementTab
+            management={values.management || ''}
+            medication={values.medication || {}}
             setFieldValue={setFieldValue}
           />
         );
