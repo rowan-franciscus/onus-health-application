@@ -128,23 +128,9 @@ class MedicalRecordsService {
               }
               break;
               
-            case 'immunizations':
-              if (consultation.immunizations && consultation.immunizations.length > 0) {
-                consultation.immunizations.forEach((immunization, index) => {
-                  records.push({
-                    _id: `${consultation._id}-immunization-${index}`,
-                    consultationId: consultation._id,
-                    date: consultation.date || consultation.createdAt,
-                    provider: provider,
-                    vaccineName: immunization.vaccineName || 'N/A',
-                    dateAdministered: immunization.dateAdministered,
-                    vaccineSerialNumber: immunization.vaccineSerialNumber || 'N/A',
-                    nextDueDate: immunization.nextDueDate
-                  });
-                });
-              }
-              break;
-              
+            // 'immunizations', 'hospital-records', and 'surgery-records' are handled
+            // by the early-return path above (authoritative endpoint) — no extraction here.
+
             case 'lab-results':
               if (consultation.labResults && consultation.labResults.length > 0) {
                 consultation.labResults.forEach((labResult, index) => {
@@ -181,43 +167,6 @@ class MedicalRecordsService {
               }
               break;
               
-            case 'hospital-records':
-              if (consultation.hospitalRecords && consultation.hospitalRecords.length > 0) {
-                consultation.hospitalRecords.forEach((record, index) => {
-                  records.push({
-                    _id: `${consultation._id}-hospital-${index}`,
-                    consultationId: consultation._id,
-                    date: consultation.date || consultation.createdAt,
-                    provider: provider,
-                    admissionDate: record.admissionDate,
-                    dischargeDate: record.dischargeDate,
-                    reasonForHospitalisation: record.reasonForHospitalisation || 'N/A',
-                    treatmentsReceived: record.treatmentsReceived || 'N/A',
-                    attendingDoctors: record.attendingDoctors || 'N/A',
-                    dischargeSummary: record.dischargeSummary || '',
-                    investigationsDone: record.investigationsDone || ''
-                  });
-                });
-              }
-              break;
-              
-            case 'surgery-records':
-              if (consultation.surgeryRecords && consultation.surgeryRecords.length > 0) {
-                consultation.surgeryRecords.forEach((surgery, index) => {
-                  records.push({
-                    _id: `${consultation._id}-surgery-${index}`,
-                    consultationId: consultation._id,
-                    date: consultation.date || consultation.createdAt,
-                    provider: provider,
-                    typeOfSurgery: surgery.typeOfSurgery || 'N/A',
-                    dateOfSurgery: surgery.date,
-                    reason: surgery.reason || 'N/A',
-                    complications: surgery.complications || 'None',
-                    recoveryNotes: surgery.recoveryNotes || ''
-                  });
-                });
-              }
-              break;
           }
         });
       }

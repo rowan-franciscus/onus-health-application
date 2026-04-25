@@ -7,11 +7,9 @@ const { formatDate } = require('../utils/dateUtils');
 // Import medical record models
 const VitalsRecord = require('../models/VitalsRecord');
 const MedicationRecord = require('../models/MedicationRecord');
-const ImmunizationRecord = require('../models/ImmunizationRecord');
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
-const HospitalRecord = require('../models/HospitalRecord');
-const SurgeryRecord = require('../models/SurgeryRecord');
+// Immunization, Hospital, and Surgery records are standalone (not part of consultations).
 
 /**
  * Update a consultation without transactions (temporary fix)
@@ -25,7 +23,11 @@ exports.updateConsultationSimple = async (req, res) => {
   try {
     const { id } = req.params;
     const providerId = req.user.id;
-    const { vitals, medication, immunization, labResults, radiology, hospital, surgery, ...consultationData } = req.body;
+    const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    // Immunization, hospital, surgery are standalone records — strip from update body.
+    delete consultationData.immunization;
+    delete consultationData.hospital;
+    delete consultationData.surgery;
     
     console.log('Consultation data keys:', Object.keys(consultationData));
     
@@ -157,41 +159,6 @@ exports.updateConsultationSimple = async (req, res) => {
       }
     }
     
-    // Handle Immunizations - replace all existing
-    if (immunization && Array.isArray(immunization)) {
-      try {
-        console.log('Processing immunizations update...');
-        if (consultation.immunizations && consultation.immunizations.length > 0) {
-          await ImmunizationRecord.deleteMany({
-            _id: { $in: consultation.immunizations }
-          });
-        }
-        
-        if (immunization.length > 0) {
-          const immunizationRecords = await Promise.all(
-            immunization.map(async (imm) => {
-              const immunizationRecord = new ImmunizationRecord({
-                patient: patientId,
-                provider: providerId,
-                consultation: consultation._id,
-                date: consultation.date,
-                ...imm
-              });
-              await immunizationRecord.save();
-              return immunizationRecord._id;
-            })
-          );
-          consultation.immunizations = immunizationRecords;
-        } else {
-          consultation.immunizations = [];
-        }
-        await consultation.save();
-        console.log(`Updated ${immunization.length} immunization records`);
-      } catch (immError) {
-        console.error('Error updating immunizations:', immError);
-      }
-    }
-    
     // Handle Lab Results
     if (labResults && Array.isArray(labResults)) {
       try {
@@ -262,76 +229,6 @@ exports.updateConsultationSimple = async (req, res) => {
       }
     }
     
-    // Handle Hospital Records
-    if (hospital && Array.isArray(hospital)) {
-      try {
-        console.log('Processing hospital records update...');
-        if (consultation.hospitalRecords && consultation.hospitalRecords.length > 0) {
-          await HospitalRecord.deleteMany({
-            _id: { $in: consultation.hospitalRecords }
-          });
-        }
-        
-        if (hospital.length > 0) {
-          const hospitalRecords = await Promise.all(
-            hospital.map(async (hosp) => {
-              const hospitalRecord = new HospitalRecord({
-                patient: patientId,
-                provider: providerId,
-                consultation: consultation._id,
-                date: consultation.date,
-                ...hosp
-              });
-              await hospitalRecord.save();
-              return hospitalRecord._id;
-            })
-          );
-          consultation.hospitalRecords = hospitalRecords;
-        } else {
-          consultation.hospitalRecords = [];
-        }
-        await consultation.save();
-        console.log(`Updated ${hospital.length} hospital records`);
-      } catch (hospError) {
-        console.error('Error updating hospital records:', hospError);
-      }
-    }
-    
-    // Handle Surgery Records
-    if (surgery && Array.isArray(surgery)) {
-      try {
-        console.log('Processing surgery records update...');
-        if (consultation.surgeryRecords && consultation.surgeryRecords.length > 0) {
-          await SurgeryRecord.deleteMany({
-            _id: { $in: consultation.surgeryRecords }
-          });
-        }
-        
-        if (surgery.length > 0) {
-          const surgeryRecords = await Promise.all(
-            surgery.map(async (surg) => {
-              const surgeryRecord = new SurgeryRecord({
-                patient: patientId,
-                provider: providerId,
-                consultation: consultation._id,
-                date: consultation.date,
-                ...surg
-              });
-              await surgeryRecord.save();
-              return surgeryRecord._id;
-            })
-          );
-          consultation.surgeryRecords = surgeryRecords;
-        } else {
-          consultation.surgeryRecords = [];
-        }
-        await consultation.save();
-        console.log(`Updated ${surgery.length} surgery records`);
-      } catch (surgError) {
-        console.error('Error updating surgery records:', surgError);
-      }
-    }
-    
     // Handle post-update operations
     try {
       // If status was changed to 'completed', send notification
@@ -371,11 +268,8 @@ exports.updateConsultationSimple = async (req, res) => {
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
-      .populate('immunizations')
       .populate('labResults')
-      .populate('radiologyReports')
-      .populate('hospitalRecords')
-      .populate('surgeryRecords');
+      .populate('radiologyReports');
     
     console.log('=== SIMPLE CONSULTATION UPDATE SUCCESS ===');
     return res.json(populatedConsultation);

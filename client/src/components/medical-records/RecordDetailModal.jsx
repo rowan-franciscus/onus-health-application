@@ -54,39 +54,8 @@ const titleMap = {
   'surgery-records': 'Surgery Record'
 };
 
-const RecordDetailModal = ({ isOpen, onClose, record, recordType, onViewConsultation }) => {
+const RecordDetailModal = ({ isOpen, onClose, record, recordType }) => {
   if (!record) return null;
-
-  const isFromConsultation = !!record.consultationId;
-
-  const sourceBanner = (
-    <div
-      style={{
-        padding: '10px 14px',
-        borderRadius: 6,
-        background: isFromConsultation ? '#eef2ff' : '#ecfdf5',
-        color: isFromConsultation ? '#3730a3' : '#065f46',
-        fontSize: 14,
-        marginBottom: 16,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12
-      }}
-    >
-      <span>
-        <strong>Source:</strong>{' '}
-        {isFromConsultation
-          ? 'Added as part of a consultation'
-          : 'Added individually (not linked to a consultation)'}
-      </span>
-      {isFromConsultation && onViewConsultation && (
-        <Button variant="tertiary" size="small" onClick={() => onViewConsultation(record.consultationId)}>
-          Open Consultation
-        </Button>
-      )}
-    </div>
-  );
 
   return (
     <Modal
@@ -95,7 +64,6 @@ const RecordDetailModal = ({ isOpen, onClose, record, recordType, onViewConsulta
       title={titleMap[recordType] || 'Record Details'}
       size="medium"
     >
-      {sourceBanner}
       <div>{renderFields(recordType, record)}</div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
         <Button variant="secondary" onClick={onClose}>Close</Button>
@@ -108,8 +76,7 @@ RecordDetailModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   record: PropTypes.object,
-  recordType: PropTypes.oneOf(['immunizations', 'hospital-records', 'surgery-records']).isRequired,
-  onViewConsultation: PropTypes.func
+  recordType: PropTypes.oneOf(['immunizations', 'hospital-records', 'surgery-records']).isRequired
 };
 
 export default RecordDetailModal;

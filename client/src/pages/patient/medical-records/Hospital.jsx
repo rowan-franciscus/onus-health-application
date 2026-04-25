@@ -105,14 +105,13 @@ const HospitalRecords = () => {
         renderTableHeaders={renderTableHeaders}
         renderRecordContent={renderRecordContent}
         searchFields={['date', 'provider', 'reasonForHospitalisation', 'attendingDoctors', 'treatmentsReceived']}
-        noRecordsMessage="No hospital records found. Your health provider will add hospital records during consultations."
+        noRecordsMessage="No hospital records found. Your health provider will add hospital records directly to your record."
       />
       <RecordDetailModal
         isOpen={!!selectedRecord}
         onClose={handleCloseDetails}
         record={selectedRecord}
         recordType="hospital-records"
-        onViewConsultation={handleViewConsultation}
       />
     </>
   );

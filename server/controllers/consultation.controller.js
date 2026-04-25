@@ -10,11 +10,9 @@ const { formatDate } = require('../utils/dateUtils');
 // Import medical record models
 const VitalsRecord = require('../models/VitalsRecord');
 const MedicationRecord = require('../models/MedicationRecord');
-const ImmunizationRecord = require('../models/ImmunizationRecord');
+// Immunization, Hospital, and Surgery records are now standalone (not part of consultations).
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
-const HospitalRecord = require('../models/HospitalRecord');
-const SurgeryRecord = require('../models/SurgeryRecord');
 
 /**
  * Get all consultations with filtering
@@ -86,11 +84,8 @@ exports.getAllConsultations = async (req, res) => {
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
-      .populate('immunizations')
       .populate('labResults')
       .populate('radiologyReports')
-      .populate('hospitalRecords')
-      .populate('surgeryRecords')
       .sort({ createdAt: -1 });
     
     return res.json(consultations);
@@ -118,11 +113,8 @@ exports.getConsultationById = async (req, res) => {
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
-      .populate('immunizations')
       .populate('labResults')
-      .populate('radiologyReports')
-      .populate('hospitalRecords')
-      .populate('surgeryRecords');
+      .populate('radiologyReports');
     
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation not found' });
@@ -188,19 +180,21 @@ exports.createConsultation = async (req, res) => {
     console.log('Request user:', { id: req.user.id, role: req.user.role, email: req.user.email });
     
     const providerId = req.user.id;
-    const { patient, patientEmail, vitals, medication, immunization, labResults, radiology, hospital, surgery, ...consultationData } = req.body;
-    
+    const { patient, patientEmail, vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    // Note: immunization, hospital, and surgery are intentionally NOT destructured here.
+    // They are standalone records and any leftover values in req.body are ignored.
+    delete consultationData.immunization;
+    delete consultationData.hospital;
+    delete consultationData.surgery;
+
     console.log('Extracted data:', {
       patient,
       patientEmail,
       consultationDataKeys: Object.keys(consultationData),
       vitalsExists: !!vitals,
       medicationLength: medication?.length,
-      immunizationLength: immunization?.length,
       labResultsLength: labResults?.length,
-      radiologyLength: radiology?.length,
-      hospitalLength: hospital?.length,
-      surgeryLength: surgery?.length
+      radiologyLength: radiology?.length
     });
     
     let patientId = patient;
@@ -356,36 +350,6 @@ exports.createConsultation = async (req, res) => {
       console.log('No medication data to save');
     }
     
-    // Save Immunizations if provided
-    if (immunization && Array.isArray(immunization) && immunization.length > 0) {
-      console.log('Creating immunization records:', immunization.length);
-      try {
-        const immunizationRecords = await Promise.all(
-          immunization.map(async (imm, index) => {
-            console.log(`Creating immunization ${index + 1}:`, imm);
-            const immunizationRecord = new ImmunizationRecord({
-              patient: patientId,
-              provider: providerId,
-              consultation: consultation._id,
-              date: consultation.date,
-              ...imm
-            });
-            await immunizationRecord.save({ session });
-            return immunizationRecord._id;
-          })
-        );
-        
-        // Update consultation with immunization references
-        consultation.immunizations = immunizationRecords;
-        console.log('All immunization records created successfully');
-      } catch (immunizationError) {
-        console.error('Error creating immunization records:', immunizationError);
-        throw immunizationError;
-      }
-    } else {
-      console.log('No immunization data to save');
-    }
-    
     // Save Lab Results if provided
     if (labResults && Array.isArray(labResults) && labResults.length > 0) {
       console.log('Creating lab result records:', labResults.length);
@@ -446,66 +410,6 @@ exports.createConsultation = async (req, res) => {
       console.log('No radiology data to save');
     }
     
-    // Save Hospital Records if provided
-    if (hospital && Array.isArray(hospital) && hospital.length > 0) {
-      console.log('Creating hospital records:', hospital.length);
-      try {
-        const hospitalRecords = await Promise.all(
-          hospital.map(async (hosp, index) => {
-            console.log(`Creating hospital record ${index + 1}:`, hosp);
-            const hospitalRecord = new HospitalRecord({
-              patient: patientId,
-              provider: providerId,
-              consultation: consultation._id,
-              date: consultation.date,
-              ...hosp
-            });
-            await hospitalRecord.save({ session });
-            return hospitalRecord._id;
-          })
-        );
-        
-        // Update consultation with hospital references
-        consultation.hospitalRecords = hospitalRecords;
-        console.log('All hospital records created successfully');
-      } catch (hospitalError) {
-        console.error('Error creating hospital records:', hospitalError);
-        throw hospitalError;
-      }
-    } else {
-      console.log('No hospital data to save');
-    }
-    
-    // Save Surgery Records if provided
-    if (surgery && Array.isArray(surgery) && surgery.length > 0) {
-      console.log('Creating surgery records:', surgery.length);
-      try {
-        const surgeryRecords = await Promise.all(
-          surgery.map(async (surg, index) => {
-            console.log(`Creating surgery record ${index + 1}:`, surg);
-            const surgeryRecord = new SurgeryRecord({
-              patient: patientId,
-              provider: providerId,
-              consultation: consultation._id,
-              date: consultation.date,
-              ...surg
-            });
-            await surgeryRecord.save({ session });
-            return surgeryRecord._id;
-          })
-        );
-        
-        // Update consultation with surgery references
-        consultation.surgeryRecords = surgeryRecords;
-        console.log('All surgery records created successfully');
-      } catch (surgeryError) {
-        console.error('Error creating surgery records:', surgeryError);
-        throw surgeryError;
-      }
-    } else {
-      console.log('No surgery data to save');
-    }
-    
     console.log('=== FINAL CONSULTATION SAVE ===');
     // Save the updated consultation with all the references
     await consultation.save({ session });
@@ -551,11 +455,8 @@ exports.createConsultation = async (req, res) => {
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
-      .populate('immunizations')
       .populate('labResults')
-      .populate('radiologyReports')
-      .populate('hospitalRecords')
-      .populate('surgeryRecords');
+      .populate('radiologyReports');
     
     console.log('Consultation populated successfully');
     console.log('=== CONSULTATION CREATION DEBUG END - SUCCESS ===');
@@ -593,7 +494,11 @@ exports.updateConsultation = async (req, res) => {
     
     const { id } = req.params;
     const providerId = req.user.id;
-    const { vitals, medication, immunization, labResults, radiology, hospital, surgery, ...consultationData } = req.body;
+    const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    // Immunization, hospital, surgery are standalone records — strip from update body.
+    delete consultationData.immunization;
+    delete consultationData.hospital;
+    delete consultationData.surgery;
     
     console.log('Consultation data keys:', Object.keys(consultationData));
     console.log('Has vitals:', !!vitals);
@@ -689,36 +594,6 @@ exports.updateConsultation = async (req, res) => {
       }
     }
     
-    // Handle Immunizations - replace all existing
-    if (immunization && Array.isArray(immunization)) {
-      // Delete existing immunization records for this consultation
-      if (consultation.immunizations && consultation.immunizations.length > 0) {
-        await ImmunizationRecord.deleteMany({
-          _id: { $in: consultation.immunizations }
-        }).session(session);
-      }
-      
-      // Create new immunization records
-      if (immunization.length > 0) {
-        const immunizationRecords = await Promise.all(
-          immunization.map(async (imm) => {
-            const immunizationRecord = new ImmunizationRecord({
-              patient: patientId,
-              provider: providerId,
-              consultation: consultation._id,
-              date: consultation.date,
-              ...imm
-            });
-            await immunizationRecord.save({ session });
-            return immunizationRecord._id;
-          })
-        );
-        consultation.immunizations = immunizationRecords;
-      } else {
-        consultation.immunizations = [];
-      }
-    }
-    
     // Handle Lab Results - replace all existing
     if (labResults && Array.isArray(labResults)) {
       // Delete existing lab result records for this consultation
@@ -779,66 +654,6 @@ exports.updateConsultation = async (req, res) => {
       }
     }
     
-    // Handle Hospital Records - replace all existing
-    if (hospital && Array.isArray(hospital)) {
-      // Delete existing hospital records for this consultation
-      if (consultation.hospitalRecords && consultation.hospitalRecords.length > 0) {
-        await HospitalRecord.deleteMany({
-          _id: { $in: consultation.hospitalRecords }
-        }).session(session);
-      }
-      
-      // Create new hospital records
-      if (hospital.length > 0) {
-        const hospitalRecords = await Promise.all(
-          hospital.map(async (hosp) => {
-            const hospitalRecord = new HospitalRecord({
-              patient: patientId,
-              provider: providerId,
-              consultation: consultation._id,
-              date: consultation.date,
-              ...hosp
-            });
-            await hospitalRecord.save({ session });
-            return hospitalRecord._id;
-          })
-        );
-        consultation.hospitalRecords = hospitalRecords;
-      } else {
-        consultation.hospitalRecords = [];
-      }
-    }
-    
-    // Handle Surgery Records - replace all existing
-    if (surgery && Array.isArray(surgery)) {
-      // Delete existing surgery records for this consultation
-      if (consultation.surgeryRecords && consultation.surgeryRecords.length > 0) {
-        await SurgeryRecord.deleteMany({
-          _id: { $in: consultation.surgeryRecords }
-        }).session(session);
-      }
-      
-      // Create new surgery records
-      if (surgery.length > 0) {
-        const surgeryRecords = await Promise.all(
-          surgery.map(async (surg) => {
-            const surgeryRecord = new SurgeryRecord({
-              patient: patientId,
-              provider: providerId,
-              consultation: consultation._id,
-              date: consultation.date,
-              ...surg
-            });
-            await surgeryRecord.save({ session });
-            return surgeryRecord._id;
-          })
-        );
-        consultation.surgeryRecords = surgeryRecords;
-      } else {
-        consultation.surgeryRecords = [];
-      }
-    }
-    
     try {
       console.log('Saving consultation...');
       await consultation.save({ session });
@@ -892,11 +707,8 @@ exports.updateConsultation = async (req, res) => {
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
-      .populate('immunizations')
       .populate('labResults')
-      .populate('radiologyReports')
-      .populate('hospitalRecords')
-      .populate('surgeryRecords');
+      .populate('radiologyReports');
     
     return res.json(populatedConsultation);
   } catch (error) {

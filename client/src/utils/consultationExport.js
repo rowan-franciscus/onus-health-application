@@ -108,22 +108,8 @@ export const exportAsCSV = (consultation) => {
     });
   }
   
-  // Immunizations
-  if (consultation.immunizations && consultation.immunizations.length > 0) {
-    csvRows.push([]);
-    csvRows.push(['IMMUNIZATIONS']);
-    csvRows.push(['Vaccine Name', 'Date Administered', 'Next Due Date', 'Administered By']);
-    
-    consultation.immunizations.forEach(immunization => {
-      csvRows.push([
-        immunization.vaccineName || 'N/A',
-        formatDate(immunization.dateAdministered) || 'N/A',
-        formatDate(immunization.nextDueDate) || 'N/A',
-        immunization.administeredBy || 'N/A'
-      ]);
-    });
-  }
-  
+  // Immunization, Hospital, and Surgery records are standalone — not exported as part of a consultation.
+
   // Lab Results
   if (consultation.labResults && consultation.labResults.length > 0) {
     csvRows.push([]);
@@ -312,34 +298,8 @@ export const exportAsPDF = (consultation) => {
     yPosition = doc.lastAutoTable.finalY + 10;
   }
   
-  // Immunizations
-  if (consultation.immunizations && consultation.immunizations.length > 0) {
-    if (yPosition > 240) {
-      doc.addPage();
-      yPosition = 20;
-    }
-    
-    addSectionHeader('IMMUNIZATIONS');
-    
-    const immunizationData = consultation.immunizations.map(imm => [
-      imm.vaccineName || 'N/A',
-      formatDate(imm.dateAdministered) || 'N/A',
-      formatDate(imm.nextDueDate) || 'N/A',
-      imm.administeredBy || 'N/A'
-    ]);
-    
-    doc.autoTable({
-      startY: yPosition,
-      head: [['Vaccine', 'Date Administered', 'Next Due', 'Administered By']],
-      body: immunizationData,
-      theme: 'grid',
-      headStyles: { fillColor: [94, 23, 235] },
-      margin: { left: 20, right: 20 },
-      styles: { fontSize: 9 }
-    });
-    yPosition = doc.lastAutoTable.finalY + 10;
-  }
-  
+  // Immunization, Hospital, and Surgery records are standalone — not part of consultation export.
+
   // Lab Results
   if (consultation.labResults && consultation.labResults.length > 0) {
     if (yPosition > 240) {

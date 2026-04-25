@@ -118,14 +118,13 @@ const ImmunizationsRecords = () => {
         renderTableHeaders={renderTableHeaders}
         renderRecordContent={renderRecordContent}
         searchFields={['date', 'provider', 'vaccineName', 'vaccineSerialNumber']}
-        noRecordsMessage="No immunization records found. Your health provider will add immunizations during consultations."
+        noRecordsMessage="No immunization records found. Your health provider will add immunizations directly to your record."
       />
       <RecordDetailModal
         isOpen={!!selectedRecord}
         onClose={handleCloseDetails}
         record={selectedRecord}
         recordType="immunizations"
-        onViewConsultation={handleViewConsultation}
       />
     </>
   );
