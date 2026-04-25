@@ -61,23 +61,12 @@ export const validationSchema = Yup.object().shape({
       .nullable()
   }),
   
-  medication: Yup.array().of(
-    Yup.object().shape({
-      name: Yup.string().nullable(),
-      dosage: Yup.object().shape({
-        value: Yup.string().nullable(),
-        unit: Yup.string().nullable()
-      }),
-      frequency: Yup.string().nullable(),
-      reason: Yup.string().nullable(),
-      startDate: Yup.date().nullable(),
-      endDate: Yup.date().min(
-        Yup.ref('startDate'),
-        'End date cannot be before start date'
-      ).nullable()
-    })
-  ),
-  
+  medication: Yup.object().shape({
+    reason: Yup.string().nullable(),
+    startDate: Yup.date().nullable(),
+    endDate: Yup.date().nullable()
+  }),
+
   immunization: Yup.array().of(
     Yup.object().shape({
       name: Yup.string().nullable(),

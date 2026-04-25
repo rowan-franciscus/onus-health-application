@@ -7,6 +7,8 @@ const path = require('path');
 const config = require('../config/environment');
 const { formatDate } = require('../utils/dateUtils');
 
+const EmailQueue = require('../models/EmailQueue');
+
 // Import medical record models
 const VitalsRecord = require('../models/VitalsRecord');
 const MedicationRecord = require('../models/MedicationRecord');
