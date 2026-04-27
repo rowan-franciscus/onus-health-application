@@ -94,8 +94,13 @@ const AddConsultation = () => {
           respiratoryRate:
             consultationData.vitals?.respiratoryRate?.value || "",
           bloodGlucose: consultationData.vitals?.bloodGlucose?.value || "",
+          bloodGlucoseType:
+            consultationData.vitals?.bloodGlucose?.measurementType || "",
           bloodOxygenSaturation:
             consultationData.vitals?.bloodOxygenSaturation?.value || "",
+          spo2Context:
+            consultationData.vitals?.bloodOxygenSaturation?.measurementContext ||
+            "",
           bmi: consultationData.vitals?.bmi?.value || "",
           bodyFatPercentage:
             consultationData.vitals?.bodyFatPercentage?.value || "",
@@ -154,7 +159,9 @@ const AddConsultation = () => {
           bodyTemperature: "",
           respiratoryRate: "",
           bloodGlucose: "",
+          bloodGlucoseType: "",
           bloodOxygenSaturation: "",
+          spo2Context: "",
           bmi: "",
           bodyFatPercentage: "",
           weight: "",
@@ -390,9 +397,17 @@ const AddConsultation = () => {
             },
             bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
             respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
-            bloodGlucose: { value: formData.vitals.bloodGlucose || "" },
+            bloodGlucose: {
+              value: formData.vitals.bloodGlucose || "",
+              ...(formData.vitals.bloodGlucoseType
+                ? { measurementType: formData.vitals.bloodGlucoseType }
+                : {}),
+            },
             bloodOxygenSaturation: {
               value: formData.vitals.bloodOxygenSaturation || "",
+              ...(formData.vitals.spo2Context
+                ? { measurementContext: formData.vitals.spo2Context }
+                : {}),
             },
             bmi: { value: formData.vitals.bmi || "" },
             bodyFatPercentage: {
@@ -412,8 +427,8 @@ const AddConsultation = () => {
             {
               name: medObj.reason || "(see management plan)",
               reasonForPrescription: medObj.reason || "",
-              startDate: medObj.startDate || undefined,
-              endDate: medObj.endDate || undefined,
+              ...(medObj.startDate ? { startDate: medObj.startDate } : {}),
+              ...(medObj.endDate ? { endDate: medObj.endDate } : {}),
             },
           ]
         : [];
@@ -607,9 +622,17 @@ const AddConsultation = () => {
             },
             bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
             respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
-            bloodGlucose: { value: formData.vitals.bloodGlucose || "" },
+            bloodGlucose: {
+              value: formData.vitals.bloodGlucose || "",
+              ...(formData.vitals.bloodGlucoseType
+                ? { measurementType: formData.vitals.bloodGlucoseType }
+                : {}),
+            },
             bloodOxygenSaturation: {
               value: formData.vitals.bloodOxygenSaturation || "",
+              ...(formData.vitals.spo2Context
+                ? { measurementContext: formData.vitals.spo2Context }
+                : {}),
             },
             bmi: { value: formData.vitals.bmi || "" },
             bodyFatPercentage: {
@@ -628,8 +651,8 @@ const AddConsultation = () => {
             {
               name: medObj.reason || "(see management plan)",
               reasonForPrescription: medObj.reason || "",
-              startDate: medObj.startDate || undefined,
-              endDate: medObj.endDate || undefined,
+              ...(medObj.startDate ? { startDate: medObj.startDate } : {}),
+              ...(medObj.endDate ? { endDate: medObj.endDate } : {}),
             },
           ]
         : [];

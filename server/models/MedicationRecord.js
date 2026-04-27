@@ -23,6 +23,7 @@ const MedicationSchema = new Schema({
     type: String,
   },
   startDate: {
+    type: Schema.Types.Mixed,
   },
   endDate: {
     type: Date,

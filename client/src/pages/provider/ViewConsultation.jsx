@@ -102,6 +102,21 @@ const ViewConsultation = () => {
     return `${value}${unit ? ` ${unit}` : ''}`;
   };
 
+  const bloodGlucoseTypeLabels = {
+    random: 'Random / Casual',
+    fasting: 'Fasting',
+    'post-prandial': 'Post-Prandial',
+    postprandial: 'Post-Prandial',
+    rapid: 'Rapid / Point-of-Care',
+  };
+
+  const spo2ContextLabels = {
+    'room-air': 'Room Air',
+    'nasal-cannula': 'Nasal Cannula',
+    'face-mask': 'Face Mask',
+    ventilator: 'Ventilator',
+  };
+
   // Render content for each tab
   const renderTabContent = () => {
     if (!consultation) return null;
@@ -197,11 +212,21 @@ const ViewConsultation = () => {
               </div>
               <div className={styles.field}>
                 <label>Blood Glucose:</label>
-                <span>{formatValue(vitals.bloodGlucose?.value, 'mg/dL')}</span>
+                <span>
+                  {formatValue(vitals.bloodGlucose?.value, 'mg/dL')}
+                  {vitals.bloodGlucose?.measurementType
+                    ? ` (${bloodGlucoseTypeLabels[vitals.bloodGlucose.measurementType] || vitals.bloodGlucose.measurementType})`
+                    : ''}
+                </span>
               </div>
               <div className={styles.field}>
                 <label>Blood Oxygen Saturation:</label>
-                <span>{formatValue(vitals.bloodOxygenSaturation?.value, '%')}</span>
+                <span>
+                  {formatValue(vitals.bloodOxygenSaturation?.value, '%')}
+                  {vitals.bloodOxygenSaturation?.measurementContext
+                    ? ` (${spo2ContextLabels[vitals.bloodOxygenSaturation.measurementContext] || vitals.bloodOxygenSaturation.measurementContext})`
+                    : ''}
+                </span>
               </div>
               <div className={styles.field}>
                 <label>BMI:</label>

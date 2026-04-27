@@ -159,6 +159,34 @@
   min-width: 40px;
 }
 
+/* Inline label-adjacent context dropdown */
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.labelRow .formLabel {
+  margin-bottom: 0;
+}
+
+.contextSelect {
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  background-color: #f5f3fa;
+  color: #333;
+  font-size: 0.8rem;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.contextSelect:focus {
+  border-color: #6039cc;
+  outline: none;
+}
+
 /* Blood pressure special case */
 .bloodPressureGroup {
   display: flex;

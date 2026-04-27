@@ -109,6 +109,21 @@ const PatientViewConsultation = () => {
     return `${value}${unit ? ` ${unit}` : ''}`;
   };
 
+  const bloodGlucoseTypeLabels = {
+    random: 'Random / Casual',
+    fasting: 'Fasting',
+    'post-prandial': 'Post-Prandial',
+    postprandial: 'Post-Prandial',
+    rapid: 'Rapid / Point-of-Care',
+  };
+
+  const spo2ContextLabels = {
+    'room-air': 'Room Air',
+    'nasal-cannula': 'Nasal Cannula',
+    'face-mask': 'Face Mask',
+    ventilator: 'Ventilator',
+  };
+
   // Handle click outside download menu
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -253,11 +268,21 @@ const PatientViewConsultation = () => {
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Blood Glucose</h3>
-                  <p>{formatValue(vitals.bloodGlucose?.value, 'mg/dL')}</p>
+                  <p>
+                    {formatValue(vitals.bloodGlucose?.value, 'mg/dL')}
+                    {vitals.bloodGlucose?.measurementType
+                      ? ` (${bloodGlucoseTypeLabels[vitals.bloodGlucose.measurementType] || vitals.bloodGlucose.measurementType})`
+                      : ''}
+                  </p>
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Blood Oxygen Saturation</h3>
-                  <p>{formatValue(vitals.bloodOxygenSaturation?.value, '%')}</p>
+                  <p>
+                    {formatValue(vitals.bloodOxygenSaturation?.value, '%')}
+                    {vitals.bloodOxygenSaturation?.measurementContext
+                      ? ` (${spo2ContextLabels[vitals.bloodOxygenSaturation.measurementContext] || vitals.bloodOxygenSaturation.measurementContext})`
+                      : ''}
+                  </p>
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>BMI</h3>
