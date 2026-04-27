@@ -23,7 +23,6 @@ const MedicationSchema = new Schema({
     type: String,
   },
   startDate: {
-    type: Date,
   },
   endDate: {
     type: Date,
