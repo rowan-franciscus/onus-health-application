@@ -1,50 +1,49 @@
-const mongoose = require('mongoose');
-const { MedicalRecord } = require('./MedicalRecord');
+const mongoose = require("mongoose");
+const { MedicalRecord } = require("./MedicalRecord");
 const Schema = mongoose.Schema;
 
 // Medication schema - extends the base MedicalRecord
 const MedicationSchema = new Schema({
   name: {
     type: String,
-    required: true
+    required: true,
   },
   dosage: {
     value: {
       type: String,
-      required: true
     },
     unit: {
       type: String,
-      required: true
-    }
+    },
   },
   frequency: {
     type: String,
-    required: true
   },
   reasonForPrescription: {
-    type: String
+    type: String,
   },
   startDate: {
     type: Date,
-    required: true
   },
   endDate: {
-    type: Date
+    type: Date,
   },
   instructions: {
-    type: String
+    type: String,
   },
   sideEffects: {
-    type: String
+    type: String,
   },
   isActive: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 });
 
 // Create Medication as a discriminator of MedicalRecord
-const MedicationRecord = MedicalRecord.discriminator('Medication', MedicationSchema);
+const MedicationRecord = MedicalRecord.discriminator(
+  "Medication",
+  MedicationSchema,
+);
 
-module.exports = MedicationRecord; 
+module.exports = MedicationRecord;

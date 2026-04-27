@@ -1,147 +1,178 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import styles from './AddConsultation.module.css';
-import { formatDate } from '../../utils/dateUtils';
+import React, { useState, useEffect } from "react";
+import {
+  useNavigate,
+  useParams,
+  Link,
+  useSearchParams,
+} from "react-router-dom";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import styles from "./AddConsultation.module.css";
+import { formatDate } from "../../utils/dateUtils";
 
 // Component imports
-import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
-import Tabs from '../../components/common/Tabs';
-import ConsultationForm from '../../components/forms/ConsultationForm';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import PatientService from '../../services/patient.service';
-import ConsultationService from '../../services/consultation.service';
-import ApiService from '../../services/api.service';
-import FileService from '../../services/file.service';
-import Modal from '../../components/common/Modal';
+import Card from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Tabs from "../../components/common/Tabs";
+import ConsultationForm from "../../components/forms/ConsultationForm";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import PatientService from "../../services/patient.service";
+import ConsultationService from "../../services/consultation.service";
+import ApiService from "../../services/api.service";
+import FileService from "../../services/file.service";
+import Modal from "../../components/common/Modal";
 
 const AddConsultation = () => {
   const { patientId: paramPatientId, id: consultationId } = useParams();
   const [searchParams] = useSearchParams();
-  const queryPatientId = searchParams.get('patientId');
-  const queryPatientEmail = searchParams.get('patientEmail');
-  
+  const queryPatientId = searchParams.get("patientId");
+  const queryPatientEmail = searchParams.get("patientEmail");
+
   // Use patientId from params first, then from query
   const patientId = paramPatientId || queryPatientId;
   const patientEmail = queryPatientEmail;
-  
+
   // Determine if we're editing an existing consultation
   const isEditing = !!consultationId;
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [patient, setPatient] = useState(null);
   const [providerProfile, setProviderProfile] = useState(null);
   const [consultationData, setConsultationData] = useState(null);
-  const [activeTab, setActiveTab] = useState('general');
-  
+  const [activeTab, setActiveTab] = useState("general");
+
   const navigate = useNavigate();
-  const user = useSelector(state => state.auth.user);
-  
+  const user = useSelector((state) => state.auth.user);
+
   // Define the form tabs
   const formTabs = [
-    { id: 'general', label: 'General' },
-    { id: 'history', label: 'History' },
-    { id: 'physical', label: 'Physical' },
-    { id: 'labResults', label: 'Lab Investigation' },
-    { id: 'radiology', label: 'Imaging' },
-    { id: 'management', label: 'Management' }
+    { id: "general", label: "General" },
+    { id: "history", label: "History" },
+    { id: "physical", label: "Physical" },
+    { id: "labResults", label: "Lab Investigation" },
+    { id: "radiology", label: "Imaging" },
+    { id: "management", label: "Management" },
   ];
-  
+
   // Function to create initial form values with provider profile data
   const getInitialFormValues = () => {
     if (isEditing && consultationData) {
-      const firstMed = (consultationData.medications && consultationData.medications[0]) || {};
+      const firstMed =
+        (consultationData.medications && consultationData.medications[0]) || {};
       return {
         general: {
-          date: consultationData.date ? new Date(consultationData.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-          specialistName: consultationData.general?.specialistName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-          specialty: consultationData.general?.specialty || providerProfile?.specialty || '',
-          practiceName: consultationData.general?.practice || providerProfile?.practiceInfo?.name || '',
-          reasonForVisit: consultationData.general?.reasonForVisit || '',
-          diagnosis: consultationData.general?.diagnosis || '',
-          notes: consultationData.general?.notes || ''
+          date: consultationData.date
+            ? new Date(consultationData.date).toISOString().split("T")[0]
+            : new Date().toISOString().split("T")[0],
+          specialistName:
+            consultationData.general?.specialistName ||
+            `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+          specialty:
+            consultationData.general?.specialty ||
+            providerProfile?.specialty ||
+            "",
+          practiceName:
+            consultationData.general?.practice ||
+            providerProfile?.practiceInfo?.name ||
+            "",
+          reasonForVisit: consultationData.general?.reasonForVisit || "",
+          diagnosis: consultationData.general?.diagnosis || "",
+          notes: consultationData.general?.notes || "",
         },
-        history: consultationData.history || '',
-        physicalExamination: consultationData.physicalExamination || '',
-        management: consultationData.management || '',
+        history: consultationData.history || "",
+        physicalExamination: consultationData.physicalExamination || "",
+        management: consultationData.management || "",
         vitals: {
-          heartRate: consultationData.vitals?.heartRate?.value || '',
+          heartRate: consultationData.vitals?.heartRate?.value || "",
           bloodPressure: {
-            systolic: consultationData.vitals?.bloodPressure?.systolic || '',
-            diastolic: consultationData.vitals?.bloodPressure?.diastolic || ''
+            systolic: consultationData.vitals?.bloodPressure?.systolic || "",
+            diastolic: consultationData.vitals?.bloodPressure?.diastolic || "",
           },
-          bodyTemperature: consultationData.vitals?.bodyTemperature?.value || '',
-          respiratoryRate: consultationData.vitals?.respiratoryRate?.value || '',
-          bloodGlucose: consultationData.vitals?.bloodGlucose?.value || '',
-          bloodOxygenSaturation: consultationData.vitals?.bloodOxygenSaturation?.value || '',
-          bmi: consultationData.vitals?.bmi?.value || '',
-          bodyFatPercentage: consultationData.vitals?.bodyFatPercentage?.value || '',
-          weight: consultationData.vitals?.weight?.value || '',
-          height: consultationData.vitals?.height?.value || ''
+          bodyTemperature:
+            consultationData.vitals?.bodyTemperature?.value || "",
+          respiratoryRate:
+            consultationData.vitals?.respiratoryRate?.value || "",
+          bloodGlucose: consultationData.vitals?.bloodGlucose?.value || "",
+          bloodOxygenSaturation:
+            consultationData.vitals?.bloodOxygenSaturation?.value || "",
+          bmi: consultationData.vitals?.bmi?.value || "",
+          bodyFatPercentage:
+            consultationData.vitals?.bodyFatPercentage?.value || "",
+          weight: consultationData.vitals?.weight?.value || "",
+          height: consultationData.vitals?.height?.value || "",
         },
         medication: {
-          reason: firstMed.reasonForPrescription || '',
-          startDate: firstMed.startDate ? new Date(firstMed.startDate).toISOString().split('T')[0] : '',
-          endDate: firstMed.endDate ? new Date(firstMed.endDate).toISOString().split('T')[0] : ''
+          reason: firstMed.reasonForPrescription || "",
+          startDate: firstMed.startDate
+            ? new Date(firstMed.startDate).toISOString().split("T")[0]
+            : "",
+          endDate: firstMed.endDate
+            ? new Date(firstMed.endDate).toISOString().split("T")[0]
+            : "",
         },
-        labResults: consultationData.labResults?.map(lab => ({
-          testName: lab.testName || '',
-          labName: lab.labName || '',
-          date: lab.dateOfTest ? new Date(lab.dateOfTest).toISOString().split('T')[0] : '',
-          results: lab.results || '',
-          comments: lab.comments || ''
-        })) || [],
-        radiology: consultationData.radiologyReports?.map(rad => ({
-          scanType: rad.typeOfScan || '',
-          date: rad.date ? new Date(rad.date).toISOString().split('T')[0] : '',
-          bodyPart: rad.bodyPartExamined || '',
-          findings: rad.findings || '',
-          recommendations: rad.recommendations || ''
-        })) || [],
-        attachments: consultationData.attachments || []
+        labResults:
+          consultationData.labResults?.map((lab) => ({
+            testName: lab.testName || "",
+            labName: lab.labName || "",
+            date: lab.dateOfTest
+              ? new Date(lab.dateOfTest).toISOString().split("T")[0]
+              : "",
+            results: lab.results || "",
+            comments: lab.comments || "",
+          })) || [],
+        radiology:
+          consultationData.radiologyReports?.map((rad) => ({
+            scanType: rad.typeOfScan || "",
+            date: rad.date
+              ? new Date(rad.date).toISOString().split("T")[0]
+              : "",
+            bodyPart: rad.bodyPartExamined || "",
+            findings: rad.findings || "",
+            recommendations: rad.recommendations || "",
+          })) || [],
+        attachments: consultationData.attachments || [],
       };
     } else {
       return {
         general: {
-          date: new Date().toISOString().split('T')[0],
-          specialistName: `${user?.firstName || ''} ${user?.lastName || ''}`.trim(),
-          specialty: providerProfile?.specialty || '',
-          practiceName: providerProfile?.practiceInfo?.name || '',
-          reasonForVisit: '',
-          diagnosis: '',
-          notes: ''
+          date: new Date().toISOString().split("T")[0],
+          specialistName:
+            `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+          specialty: providerProfile?.specialty || "",
+          practiceName: providerProfile?.practiceInfo?.name || "",
+          reasonForVisit: "",
+          diagnosis: "",
+          notes: "",
         },
-        history: '',
-        physicalExamination: '',
-        management: '',
+        history: "",
+        physicalExamination: "",
+        management: "",
         vitals: {
-          heartRate: '',
-          bloodPressure: { systolic: '', diastolic: '' },
-          bodyTemperature: '',
-          respiratoryRate: '',
-          bloodGlucose: '',
-          bloodOxygenSaturation: '',
-          bmi: '',
-          bodyFatPercentage: '',
-          weight: '',
-          height: ''
+          heartRate: "",
+          bloodPressure: { systolic: "", diastolic: "" },
+          bodyTemperature: "",
+          respiratoryRate: "",
+          bloodGlucose: "",
+          bloodOxygenSaturation: "",
+          bmi: "",
+          bodyFatPercentage: "",
+          weight: "",
+          height: "",
         },
-        medication: { reason: '', startDate: '', endDate: '' },
+        medication: { reason: "", startDate: "", endDate: "" },
         labResults: [],
         radiology: [],
-        attachments: []
+        attachments: [],
       };
     }
   };
-  
+
   useEffect(() => {
     const fetchData = async () => {
       // Fetch provider profile data first
       await fetchProviderProfile();
-      
+
       if (isEditing) {
         // If editing, fetch the consultation data
         await fetchConsultationData();
@@ -154,503 +185,620 @@ const AddConsultation = () => {
           setPatient({
             email: patientEmail,
             name: patientEmail,
-            gender: 'Unknown',
-            age: 'Unknown',
-            insurance: 'Unknown'
+            gender: "Unknown",
+            age: "Unknown",
+            insurance: "Unknown",
           });
           setIsLoading(false);
         } else {
           // No patient specified
-          toast.error('No patient specified for consultation');
-          navigate('/provider/patients');
+          toast.error("No patient specified for consultation");
+          navigate("/provider/patients");
         }
       }
     };
-    
+
     fetchData();
   }, [patientId, patientEmail, consultationId, isEditing]);
-  
+
   const fetchProviderProfile = async () => {
     try {
-      const response = await ApiService.get('/provider/profile');
-      
+      const response = await ApiService.get("/provider/profile");
+
       if (response.success && response.provider) {
         const provider = response.provider;
         const providerProfileData = provider.providerProfile || {};
-        
+
         setProviderProfile(providerProfileData);
       }
     } catch (error) {
-      console.error('Error fetching provider profile:', error);
+      console.error("Error fetching provider profile:", error);
       // Don't show error toast as this is optional data for auto-population
     }
   };
-  
+
   const fetchConsultationData = async () => {
     try {
       const response = await ApiService.get(`/consultations/${consultationId}`);
-      
+
       if (response) {
         setConsultationData(response);
-        
+
         // Set patient data from consultation
         if (response.patient) {
           const patientData = response.patient;
           // Handle both populated patient object and patient ID string
-          if (typeof patientData === 'string') {
+          if (typeof patientData === "string") {
             // If patient is just an ID, we need to fetch the patient data
-            console.log('Patient data is an ID, fetching patient details...');
+            console.log("Patient data is an ID, fetching patient details...");
             try {
-              const patientResponse = await PatientService.getPatientById(patientData);
+              const patientResponse =
+                await PatientService.getPatientById(patientData);
               if (patientResponse && patientResponse.patient) {
                 const patient = patientResponse.patient;
                 setPatient({
                   id: patient._id,
-                  name: `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 'Unknown',
-                  gender: patient.patientProfile?.gender || 'Unknown',
-                  age: patient.patientProfile?.dateOfBirth ? 
-                    calculateAge(patient.patientProfile.dateOfBirth) : 'Unknown',
-                  insurance: patient.patientProfile?.insurance?.provider || 'Unknown',
+                  name:
+                    `${patient.firstName || ""} ${patient.lastName || ""}`.trim() ||
+                    "Unknown",
+                  gender: patient.patientProfile?.gender || "Unknown",
+                  age: patient.patientProfile?.dateOfBirth
+                    ? calculateAge(patient.patientProfile.dateOfBirth)
+                    : "Unknown",
+                  insurance:
+                    patient.patientProfile?.insurance?.provider || "Unknown",
                   email: patient.email,
-                  profileImage: patient.profileImage
+                  profileImage: patient.profileImage,
                 });
               } else {
                 // If we can't fetch patient details, set minimal data
                 setPatient({
                   id: patientData,
-                  name: 'Patient',
-                  gender: 'Unknown',
-                  age: 'Unknown',
-                  insurance: 'Unknown',
-                  email: 'Unknown'
+                  name: "Patient",
+                  gender: "Unknown",
+                  age: "Unknown",
+                  insurance: "Unknown",
+                  email: "Unknown",
                 });
               }
             } catch (patientError) {
-              console.error('Error fetching patient details:', patientError);
+              console.error("Error fetching patient details:", patientError);
               // Set minimal patient data to allow saving
               setPatient({
                 id: patientData,
-                name: 'Patient',
-                gender: 'Unknown',
-                age: 'Unknown',
-                insurance: 'Unknown',
-                email: 'Unknown'
+                name: "Patient",
+                gender: "Unknown",
+                age: "Unknown",
+                insurance: "Unknown",
+                email: "Unknown",
               });
             }
           } else {
             // Patient data is populated
             setPatient({
               id: patientData._id,
-              name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || 'Unknown',
-              gender: patientData.patientProfile?.gender || 'Unknown',
-              age: patientData.patientProfile?.dateOfBirth ? 
-                calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
-              insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
+              name:
+                `${patientData.firstName || ""} ${patientData.lastName || ""}`.trim() ||
+                "Unknown",
+              gender: patientData.patientProfile?.gender || "Unknown",
+              age: patientData.patientProfile?.dateOfBirth
+                ? calculateAge(patientData.patientProfile.dateOfBirth)
+                : "Unknown",
+              insurance:
+                patientData.patientProfile?.insurance?.provider || "Unknown",
               email: patientData.email,
-              profileImage: patientData.profileImage
+              profileImage: patientData.profileImage,
             });
           }
         } else {
-          console.error('No patient data in consultation response');
-          toast.error('Patient information is missing from consultation');
-          navigate('/provider/consultations');
+          console.error("No patient data in consultation response");
+          toast.error("Patient information is missing from consultation");
+          navigate("/provider/consultations");
           return;
         }
-        
+
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('Error fetching consultation data:', error);
-      toast.error('Failed to load consultation data');
-      navigate('/provider/consultations');
+      console.error("Error fetching consultation data:", error);
+      toast.error("Failed to load consultation data");
+      navigate("/provider/consultations");
     }
   };
-  
+
   const fetchPatientData = async () => {
     try {
-      console.log('Fetching patient data for ID:', patientId);
+      console.log("Fetching patient data for ID:", patientId);
       // Fetch patient data using the service
       const response = await PatientService.getPatientById(patientId);
-      console.log('Patient service response:', response);
-      
+      console.log("Patient service response:", response);
+
       if (response && response.patient) {
         const patientData = response.patient;
-        console.log('Patient data received:', patientData);
-        
+        console.log("Patient data received:", patientData);
+
         setPatient({
           id: patientData._id,
-          name: `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim() || 'Unknown',
-          gender: patientData.patientProfile?.gender || 'Unknown',
-          age: patientData.patientProfile?.dateOfBirth ? 
-            calculateAge(patientData.patientProfile.dateOfBirth) : 'Unknown',
-          insurance: patientData.patientProfile?.insurance?.provider || 'Unknown',
+          name:
+            `${patientData.firstName || ""} ${patientData.lastName || ""}`.trim() ||
+            "Unknown",
+          gender: patientData.patientProfile?.gender || "Unknown",
+          age: patientData.patientProfile?.dateOfBirth
+            ? calculateAge(patientData.patientProfile.dateOfBirth)
+            : "Unknown",
+          insurance:
+            patientData.patientProfile?.insurance?.provider || "Unknown",
           email: patientData.email,
-          profileImage: patientData.profileImage
+          profileImage: patientData.profileImage,
         });
-        console.log('Patient state set successfully');
+        console.log("Patient state set successfully");
         setIsLoading(false);
       } else if (response && response.success === false) {
-        console.error('API returned error:', response.message);
-        toast.error(response.message || 'Failed to load patient information');
+        console.error("API returned error:", response.message);
+        toast.error(response.message || "Failed to load patient information");
         setPatient(null);
         setIsLoading(false);
       } else {
-        console.error('No patient data in response:', response);
-        toast.error('Failed to load patient information');
+        console.error("No patient data in response:", response);
+        toast.error("Failed to load patient information");
         setPatient(null);
         setIsLoading(false);
       }
     } catch (error) {
-      console.error('Error fetching patient data:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch patient data';
+      console.error("Error fetching patient data:", error);
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch patient data";
       toast.error(errorMessage);
       setPatient(null);
       setIsLoading(false);
     }
   };
-  
+
   const calculateAge = (dateOfBirth) => {
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
       age--;
     }
     return age;
   };
-  
+
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
   };
-  
+
   const handleSaveDraft = async (formData) => {
     setIsSaving(true);
     try {
-      console.log('handleSaveDraft called with formData:', formData);
+      console.log("handleSaveDraft called with formData:", formData);
 
       const { date, ...generalWithoutDate } = formData.general;
 
-      const transformedVitals = formData.vitals ? {
-        heartRate: { value: formData.vitals.heartRate || '' },
-        bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
-        bodyTemperature: { value: formData.vitals.bodyTemperature || '' },
-        respiratoryRate: { value: formData.vitals.respiratoryRate || '' },
-        bloodGlucose: { value: formData.vitals.bloodGlucose || '' },
-        bloodOxygenSaturation: { value: formData.vitals.bloodOxygenSaturation || '' },
-        bmi: { value: formData.vitals.bmi || '' },
-        bodyFatPercentage: { value: formData.vitals.bodyFatPercentage || '' },
-        weight: { value: formData.vitals.weight || '' },
-        height: { value: formData.vitals.height || '' }
-      } : {};
+      const transformedVitals = formData.vitals
+        ? {
+            heartRate: { value: formData.vitals.heartRate || "" },
+            bloodPressure: formData.vitals.bloodPressure || {
+              systolic: "",
+              diastolic: "",
+            },
+            bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
+            respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
+            bloodGlucose: { value: formData.vitals.bloodGlucose || "" },
+            bloodOxygenSaturation: {
+              value: formData.vitals.bloodOxygenSaturation || "",
+            },
+            bmi: { value: formData.vitals.bmi || "" },
+            bodyFatPercentage: {
+              value: formData.vitals.bodyFatPercentage || "",
+            },
+            weight: { value: formData.vitals.weight || "" },
+            height: { value: formData.vitals.height || "" },
+          }
+        : {};
 
       // Medication is now a single object with reason/dates; the free-form plan lives in `management`.
       const medObj = formData.medication || {};
-      const hasMedicationData = formData.management || medObj.reason || medObj.startDate || medObj.endDate;
+      const hasMedicationData =
+        medObj.reason || medObj.startDate || medObj.endDate;
       const transformedMedication = hasMedicationData
-        ? [{
-            name: formData.management ? '(see management plan)' : '',
-            reasonForPrescription: medObj.reason || '',
-            startDate: medObj.startDate || undefined,
-            endDate: medObj.endDate || undefined
-          }]
+        ? [
+            {
+              name: medObj.reason || "(see management plan)",
+              reasonForPrescription: medObj.reason || "",
+              startDate: medObj.startDate || undefined,
+              endDate: medObj.endDate || undefined,
+            },
+          ]
         : [];
 
-      const transformedLabResults = formData.labResults.map(lab => ({
+      const transformedLabResults = formData.labResults.map((lab) => ({
         testName: lab.testName,
         labName: lab.labName,
         dateOfTest: lab.date || lab.dateOfTest,
         results: lab.results,
-        comments: lab.comments
+        comments: lab.comments,
       }));
 
-      const transformedRadiology = formData.radiology.map(rad => ({
+      const transformedRadiology = formData.radiology.map((rad) => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
         bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,
         findings: rad.findings,
-        recommendations: rad.recommendations
+        recommendations: rad.recommendations,
       }));
 
       const filesToUpload = formData.attachments || [];
-      console.log('Files to upload:', filesToUpload.length, filesToUpload.map(f => f instanceof File ? f.name : 'existing'));
+      console.log(
+        "Files to upload:",
+        filesToUpload.length,
+        filesToUpload.map((f) => (f instanceof File ? f.name : "existing")),
+      );
 
       const consultationData = {
-        ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
+        ...(patient.id
+          ? { patient: patient.id }
+          : { patientEmail: patient.email }),
         date: date,
         general: {
           ...generalWithoutDate,
-          practice: generalWithoutDate.practiceName
+          practice: generalWithoutDate.practiceName,
         },
-        history: formData.history || '',
-        physicalExamination: formData.physicalExamination || '',
-        management: formData.management || '',
+        history: formData.history || "",
+        physicalExamination: formData.physicalExamination || "",
+        management: formData.management || "",
         vitals: transformedVitals,
         medication: transformedMedication,
         labResults: transformedLabResults,
         radiology: transformedRadiology,
-        status: 'draft'
+        status: "draft",
       };
-      
+
       // Don't send attachments field when updating to avoid overwriting existing attachments
       if (!isEditing) {
         consultationData.attachments = [];
       }
-      
+
       // Remove practiceName from general as it's now mapped to practice
       delete consultationData.general.practiceName;
-      
+
       let response;
       if (isEditing) {
-        response = await ConsultationService.updateConsultation(consultationId, consultationData);
+        response = await ConsultationService.updateConsultation(
+          consultationId,
+          consultationData,
+        );
       } else {
-        response = await ConsultationService.createConsultation(consultationData);
+        response =
+          await ConsultationService.createConsultation(consultationData);
       }
-      
+
       if (response && (response._id || response.id)) {
         const responseConsultationId = response._id || response.id;
-        console.log('Consultation response ID:', responseConsultationId);
-        
+        console.log("Consultation response ID:", responseConsultationId);
+
         // Upload files if any
         if (filesToUpload.length > 0) {
-          console.log(`Uploading ${filesToUpload.length} files for draft consultation ${responseConsultationId}`);
-          
+          console.log(
+            `Uploading ${filesToUpload.length} files for draft consultation ${responseConsultationId}`,
+          );
+
           try {
             // Upload each file
             for (const file of filesToUpload) {
               // Skip if it's not a File object (could be existing attachment data)
               if (!(file instanceof File)) {
-                console.log('Skipping non-File object:', file);
+                console.log("Skipping non-File object:", file);
                 continue;
               }
-              
-              console.log(`Uploading file: ${file.name} to consultation ${responseConsultationId}`);
-              await FileService.uploadConsultationFile(responseConsultationId, file);
+
+              console.log(
+                `Uploading file: ${file.name} to consultation ${responseConsultationId}`,
+              );
+              await FileService.uploadConsultationFile(
+                responseConsultationId,
+                file,
+              );
               console.log(`Successfully uploaded: ${file.name}`);
             }
-            
-            toast.success(isEditing ? 'Consultation draft updated successfully with attachments' : 'Consultation draft saved successfully with attachments');
+
+            toast.success(
+              isEditing
+                ? "Consultation draft updated successfully with attachments"
+                : "Consultation draft saved successfully with attachments",
+            );
           } catch (uploadError) {
-            console.error('Error uploading files:', uploadError);
-            toast.warning('Draft saved but some files failed to upload');
+            console.error("Error uploading files:", uploadError);
+            toast.warning("Draft saved but some files failed to upload");
           }
         } else {
-          toast.success(isEditing ? 'Consultation draft updated successfully' : 'Consultation draft saved successfully');
+          toast.success(
+            isEditing
+              ? "Consultation draft updated successfully"
+              : "Consultation draft saved successfully",
+          );
         }
-        
-        navigate('/provider/consultations');
+
+        navigate("/provider/consultations");
       } else {
-        console.error('No consultation ID in response:', response);
-        toast.error('Consultation saved but unable to upload attachments');
-        navigate('/provider/consultations');
+        console.error("No consultation ID in response:", response);
+        toast.error("Consultation saved but unable to upload attachments");
+        navigate("/provider/consultations");
       }
     } catch (error) {
-      console.error('Error saving draft:', error);
-      toast.error('Failed to save consultation draft');
+      console.error("Error saving draft:", error);
+      toast.error("Failed to save consultation draft");
     } finally {
       setIsSaving(false);
     }
   };
-  
+
   const handleSubmit = async (formData) => {
     setIsSaving(true);
     try {
-      console.log('handleSubmit called with formData:', formData);
-      console.log('Current patient state:', patient);
-      console.log('Is editing:', isEditing);
-      console.log('Consultation ID:', consultationId);
-      
+      console.log("handleSubmit called with formData:", formData);
+      console.log("Current patient state:", patient);
+      console.log("Is editing:", isEditing);
+      console.log("Consultation ID:", consultationId);
+
       // Check if patient data is available
       if (!patient || (!patient.id && !patient.email)) {
-        console.error('Patient data missing:', patient);
-        toast.error('Patient information is not available. Please refresh the page and try again.');
+        console.error("Patient data missing:", patient);
+        toast.error(
+          "Patient information is not available. Please refresh the page and try again.",
+        );
         setIsSaving(false);
         return;
       }
-      
+
       // Validate required fields for completed consultations
-      if (!formData.general?.reasonForVisit || formData.general.reasonForVisit.trim() === '') {
-        toast.error('Reason for visit is required for completed consultations. Please fill in the reason for visit in the General tab.');
+      if (
+        !formData.general?.reasonForVisit ||
+        formData.general.reasonForVisit.trim() === ""
+      ) {
+        toast.error(
+          "Reason for visit is required for completed consultations. Please fill in the reason for visit in the General tab.",
+        );
         setIsSaving(false);
         // Switch to General tab to show the missing field
-        setActiveTab('general');
+        setActiveTab("general");
         return;
       }
-      
+
       // Validate other required fields
-      if (!formData.general?.specialistName || formData.general.specialistName.trim() === '') {
-        toast.error('Specialist name is required. Please fill in the specialist name in the General tab.');
+      if (
+        !formData.general?.specialistName ||
+        formData.general.specialistName.trim() === ""
+      ) {
+        toast.error(
+          "Specialist name is required. Please fill in the specialist name in the General tab.",
+        );
         setIsSaving(false);
-        setActiveTab('general');
+        setActiveTab("general");
         return;
       }
-      
-      if (!formData.general?.specialty || formData.general.specialty.trim() === '') {
-        toast.error('Specialty is required. Please fill in the specialty in the General tab.');
+
+      if (
+        !formData.general?.specialty ||
+        formData.general.specialty.trim() === ""
+      ) {
+        toast.error(
+          "Specialty is required. Please fill in the specialty in the General tab.",
+        );
         setIsSaving(false);
-        setActiveTab('general');
+        setActiveTab("general");
         return;
       }
-      
+
       const { date, ...generalWithoutDate } = formData.general;
 
-      const transformedVitals = formData.vitals ? {
-        heartRate: { value: formData.vitals.heartRate || '' },
-        bloodPressure: formData.vitals.bloodPressure || { systolic: '', diastolic: '' },
-        bodyTemperature: { value: formData.vitals.bodyTemperature || '' },
-        respiratoryRate: { value: formData.vitals.respiratoryRate || '' },
-        bloodGlucose: { value: formData.vitals.bloodGlucose || '' },
-        bloodOxygenSaturation: { value: formData.vitals.bloodOxygenSaturation || '' },
-        bmi: { value: formData.vitals.bmi || '' },
-        bodyFatPercentage: { value: formData.vitals.bodyFatPercentage || '' },
-        weight: { value: formData.vitals.weight || '' },
-        height: { value: formData.vitals.height || '' }
-      } : {};
+      const transformedVitals = formData.vitals
+        ? {
+            heartRate: { value: formData.vitals.heartRate || "" },
+            bloodPressure: formData.vitals.bloodPressure || {
+              systolic: "",
+              diastolic: "",
+            },
+            bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
+            respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
+            bloodGlucose: { value: formData.vitals.bloodGlucose || "" },
+            bloodOxygenSaturation: {
+              value: formData.vitals.bloodOxygenSaturation || "",
+            },
+            bmi: { value: formData.vitals.bmi || "" },
+            bodyFatPercentage: {
+              value: formData.vitals.bodyFatPercentage || "",
+            },
+            weight: { value: formData.vitals.weight || "" },
+            height: { value: formData.vitals.height || "" },
+          }
+        : {};
 
       const medObj = formData.medication || {};
-      const hasMedicationData = formData.management || medObj.reason || medObj.startDate || medObj.endDate;
+      const hasMedicationData =
+        medObj.reason || medObj.startDate || medObj.endDate;
       const transformedMedication = hasMedicationData
-        ? [{
-            name: formData.management ? '(see management plan)' : '',
-            reasonForPrescription: medObj.reason || '',
-            startDate: medObj.startDate || undefined,
-            endDate: medObj.endDate || undefined
-          }]
+        ? [
+            {
+              name: medObj.reason || "(see management plan)",
+              reasonForPrescription: medObj.reason || "",
+              startDate: medObj.startDate || undefined,
+              endDate: medObj.endDate || undefined,
+            },
+          ]
         : [];
 
-      const transformedLabResults = formData.labResults.map(lab => ({
+      const transformedLabResults = formData.labResults.map((lab) => ({
         testName: lab.testName,
         labName: lab.labName,
         dateOfTest: lab.date || lab.dateOfTest,
         results: lab.results,
-        comments: lab.comments
+        comments: lab.comments,
       }));
 
-      const transformedRadiology = formData.radiology.map(rad => ({
+      const transformedRadiology = formData.radiology.map((rad) => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
         bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,
         findings: rad.findings,
-        recommendations: rad.recommendations
+        recommendations: rad.recommendations,
       }));
 
       const filesToUpload = formData.attachments || [];
-      console.log('Files to upload:', filesToUpload.length, filesToUpload.map(f => f instanceof File ? f.name : 'existing'));
+      console.log(
+        "Files to upload:",
+        filesToUpload.length,
+        filesToUpload.map((f) => (f instanceof File ? f.name : "existing")),
+      );
 
       const consultationData = {
-        ...(patient.id ? { patient: patient.id } : { patientEmail: patient.email }),
+        ...(patient.id
+          ? { patient: patient.id }
+          : { patientEmail: patient.email }),
         date: date,
         general: {
           ...generalWithoutDate,
-          practice: generalWithoutDate.practiceName
+          practice: generalWithoutDate.practiceName,
         },
-        history: formData.history || '',
-        physicalExamination: formData.physicalExamination || '',
-        management: formData.management || '',
+        history: formData.history || "",
+        physicalExamination: formData.physicalExamination || "",
+        management: formData.management || "",
         vitals: transformedVitals,
         medication: transformedMedication,
         labResults: transformedLabResults,
         radiology: transformedRadiology,
-        status: 'completed'
+        status: "completed",
       };
-      
+
       // Don't send attachments field when updating to avoid overwriting existing attachments
       if (!isEditing) {
         consultationData.attachments = [];
       }
-      
+
       // Remove practiceName from general as it's now mapped to practice
       delete consultationData.general.practiceName;
-      
-      console.log('Sending consultation data:', consultationData);
-      
+
+      console.log("Sending consultation data:", consultationData);
+
       let response;
       if (isEditing) {
-        response = await ConsultationService.updateConsultation(consultationId, consultationData);
+        response = await ConsultationService.updateConsultation(
+          consultationId,
+          consultationData,
+        );
       } else {
-        response = await ConsultationService.createConsultation(consultationData);
+        response =
+          await ConsultationService.createConsultation(consultationData);
       }
-      
+
       if (response && (response._id || response.id)) {
         const responseConsultationId = response._id || response.id;
-        console.log('Consultation response ID:', responseConsultationId);
-        
+        console.log("Consultation response ID:", responseConsultationId);
+
         // Upload files if any
         if (filesToUpload.length > 0) {
-          console.log(`Uploading ${filesToUpload.length} files for consultation ${responseConsultationId}`);
-          
+          console.log(
+            `Uploading ${filesToUpload.length} files for consultation ${responseConsultationId}`,
+          );
+
           try {
             // Upload each file
             for (const file of filesToUpload) {
               // Skip if it's not a File object (could be existing attachment data)
               if (!(file instanceof File)) {
-                console.log('Skipping non-File object:', file);
+                console.log("Skipping non-File object:", file);
                 continue;
               }
-              
-              console.log(`Uploading file: ${file.name} to consultation ${responseConsultationId}`);
-              await FileService.uploadConsultationFile(responseConsultationId, file);
+
+              console.log(
+                `Uploading file: ${file.name} to consultation ${responseConsultationId}`,
+              );
+              await FileService.uploadConsultationFile(
+                responseConsultationId,
+                file,
+              );
               console.log(`Successfully uploaded: ${file.name}`);
             }
-            
-            toast.success(isEditing ? 'Consultation updated successfully with attachments' : 'Consultation saved successfully with attachments');
+
+            toast.success(
+              isEditing
+                ? "Consultation updated successfully with attachments"
+                : "Consultation saved successfully with attachments",
+            );
           } catch (uploadError) {
-            console.error('Error uploading files:', uploadError);
-            toast.warning('Consultation saved but some files failed to upload');
+            console.error("Error uploading files:", uploadError);
+            toast.warning("Consultation saved but some files failed to upload");
           }
         } else {
-          toast.success(isEditing ? 'Consultation updated successfully' : 'Consultation saved successfully');
+          toast.success(
+            isEditing
+              ? "Consultation updated successfully"
+              : "Consultation saved successfully",
+          );
         }
-        
-        navigate('/provider/consultations');
+
+        navigate("/provider/consultations");
       } else {
-        console.error('No consultation ID in response:', response);
-        toast.error('Consultation saved but unable to upload attachments');
-        navigate('/provider/consultations');
+        console.error("No consultation ID in response:", response);
+        toast.error("Consultation saved but unable to upload attachments");
+        navigate("/provider/consultations");
       }
     } catch (error) {
-      console.error('Error saving consultation:', error);
-      console.error('Error details:', error.response?.data);
-      
+      console.error("Error saving consultation:", error);
+      console.error("Error details:", error.response?.data);
+
       // Provide more specific error messages
       if (error.response?.status === 404) {
-        toast.error('Patient not found. Please ensure the patient exists in the system.');
+        toast.error(
+          "Patient not found. Please ensure the patient exists in the system.",
+        );
       } else if (error.response?.status === 403) {
-        toast.error('You do not have permission to update this consultation.');
+        toast.error("You do not have permission to update this consultation.");
       } else if (error.response?.status === 400) {
-        const message = error.response?.data?.message || 'Invalid consultation data';
+        const message =
+          error.response?.data?.message || "Invalid consultation data";
         toast.error(message);
       } else if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error('Failed to save consultation. Please try again.');
+        toast.error("Failed to save consultation. Please try again.");
       }
     } finally {
       setIsSaving(false);
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
         <LoadingSpinner />
-        <p>{isEditing ? 'Loading consultation data...' : 'Loading patient data...'}</p>
+        <p>
+          {isEditing
+            ? "Loading consultation data..."
+            : "Loading patient data..."}
+        </p>
       </div>
     );
   }
-  
+
   // Check if patient data is available
   if (!patient) {
     return (
       <div className={styles.loadingContainer}>
         <p>No patient data available. Please select a patient first.</p>
-        <Button onClick={() => navigate('/provider/patients')}>
+        <Button onClick={() => navigate("/provider/patients")}>
           Go to Patients
         </Button>
       </div>
     );
   }
-  
+
   // When editing, ensure consultation data is loaded
   if (isEditing && !consultationData) {
     return (
@@ -660,33 +808,58 @@ const AddConsultation = () => {
       </div>
     );
   }
-  
+
   return (
     <div className={styles.consultationContainer}>
       <div className={styles.header}>
         <div className={styles.titleSection}>
-          <Link to={isEditing ? "/provider/consultations" : "/provider/patients"} className={styles.backLink}>
+          <Link
+            to={isEditing ? "/provider/consultations" : "/provider/patients"}
+            className={styles.backLink}
+          >
             &larr; Back to {isEditing ? "Consultations" : "Patients"}
           </Link>
           <h1>{isEditing ? "Edit Consultation" : "New Consultation"}</h1>
-          <p>{isEditing ? "Edit the consultation record for your patient" : "Add a new consultation record for your patient"}</p>
+          <p>
+            {isEditing
+              ? "Edit the consultation record for your patient"
+              : "Add a new consultation record for your patient"}
+          </p>
         </div>
       </div>
-      
+
       {patient && (
         <div className={styles.patientInfo}>
           <div className={styles.patientAvatar}>
             {patient.profileImage ? (
-              <img 
-                src={FileService.getProfilePictureUrl(patient.profileImage, patient.id)} 
+              <img
+                src={FileService.getProfilePictureUrl(
+                  patient.profileImage,
+                  patient.id,
+                )}
                 alt={patient.name}
                 className={styles.patientAvatarImage}
               />
             ) : (
               <div className={styles.patientAvatarPlaceholder}>
-                <svg className={styles.avatarIcon} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="12" cy="8" r="3" stroke="currentColor" strokeWidth="2"/>
-                  <path d="M16 14C16 12.8954 14.6569 12 13 12H11C9.34315 12 8 12.8954 8 14V18C8 19.1046 8.89543 20 10 20H14C15.1046 20 16 19.1046 16 18V14Z" stroke="currentColor" strokeWidth="2"/>
+                <svg
+                  className={styles.avatarIcon}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="12"
+                    cy="8"
+                    r="3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M16 14C16 12.8954 14.6569 12 13 12H11C9.34315 12 8 12.8954 8 14V18C8 19.1046 8.89543 20 10 20H14C15.1046 20 16 19.1046 16 18V14Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
                 </svg>
               </div>
             )}
@@ -701,16 +874,16 @@ const AddConsultation = () => {
           </div>
         </div>
       )}
-      
+
       <Card className={styles.formCard}>
-        <Tabs 
-          tabs={formTabs} 
-          activeTab={activeTab} 
-          onTabChange={handleTabChange} 
+        <Tabs
+          tabs={formTabs}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
         />
-        
-        <ConsultationForm 
-          key={isEditing ? `edit-${consultationId}` : 'new'}
+
+        <ConsultationForm
+          key={isEditing ? `edit-${consultationId}` : "new"}
           initialValues={getInitialFormValues()}
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -723,4 +896,4 @@ const AddConsultation = () => {
   );
 };
 
-export default AddConsultation; 
+export default AddConsultation;
