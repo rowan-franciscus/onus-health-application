@@ -54,8 +54,10 @@ const ProviderAddPatient = lazy(() => import('./pages/provider/AddPatient'));
 const ProviderConsultations = lazy(() => import('./pages/provider/Consultations'));
 const ProviderAddConsultation = lazy(() => import('./pages/provider/AddConsultation'));
 const ProviderViewConsultation = lazy(() => import('./pages/provider/ViewConsultation'));
-const ProviderMedicalRecords = lazy(() => import('./pages/provider/MedicalRecords'));
 const ProviderViewVitals = lazy(() => import('./pages/provider/ViewVitals'));
+const ProviderImmunizations = lazy(() => import('./pages/provider/Immunizations'));
+const ProviderHospitalRecords = lazy(() => import('./pages/provider/HospitalRecords'));
+const ProviderSurgeries = lazy(() => import('./pages/provider/Surgeries'));
 const ProviderProfile = lazy(() => import('./pages/provider/Profile'));
 const ProviderSettings = lazy(() => import('./pages/provider/Settings'));
 
@@ -453,35 +455,45 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/provider/medical-records" 
+            <Route
+              path="/provider/medical-records/vitals/:id"
               element={
-                <ProtectedRoute 
-                  element={<ProviderMedicalRecords />} 
-                  allowedRoles={['provider']} 
+                <ProtectedRoute
+                  element={<ProviderViewVitals />}
+                  allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
-              } 
+              }
             />
-            <Route 
-              path="/provider/medical-records/:type" 
+            <Route
+              path="/provider/immunizations"
               element={
-                <ProtectedRoute 
-                  element={<ProviderMedicalRecords />} 
-                  allowedRoles={['provider']} 
+                <ProtectedRoute
+                  element={<ProviderImmunizations />}
+                  allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
-              } 
+              }
             />
-            <Route 
-              path="/provider/medical-records/vitals/:id" 
+            <Route
+              path="/provider/hospital-records"
               element={
-                <ProtectedRoute 
-                  element={<ProviderViewVitals />} 
-                  allowedRoles={['provider']} 
+                <ProtectedRoute
+                  element={<ProviderHospitalRecords />}
+                  allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
-              } 
+              }
+            />
+            <Route
+              path="/provider/surgeries"
+              element={
+                <ProtectedRoute
+                  element={<ProviderSurgeries />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
             />
             <Route 
               path="/provider/profile" 

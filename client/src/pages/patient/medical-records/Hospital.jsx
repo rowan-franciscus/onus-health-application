@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { formatDate, getDateDifference } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
+import RecordDetailModal from '../../../components/medical-records/RecordDetailModal';
 import styles from './Hospital.module.css';
 
 const HospitalRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -52,6 +54,9 @@ const HospitalRecords = () => {
     navigate(`/patient/consultations/${consultationId}?tab=hospital`);
   };
 
+  const handleOpenDetails = (record) => setSelectedRecord(record);
+  const handleCloseDetails = () => setSelectedRecord(null);
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
@@ -78,9 +83,9 @@ const HospitalRecords = () => {
         <td>{calculateStayDuration(record.admissionDate, record.dischargeDate)}</td>
         <td title={record.reasonForHospitalisation}>{truncateText(record.reasonForHospitalisation)}</td>
         <td>
-          <button 
+          <button
             className={styles.viewButton}
-            onClick={() => handleViewConsultation(record.consultationId)}
+            onClick={() => handleOpenDetails(record)}
           >
             View
           </button>
@@ -90,17 +95,25 @@ const HospitalRecords = () => {
   };
 
   return (
-    <MedicalRecordTypeView
-      title="Hospital Records"
-      recordType="hospital-records"
-      records={records}
-      isLoading={isLoading}
-      error={error}
-      renderTableHeaders={renderTableHeaders}
-      renderRecordContent={renderRecordContent}
-      searchFields={['date', 'provider', 'reasonForHospitalisation', 'attendingDoctors', 'treatmentsReceived']}
-      noRecordsMessage="No hospital records found. Your health provider will add hospital records during consultations."
-    />
+    <>
+      <MedicalRecordTypeView
+        title="Hospital Records"
+        recordType="hospital-records"
+        records={records}
+        isLoading={isLoading}
+        error={error}
+        renderTableHeaders={renderTableHeaders}
+        renderRecordContent={renderRecordContent}
+        searchFields={['date', 'provider', 'reasonForHospitalisation', 'attendingDoctors', 'treatmentsReceived']}
+        noRecordsMessage="No hospital records found. Your health provider will add hospital records directly to your record."
+      />
+      <RecordDetailModal
+        isOpen={!!selectedRecord}
+        onClose={handleCloseDetails}
+        record={selectedRecord}
+        recordType="hospital-records"
+      />
+    </>
   );
 };
 

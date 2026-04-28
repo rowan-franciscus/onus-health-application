@@ -26,13 +26,11 @@ const ViewConsultation = () => {
   // Define the tabs structure matching the consultation form
   const consultationTabs = [
     { id: 'general', label: 'General' },
-    { id: 'vitals', label: 'Vitals' },
-    { id: 'medication', label: 'Medication' },
-    { id: 'immunization', label: 'Immunization' },
-    { id: 'labResults', label: 'Lab Results' },
-    { id: 'radiology', label: 'Radiology' },
-    { id: 'hospital', label: 'Hospital' },
-    { id: 'surgery', label: 'Surgery' }
+    { id: 'history', label: 'History' },
+    { id: 'physical', label: 'Physical' },
+    { id: 'labResults', label: 'Lab Investigation' },
+    { id: 'radiology', label: 'Imaging' },
+    { id: 'management', label: 'Management' }
   ];
 
   useEffect(() => {
@@ -104,6 +102,21 @@ const ViewConsultation = () => {
     return `${value}${unit ? ` ${unit}` : ''}`;
   };
 
+  const bloodGlucoseTypeLabels = {
+    random: 'Random / Casual',
+    fasting: 'Fasting',
+    'post-prandial': 'Post-Prandial',
+    postprandial: 'Post-Prandial',
+    rapid: 'Rapid / Point-of-Care',
+  };
+
+  const spo2ContextLabels = {
+    'room-air': 'Room Air',
+    'nasal-cannula': 'Nasal Cannula',
+    'face-mask': 'Face Mask',
+    ventilator: 'Ventilator',
+  };
+
   // Render content for each tab
   const renderTabContent = () => {
     if (!consultation) return null;
@@ -134,13 +147,17 @@ const ViewConsultation = () => {
                 <span>{formatValue(consultation.general?.reasonForVisit)}</span>
               </div>
               <div className={styles.field}>
+                <label>Diagnosis:</label>
+                <span>{formatValue(consultation.general?.diagnosis)}</span>
+              </div>
+              <div className={styles.field}>
                 <label>Status:</label>
                 <span className={styles[`status-${consultation.status}`]}>
                   {consultation.status || 'Unknown'}
                 </span>
               </div>
             </div>
-            
+
             {consultation.general?.notes && (
               <div className={styles.notesField}>
                 <label>Notes/Observations:</label>
@@ -152,7 +169,23 @@ const ViewConsultation = () => {
           </div>
         );
 
-      case 'vitals':
+      case 'history':
+        return (
+          <div className={styles.tabContent}>
+            {consultation.history ? (
+              <div className={styles.notesField}>
+                <label>Patient History:</label>
+                <div className={styles.notesContent} style={{ whiteSpace: 'pre-wrap' }}>
+                  {consultation.history}
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyState}>No patient history recorded</div>
+            )}
+          </div>
+        );
+
+      case 'physical':
         const vitals = consultation.vitals || {};
         return (
           <div className={styles.tabContent}>
@@ -179,11 +212,21 @@ const ViewConsultation = () => {
               </div>
               <div className={styles.field}>
                 <label>Blood Glucose:</label>
-                <span>{formatValue(vitals.bloodGlucose?.value, 'mg/dL')}</span>
+                <span>
+                  {formatValue(vitals.bloodGlucose?.value, 'mg/dL')}
+                  {vitals.bloodGlucose?.measurementType
+                    ? ` (${bloodGlucoseTypeLabels[vitals.bloodGlucose.measurementType] || vitals.bloodGlucose.measurementType})`
+                    : ''}
+                </span>
               </div>
               <div className={styles.field}>
                 <label>Blood Oxygen Saturation:</label>
-                <span>{formatValue(vitals.bloodOxygenSaturation?.value, '%')}</span>
+                <span>
+                  {formatValue(vitals.bloodOxygenSaturation?.value, '%')}
+                  {vitals.bloodOxygenSaturation?.measurementContext
+                    ? ` (${spo2ContextLabels[vitals.bloodOxygenSaturation.measurementContext] || vitals.bloodOxygenSaturation.measurementContext})`
+                    : ''}
+                </span>
               </div>
               <div className={styles.field}>
                 <label>BMI:</label>
@@ -202,82 +245,47 @@ const ViewConsultation = () => {
                 <span>{formatValue(vitals.height?.value, 'cm')}</span>
               </div>
             </div>
-          </div>
-        );
 
-      case 'medication':
-        const medications = consultation.medications || [];
-        return (
-          <div className={styles.tabContent}>
-            {medications.length === 0 ? (
-              <div className={styles.emptyState}>No medications recorded</div>
-            ) : (
-              <div className={styles.recordsList}>
-                {medications.map((medication, index) => (
-                  <div key={index} className={styles.recordItem}>
-                    <div className={styles.recordHeader}>
-                      <h4>{medication.name || 'Unnamed Medication'}</h4>
-                    </div>
-                    <div className={styles.recordDetails}>
-                      <div className={styles.field}>
-                        <label>Dosage:</label>
-                        <span>{medication.dosage ? `${medication.dosage.value} ${medication.dosage.unit}` : 'N/A'}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Frequency:</label>
-                        <span>{formatValue(medication.frequency)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Reason for Prescription:</label>
-                        <span>{formatValue(medication.reasonForPrescription)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Start Date:</label>
-                        <span>{formatDate(medication.startDate)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>End Date:</label>
-                        <span>{formatDate(medication.endDate)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {consultation.physicalExamination && (
+              <div className={styles.notesField}>
+                <label>Physical Examination:</label>
+                <div className={styles.notesContent} style={{ whiteSpace: 'pre-wrap' }}>
+                  {consultation.physicalExamination}
+                </div>
               </div>
             )}
           </div>
         );
 
-      case 'immunization':
-        const immunizations = consultation.immunizations || [];
+      case 'management':
+        const firstMed = (consultation.medications && consultation.medications[0]) || {};
         return (
           <div className={styles.tabContent}>
-            {immunizations.length === 0 ? (
-              <div className={styles.emptyState}>No immunizations recorded</div>
-            ) : (
-              <div className={styles.recordsList}>
-                {immunizations.map((immunization, index) => (
-                  <div key={index} className={styles.recordItem}>
-                    <div className={styles.recordHeader}>
-                      <h4>{immunization.vaccineName || 'Unnamed Vaccine'}</h4>
-                    </div>
-                    <div className={styles.recordDetails}>
-                      <div className={styles.field}>
-                        <label>Date Administered:</label>
-                        <span>{formatDate(immunization.dateAdministered)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Vaccine Serial Number:</label>
-                        <span>{formatValue(immunization.vaccineSerialNumber)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Next Due Date:</label>
-                        <span>{formatDate(immunization.nextDueDate)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {consultation.management ? (
+              <div className={styles.notesField}>
+                <label>Medications:</label>
+                <div className={styles.notesContent} style={{ whiteSpace: 'pre-wrap' }}>
+                  {consultation.management}
+                </div>
               </div>
+            ) : (
+              <div className={styles.emptyState}>No management plan recorded</div>
             )}
+
+            <div className={styles.fieldGrid} style={{ marginTop: 16 }}>
+              <div className={styles.field}>
+                <label>Reason for Prescription:</label>
+                <span>{formatValue(firstMed.reasonForPrescription)}</span>
+              </div>
+              <div className={styles.field}>
+                <label>Start Date:</label>
+                <span>{formatDate(firstMed.startDate)}</span>
+              </div>
+              <div className={styles.field}>
+                <label>End Date:</label>
+                <span>{formatDate(firstMed.endDate)}</span>
+              </div>
+            </div>
           </div>
         );
 
@@ -348,110 +356,6 @@ const ViewConsultation = () => {
                       <div className={styles.field}>
                         <label>Recommendations:</label>
                         <span>{formatValue(radiology.recommendations)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 'hospital':
-        const hospitalRecords = consultation.hospitalRecords || [];
-        return (
-          <div className={styles.tabContent}>
-            {hospitalRecords.length === 0 ? (
-              <div className={styles.emptyState}>No hospital records</div>
-            ) : (
-              <div className={styles.recordsList}>
-                {hospitalRecords.map((hospital, index) => (
-                  <div key={index} className={styles.recordItem}>
-                    <div className={styles.recordHeader}>
-                      <h4>{hospital.hospitalName || 'Hospital Stay'}</h4>
-                    </div>
-                    <div className={styles.recordDetails}>
-                      <div className={styles.field}>
-                        <label>Hospital Name:</label>
-                        <span>{formatValue(hospital.hospitalName)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Admission Date:</label>
-                        <span>{formatDate(hospital.admissionDate)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Discharge Date:</label>
-                        <span>{formatDate(hospital.dischargeDate)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Reason for Hospitalization:</label>
-                        <span>{formatValue(hospital.reasonForHospitalization)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Treatments Received:</label>
-                        <span>
-                          {hospital.treatmentsReceived && hospital.treatmentsReceived.length > 0 
-                            ? hospital.treatmentsReceived.join(', ') 
-                            : 'N/A'}
-                        </span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Attending Doctors:</label>
-                        <span>
-                          {hospital.attendingDoctors && hospital.attendingDoctors.length > 0 
-                            ? hospital.attendingDoctors.map(doc => doc.name || doc).join(', ')
-                            : 'N/A'}
-                        </span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Discharge Summary:</label>
-                        <span>{formatValue(hospital.dischargeSummary)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Investigations Done:</label>
-                        <span>
-                          {hospital.investigationsDone && hospital.investigationsDone.length > 0 
-                            ? hospital.investigationsDone.join(', ') 
-                            : 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-
-      case 'surgery':
-        const surgeryRecords = consultation.surgeryRecords || [];
-        return (
-          <div className={styles.tabContent}>
-            {surgeryRecords.length === 0 ? (
-              <div className={styles.emptyState}>No surgery records</div>
-            ) : (
-              <div className={styles.recordsList}>
-                {surgeryRecords.map((surgery, index) => (
-                  <div key={index} className={styles.recordItem}>
-                    <div className={styles.recordHeader}>
-                      <h4>{surgery.typeOfSurgery || 'Unnamed Surgery'}</h4>
-                    </div>
-                    <div className={styles.recordDetails}>
-                      <div className={styles.field}>
-                        <label>Date:</label>
-                        <span>{formatDate(surgery.date)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Reason:</label>
-                        <span>{formatValue(surgery.reason)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Complications:</label>
-                        <span>{formatValue(surgery.complications)}</span>
-                      </div>
-                      <div className={styles.field}>
-                        <label>Recovery Notes:</label>
-                        <span>{formatValue(surgery.recoveryNotes)}</span>
                       </div>
                     </div>
                   </div>

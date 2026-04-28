@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../../../utils/dateUtils';
 import medicalRecordsService from '../../../services/medicalRecords.service';
 import MedicalRecordTypeView from '../../../components/medical-records/MedicalRecordTypeView';
+import RecordDetailModal from '../../../components/medical-records/RecordDetailModal';
 import styles from './Immunizations.module.css';
 
 const ImmunizationsRecords = () => {
   const [records, setRecords] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +58,9 @@ const ImmunizationsRecords = () => {
     navigate(`/patient/consultations/${consultationId}?tab=immunizations`);
   };
 
+  const handleOpenDetails = (record) => setSelectedRecord(record);
+  const handleCloseDetails = () => setSelectedRecord(null);
+
   // Render table headers
   const renderTableHeaders = () => {
     return (
@@ -91,9 +96,9 @@ const ImmunizationsRecords = () => {
           )}
         </td>
         <td>
-          <button 
+          <button
             className={styles.viewButton}
-            onClick={() => handleViewConsultation(record.consultationId)}
+            onClick={() => handleOpenDetails(record)}
           >
             View
           </button>
@@ -103,17 +108,25 @@ const ImmunizationsRecords = () => {
   };
 
   return (
-    <MedicalRecordTypeView
-      title="Immunizations"
-      recordType="immunizations"
-      records={records}
-      isLoading={isLoading}
-      error={error}
-      renderTableHeaders={renderTableHeaders}
-      renderRecordContent={renderRecordContent}
-      searchFields={['date', 'provider', 'vaccineName', 'vaccineSerialNumber']}
-      noRecordsMessage="No immunization records found. Your health provider will add immunizations during consultations."
-    />
+    <>
+      <MedicalRecordTypeView
+        title="Immunizations"
+        recordType="immunizations"
+        records={records}
+        isLoading={isLoading}
+        error={error}
+        renderTableHeaders={renderTableHeaders}
+        renderRecordContent={renderRecordContent}
+        searchFields={['date', 'provider', 'vaccineName', 'vaccineSerialNumber']}
+        noRecordsMessage="No immunization records found. Your health provider will add immunizations directly to your record."
+      />
+      <RecordDetailModal
+        isOpen={!!selectedRecord}
+        onClose={handleCloseDetails}
+        record={selectedRecord}
+        recordType="immunizations"
+      />
+    </>
   );
 };
 

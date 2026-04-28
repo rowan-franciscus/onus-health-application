@@ -9,13 +9,14 @@ const VitalsTab = ({
   touched,
   handleChange,
   handleBlur,
-  setFieldValue
+  setFieldValue,
+  physicalExamination = ''
 }) => {
   return (
     <div className={styles.tabContainer}>
-      <h2 className={styles.tabTitle}>Vitals</h2>
+      <h2 className={styles.tabTitle}>Physical Examination</h2>
       <p className={styles.tabDescription}>
-        Record patient's vital signs and measurements
+        Record patient's vital signs and physical.
       </p>
       
       <div className={styles.formGrid}>
@@ -143,9 +144,25 @@ const VitalsTab = ({
         </div>
         
         <div className={styles.formGroup}>
-          <label htmlFor="vitals.bloodGlucose" className={styles.formLabel}>
-            Blood Glucose
-          </label>
+          <div className={styles.labelRow}>
+            <label htmlFor="vitals.bloodGlucose" className={styles.formLabel}>
+              Blood Glucose
+            </label>
+            <select
+              id="vitals.bloodGlucoseType"
+              name="vitals.bloodGlucoseType"
+              value={values.bloodGlucoseType || ''}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={styles.contextSelect}
+            >
+              <option value="">Select type</option>
+              <option value="random">Random / Casual</option>
+              <option value="fasting">Fasting</option>
+              <option value="post-prandial">Post-Prandial</option>
+              <option value="rapid">Rapid / Point-of-Care</option>
+            </select>
+          </div>
           <div className={styles.inputGroup}>
             <input
               type="number"
@@ -169,9 +186,25 @@ const VitalsTab = ({
         </div>
         
         <div className={styles.formGroup}>
-          <label htmlFor="vitals.bloodOxygenSaturation" className={styles.formLabel}>
-            Blood Oxygen Saturation
-          </label>
+          <div className={styles.labelRow}>
+            <label htmlFor="vitals.bloodOxygenSaturation" className={styles.formLabel}>
+              Blood Oxygen Saturation
+            </label>
+            <select
+              id="vitals.spo2Context"
+              name="vitals.spo2Context"
+              value={values.spo2Context || ''}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={styles.contextSelect}
+            >
+              <option value="">Select context</option>
+              <option value="room-air">Room Air</option>
+              <option value="nasal-cannula">Nasal Cannula</option>
+              <option value="face-mask">Face Mask</option>
+              <option value="ventilator">Ventilator</option>
+            </select>
+          </div>
           <div className={styles.inputGroup}>
             <input
               type="number"
@@ -304,6 +337,21 @@ const VitalsTab = ({
           )}
         </div>
       </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="physicalExamination" className={styles.formLabel}>
+          Physical Examination
+        </label>
+        <textarea
+          id="physicalExamination"
+          name="physicalExamination"
+          value={physicalExamination}
+          onChange={(e) => setFieldValue('physicalExamination', e.target.value)}
+          placeholder="Enter physical examination findings..."
+          className={styles.textarea}
+          style={{ minHeight: 140 }}
+        />
+      </div>
     </div>
   );
 };
@@ -314,7 +362,8 @@ VitalsTab.propTypes = {
   touched: PropTypes.object,
   handleChange: PropTypes.func.isRequired,
   handleBlur: PropTypes.func.isRequired,
-  setFieldValue: PropTypes.func.isRequired
+  setFieldValue: PropTypes.func.isRequired,
+  physicalExamination: PropTypes.string
 };
 
 export default VitalsTab; 

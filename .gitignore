@@ -55,3 +55,7 @@ docs/SECURITY_MEASURES.md
 
 # User uploads
 server/uploads/
+
+# Claude
+Claude.md
+.claude/

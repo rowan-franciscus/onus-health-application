@@ -76,8 +76,7 @@ const VitalsSchema = new Schema({
     },
     measurementType: {
       type: String,
-      enum: ['fasting', 'postprandial', 'random'],
-      default: 'random'
+      enum: ['random', 'fasting', 'post-prandial', 'rapid', 'postprandial']
     }
   },
   bloodOxygenSaturation: {
@@ -87,6 +86,10 @@ const VitalsSchema = new Schema({
     unit: {
       type: String,
       default: '%'
+    },
+    measurementContext: {
+      type: String,
+      enum: ['room-air', 'nasal-cannula', 'face-mask', 'ventilator']
     }
   },
   respiratoryRate: {

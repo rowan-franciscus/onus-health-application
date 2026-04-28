@@ -171,9 +171,13 @@ const ProviderViewPatient = () => {
         
         // Extract medical records from consultations
         extractMedicalRecords(response);
-        
+
         // Also fetch vitals directly from medical records API to include patient-created vitals
         await fetchVitalsRecords(patientId);
+
+        // Fetch immunization/hospital/surgery records from the authoritative
+        // medical-records endpoint so standalone (non-consultation) records appear.
+        await fetchStandaloneSectionRecords(patientId);
       } else {
         setConsultations([]);
         setMedicalRecords({
@@ -226,6 +230,79 @@ const ProviderViewPatient = () => {
       }
     } catch (error) {
       console.error('Error fetching vitals records:', error);
+    }
+  };
+
+  // Fetch standalone records (immunizations, hospital, surgery) — the discriminator-based
+  // endpoint returns both consultation-attached and standalone records for the patient,
+  // so this is the authoritative source for these three tabs.
+  const fetchStandaloneSectionRecords = async (patientId) => {
+    const formatFieldValue = (field) => {
+      if (!field) return 'N/A';
+      if (typeof field === 'object' && field.value !== undefined) {
+        return field.unit ? `${field.value} ${field.unit}` : field.value;
+      }
+      return field;
+    };
+
+    const formatArrayValue = (arr) => {
+      if (!arr || !Array.isArray(arr)) return 'N/A';
+      return arr.map(item => {
+        if (typeof item === 'object' && item && item.name) return item.name;
+        return formatFieldValue(item);
+      }).join(', ');
+    };
+
+    try {
+      const [immRes, hospRes, surgRes] = await Promise.all([
+        ApiService.get('/medical-records/provider/immunizations', { patientId, limit: 100 }),
+        ApiService.get('/medical-records/provider/hospital-records', { patientId, limit: 100 }),
+        ApiService.get('/medical-records/provider/surgery-records', { patientId, limit: 100 })
+      ]);
+
+      const immRecords = (immRes?.records || []).map(r => ({
+        id: r._id,
+        date: r.date ? formatDate(r.date) : (r.createdAt ? formatDate(r.createdAt) : 'N/A'),
+        provider: r.provider ? `${r.provider.firstName || ''} ${r.provider.lastName || ''}`.trim() || 'Unknown Provider' : 'Unknown Provider',
+        vaccineName: formatFieldValue(r.vaccineName) || 'Unknown Vaccine',
+        dateAdministered: r.dateAdministered ? formatDate(r.dateAdministered) : 'N/A',
+        serialNumber: formatFieldValue(r.vaccineSerialNumber),
+        nextDueDate: r.nextDueDate ? formatDate(r.nextDueDate) : 'N/A'
+      }));
+
+      const hospRecords = (hospRes?.records || []).map(r => ({
+        id: r._id,
+        date: r.date ? formatDate(r.date) : (r.createdAt ? formatDate(r.createdAt) : 'N/A'),
+        provider: r.provider ? `${r.provider.firstName || ''} ${r.provider.lastName || ''}`.trim() || 'Unknown Provider' : 'Unknown Provider',
+        hospitalName: formatFieldValue(r.hospitalName) || 'Unknown Hospital',
+        admissionDate: r.admissionDate ? formatDate(r.admissionDate) : 'N/A',
+        dischargeDate: r.dischargeDate ? formatDate(r.dischargeDate) : 'N/A',
+        reason: formatFieldValue(r.reasonForHospitalization),
+        treatments: formatArrayValue(r.treatmentsReceived),
+        attendingDoctors: formatArrayValue(r.attendingDoctors),
+        dischargeSummary: formatFieldValue(r.dischargeSummary),
+        investigations: formatArrayValue(r.investigationsDone)
+      }));
+
+      const surgRecords = (surgRes?.records || []).map(r => ({
+        id: r._id,
+        date: r.date ? formatDate(r.date) : (r.createdAt ? formatDate(r.createdAt) : 'N/A'),
+        provider: r.provider ? `${r.provider.firstName || ''} ${r.provider.lastName || ''}`.trim() || 'Unknown Provider' : 'Unknown Provider',
+        surgeryType: formatFieldValue(r.typeOfSurgery) || 'Unknown Surgery',
+        surgeryDate: r.date ? formatDate(r.date) : 'N/A',
+        reason: formatFieldValue(r.reason),
+        complications: formatFieldValue(r.complications) || 'None reported',
+        recoveryNotes: formatFieldValue(r.recoveryNotes)
+      }));
+
+      setMedicalRecords(prev => ({
+        ...prev,
+        immunizations: immRecords,
+        hospital: hospRecords,
+        surgery: surgRecords
+      }));
+    } catch (error) {
+      console.error('Error fetching standalone section records:', error);
     }
   };
 
@@ -318,31 +395,7 @@ const ProviderViewPatient = () => {
         });
       }
 
-      // Extract immunizations
-      if (consultation.immunizations && consultation.immunizations.length > 0) {
-        consultation.immunizations.forEach(immunization => {
-          // Helper function to format field values that might be objects
-          const formatFieldValue = (field) => {
-            if (!field) return 'N/A';
-            if (typeof field === 'object' && field.value !== undefined) {
-              return field.unit ? `${field.value} ${field.unit}` : field.value;
-            }
-            return field;
-          };
-
-          records.immunizations.push({
-            id: immunization._id || `${consultation._id}-imm-${Math.random()}`,
-            date: consultationDate,
-            provider: provider,
-            vaccineName: formatFieldValue(immunization.vaccineName) || 'Unknown Vaccine',
-            dateAdministered: immunization.dateAdministered ? 
-              formatDate(immunization.dateAdministered) : 'N/A',
-            serialNumber: formatFieldValue(immunization.vaccineSerialNumber),
-            nextDueDate: immunization.nextDueDate ? 
-              formatDate(immunization.nextDueDate) : 'N/A'
-          });
-        });
-      }
+      // Immunization records are now standalone — sourced via fetchStandaloneSectionRecords.
 
       // Extract lab results
       if (consultation.labResults && consultation.labResults.length > 0) {
@@ -394,69 +447,7 @@ const ProviderViewPatient = () => {
         });
       }
 
-      // Extract hospital records
-      if (consultation.hospitalRecords && consultation.hospitalRecords.length > 0) {
-        consultation.hospitalRecords.forEach(hospital => {
-          // Helper function to format field values that might be objects
-          const formatFieldValue = (field) => {
-            if (!field) return 'N/A';
-            if (typeof field === 'object' && field.value !== undefined) {
-              return field.unit ? `${field.value} ${field.unit}` : field.value;
-            }
-            return field;
-          };
-
-          // Helper function to format arrays
-          const formatArrayValue = (arr) => {
-            if (!arr || !Array.isArray(arr)) return 'N/A';
-            return arr.map(item => {
-              if (typeof item === 'object' && item.name) return item.name;
-              return formatFieldValue(item);
-            }).join(', ');
-          };
-
-          records.hospital.push({
-            id: hospital._id || `${consultation._id}-hosp-${Math.random()}`,
-            date: consultationDate,
-            provider: provider,
-            hospitalName: formatFieldValue(hospital.hospitalName) || 'Unknown Hospital',
-            admissionDate: hospital.admissionDate ? 
-              formatDate(hospital.admissionDate) : 'N/A',
-            dischargeDate: hospital.dischargeDate ? 
-              formatDate(hospital.dischargeDate) : 'N/A',
-            reason: formatFieldValue(hospital.reasonForHospitalization),
-            treatments: formatArrayValue(hospital.treatmentsReceived),
-            attendingDoctors: formatArrayValue(hospital.attendingDoctors),
-            dischargeSummary: formatFieldValue(hospital.dischargeSummary),
-            investigations: formatArrayValue(hospital.investigationsDone)
-          });
-        });
-      }
-
-      // Extract surgery records
-      if (consultation.surgeryRecords && consultation.surgeryRecords.length > 0) {
-        consultation.surgeryRecords.forEach(surgery => {
-          // Helper function to format field values that might be objects
-          const formatFieldValue = (field) => {
-            if (!field) return 'N/A';
-            if (typeof field === 'object' && field.value !== undefined) {
-              return field.unit ? `${field.value} ${field.unit}` : field.value;
-            }
-            return field;
-          };
-
-          records.surgery.push({
-            id: surgery._id || `${consultation._id}-surg-${Math.random()}`,
-            date: consultationDate,
-            provider: provider,
-            surgeryType: formatFieldValue(surgery.typeOfSurgery) || 'Unknown Surgery',
-            surgeryDate: surgery.date ? formatDate(surgery.date) : 'N/A',
-            reason: formatFieldValue(surgery.reason),
-            complications: formatFieldValue(surgery.complications) || 'None reported',
-            recoveryNotes: formatFieldValue(surgery.recoveryNotes)
-          });
-        });
-      }
+      // Hospital and surgery records are now standalone — sourced via fetchStandaloneSectionRecords.
     });
 
     setMedicalRecords(records);

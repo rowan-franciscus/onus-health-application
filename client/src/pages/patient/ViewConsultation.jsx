@@ -12,13 +12,11 @@ import { formatDate } from '../../utils/dateUtils';
 // Define tabs array outside component
 const tabs = [
   { id: 'general', label: 'General' },
-  { id: 'vitals', label: 'Vitals' },
-  { id: 'medications', label: 'Medications' },
-  { id: 'immunizations', label: 'Immunizations' },
-  { id: 'labResults', label: 'Lab Results' },
-  { id: 'radiologyReports', label: 'Radiology Reports' },
-  { id: 'hospital', label: 'Hospital' },
-  { id: 'surgery', label: 'Surgery' },
+  { id: 'history', label: 'History' },
+  { id: 'physical', label: 'Physical' },
+  { id: 'labResults', label: 'Lab Investigation' },
+  { id: 'radiologyReports', label: 'Imaging' },
+  { id: 'management', label: 'Management' },
   { id: 'files', label: 'Files' },
 ];
 
@@ -67,16 +65,18 @@ const PatientViewConsultation = () => {
               specialty: consultationData.general?.specialty || 'N/A',
               practice: consultationData.general?.practice || 'N/A',
               reasonForVisit: consultationData.general?.reasonForVisit || 'N/A',
+              diagnosis: consultationData.general?.diagnosis || '',
               observations: consultationData.general?.observations || consultationData.general?.notes || 'No observations recorded',
             },
-            
+
+            history: consultationData.history || '',
+            physicalExamination: consultationData.physicalExamination || '',
+            management: consultationData.management || '',
+
             vitals: consultationData.vitals || {},
             medications: consultationData.medications || [],
-            immunizations: consultationData.immunizations || [],
             labResults: consultationData.labResults || [],
             radiologyReports: consultationData.radiologyReports || [],
-            hospitalRecords: consultationData.hospitalRecords || [],
-            surgeryRecords: consultationData.surgeryRecords || [],
             
             // File attachments
             attachments: consultationData.attachments || []
@@ -107,6 +107,21 @@ const PatientViewConsultation = () => {
   const formatValue = (value, unit = '') => {
     if (!value || value === '' || value === 'N/A') return 'N/A';
     return `${value}${unit ? ` ${unit}` : ''}`;
+  };
+
+  const bloodGlucoseTypeLabels = {
+    random: 'Random / Casual',
+    fasting: 'Fasting',
+    'post-prandial': 'Post-Prandial',
+    postprandial: 'Post-Prandial',
+    rapid: 'Rapid / Point-of-Care',
+  };
+
+  const spo2ContextLabels = {
+    'room-air': 'Room Air',
+    'nasal-cannula': 'Nasal Cannula',
+    'face-mask': 'Face Mask',
+    ventilator: 'Ventilator',
   };
 
   // Handle click outside download menu
@@ -197,6 +212,10 @@ const PatientViewConsultation = () => {
                 <h3>Reason for Visit</h3>
                 <p>{consultation.general.reasonForVisit}</p>
               </div>
+              <div className={styles.infoItem}>
+                <h3>Diagnosis</h3>
+                <p>{consultation.general.diagnosis || 'N/A'}</p>
+              </div>
             </div>
             <div className={styles.observationsSection}>
               <h3>Notes / Observations</h3>
@@ -204,8 +223,22 @@ const PatientViewConsultation = () => {
             </div>
           </div>
         );
-      
-      case 'vitals':
+
+      case 'history':
+        return (
+          <div className={styles.generalInfo}>
+            {consultation.history ? (
+              <div className={styles.observationsSection}>
+                <h3>Patient History</h3>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{consultation.history}</p>
+              </div>
+            ) : (
+              <div className={styles.noData}>No patient history recorded</div>
+            )}
+          </div>
+        );
+
+      case 'physical':
         const vitals = consultation.vitals || {};
         return (
           <div className={styles.vitalsInfo}>
@@ -235,11 +268,21 @@ const PatientViewConsultation = () => {
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Blood Glucose</h3>
-                  <p>{formatValue(vitals.bloodGlucose?.value, 'mg/dL')}</p>
+                  <p>
+                    {formatValue(vitals.bloodGlucose?.value, 'mg/dL')}
+                    {vitals.bloodGlucose?.measurementType
+                      ? ` (${bloodGlucoseTypeLabels[vitals.bloodGlucose.measurementType] || vitals.bloodGlucose.measurementType})`
+                      : ''}
+                  </p>
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>Blood Oxygen Saturation</h3>
-                  <p>{formatValue(vitals.bloodOxygenSaturation?.value, '%')}</p>
+                  <p>
+                    {formatValue(vitals.bloodOxygenSaturation?.value, '%')}
+                    {vitals.bloodOxygenSaturation?.measurementContext
+                      ? ` (${spo2ContextLabels[vitals.bloodOxygenSaturation.measurementContext] || vitals.bloodOxygenSaturation.measurementContext})`
+                      : ''}
+                  </p>
                 </div>
                 <div className={styles.vitalItem}>
                   <h3>BMI</h3>
@@ -259,73 +302,46 @@ const PatientViewConsultation = () => {
                 </div>
               </div>
             )}
-          </div>
-        );
-      
-      case 'medications':
-        const medications = consultation.medications || [];
-        return (
-          <div className={styles.medicationsInfo}>
-            {medications.length === 0 ? (
-              <div className={styles.noData}>No medications recorded for this consultation</div>
-            ) : (
-              <div className={styles.medicationsList}>
-                {medications.map((medication, index) => (
-                  <div key={index} className={styles.medicationItem}>
-                    <h3>{medication.name || 'Unnamed Medication'}</h3>
-                    <div className={styles.medicationDetails}>
-                      <div className={styles.medicationDetail}>
-                        <span>Dosage:</span> {medication.dosage ? `${medication.dosage.value} ${medication.dosage.unit}` : 'N/A'}
-                      </div>
-                      <div className={styles.medicationDetail}>
-                        <span>Frequency:</span> {formatValue(medication.frequency)}
-                      </div>
-                      <div className={styles.medicationDetail}>
-                        <span>Reason:</span> {formatValue(medication.reasonForPrescription)}
-                      </div>
-                      <div className={styles.medicationDetail}>
-                        <span>Start Date:</span> {formatDate(medication.startDate)}
-                      </div>
-                      <div className={styles.medicationDetail}>
-                        <span>End Date:</span> {formatDate(medication.endDate)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+
+            {consultation.physicalExamination && (
+              <div className={styles.observationsSection}>
+                <h3>Physical Examination</h3>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{consultation.physicalExamination}</p>
               </div>
             )}
           </div>
         );
-      
-      case 'immunizations':
-        const immunizations = consultation.immunizations || [];
+
+      case 'management':
+        const firstMedPatient = (consultation.medications && consultation.medications[0]) || {};
         return (
-          <div className={styles.immunizationsInfo}>
-            {immunizations.length === 0 ? (
-              <div className={styles.noData}>No immunizations recorded for this consultation</div>
-            ) : (
-              <div className={styles.immunizationsList}>
-                {immunizations.map((immunization, index) => (
-                  <div key={index} className={styles.immunizationItem}>
-                    <h3>{immunization.vaccineName || 'Unnamed Vaccine'}</h3>
-                    <div className={styles.immunizationDetails}>
-                      <div className={styles.immunizationDetail}>
-                        <span>Date Administered:</span> {formatDate(immunization.dateAdministered)}
-                      </div>
-                      <div className={styles.immunizationDetail}>
-                        <span>Vaccine Serial Number:</span> {formatValue(immunization.vaccineSerialNumber)}
-                      </div>
-                      <div className={styles.immunizationDetail}>
-                        <span>Next Due Date:</span> {formatDate(immunization.nextDueDate)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          <div className={styles.generalInfo}>
+            {consultation.management ? (
+              <div className={styles.observationsSection}>
+                <h3>Medications</h3>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{consultation.management}</p>
               </div>
+            ) : (
+              <div className={styles.noData}>No management plan recorded</div>
             )}
+
+            <div className={styles.infoGrid} style={{ marginTop: 16 }}>
+              <div className={styles.infoItem}>
+                <h3>Reason for Prescription</h3>
+                <p>{formatValue(firstMedPatient.reasonForPrescription)}</p>
+              </div>
+              <div className={styles.infoItem}>
+                <h3>Start Date</h3>
+                <p>{formatDate(firstMedPatient.startDate)}</p>
+              </div>
+              <div className={styles.infoItem}>
+                <h3>End Date</h3>
+                <p>{formatDate(firstMedPatient.endDate)}</p>
+              </div>
+            </div>
           </div>
         );
-      
+
       case 'labResults':
         const labResults = consultation.labResults || [];
         return (
@@ -381,91 +397,6 @@ const PatientViewConsultation = () => {
                       </div>
                       <div className={styles.radiologyDetail}>
                         <span>Recommendations:</span> {formatValue(report.recommendations)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      
-      case 'hospital':
-        const hospitalRecords = consultation.hospitalRecords || [];
-        return (
-          <div className={styles.hospitalInfo}>
-            {hospitalRecords.length === 0 ? (
-              <div className={styles.noData}>No hospital records for this consultation</div>
-            ) : (
-              <div className={styles.hospitalList}>
-                {hospitalRecords.map((hospital, index) => (
-                  <div key={index} className={styles.hospitalItem}>
-                    <h3>{hospital.hospitalName || 'Hospital Stay'}</h3>
-                    <div className={styles.hospitalDetails}>
-                      <div className={styles.hospitalDetail}>
-                        <span>Hospital Name:</span> {formatValue(hospital.hospitalName)}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Admission Date:</span> {formatDate(hospital.admissionDate)}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Discharge Date:</span> {formatDate(hospital.dischargeDate)}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Reason for Hospitalization:</span> {formatValue(hospital.reasonForHospitalization)}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Treatments Received:</span> 
-                        {hospital.treatmentsReceived && hospital.treatmentsReceived.length > 0 
-                          ? hospital.treatmentsReceived.join(', ') 
-                          : 'N/A'}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Attending Doctors:</span> 
-                        {hospital.attendingDoctors && hospital.attendingDoctors.length > 0 
-                          ? hospital.attendingDoctors.map(doc => doc.name || doc).join(', ')
-                          : 'N/A'}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Discharge Summary:</span> {formatValue(hospital.dischargeSummary)}
-                      </div>
-                      <div className={styles.hospitalDetail}>
-                        <span>Investigations Done:</span> 
-                        {hospital.investigationsDone && hospital.investigationsDone.length > 0 
-                          ? hospital.investigationsDone.join(', ') 
-                          : 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      
-      case 'surgery':
-        const surgeryRecords = consultation.surgeryRecords || [];
-        return (
-          <div className={styles.surgeryInfo}>
-            {surgeryRecords.length === 0 ? (
-              <div className={styles.noData}>No surgery records for this consultation</div>
-            ) : (
-              <div className={styles.surgeryList}>
-                {surgeryRecords.map((surgery, index) => (
-                  <div key={index} className={styles.surgeryItem}>
-                    <h3>{surgery.typeOfSurgery || 'Unnamed Surgery'}</h3>
-                    <div className={styles.surgeryDetails}>
-                      <div className={styles.surgeryDetail}>
-                        <span>Date:</span> {formatDate(surgery.date)}
-                      </div>
-                      <div className={styles.surgeryDetail}>
-                        <span>Reason:</span> {formatValue(surgery.reason)}
-                      </div>
-                      <div className={styles.surgeryDetail}>
-                        <span>Complications:</span> {formatValue(surgery.complications)}
-                      </div>
-                      <div className={styles.surgeryDetail}>
-                        <span>Recovery Notes:</span> {formatValue(surgery.recoveryNotes)}
                       </div>
                     </div>
                   </div>

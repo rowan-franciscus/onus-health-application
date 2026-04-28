@@ -101,26 +101,44 @@ const GeneralTab = ({
         </div>
       </div>
       
-      <div className={styles.formGroup}>
-        <label htmlFor="general.reasonForVisit" className={styles.formLabel}>
-          Reason for Visit <span className={styles.required}>*</span>
-        </label>
-        <input
-          type="text"
-          id="general.reasonForVisit"
-          name="general.reasonForVisit"
-          value={values.reasonForVisit || ''}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          placeholder="Enter the primary reason for this consultation"
-          className={classNames(
-            styles.formInput,
-            touched?.reasonForVisit && errors?.reasonForVisit ? styles.inputError : ''
+      <div className={styles.formGrid}>
+        <div className={styles.formGroup}>
+          <label htmlFor="general.reasonForVisit" className={styles.formLabel}>
+            Reason for Visit <span className={styles.required}>*</span>
+          </label>
+          <input
+            type="text"
+            id="general.reasonForVisit"
+            name="general.reasonForVisit"
+            value={values.reasonForVisit || ''}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="Enter the primary reason for this consultation"
+            className={classNames(
+              styles.formInput,
+              touched?.reasonForVisit && errors?.reasonForVisit ? styles.inputError : ''
+            )}
+          />
+          {touched?.reasonForVisit && errors?.reasonForVisit && (
+            <div className={styles.errorMessage}>{errors.reasonForVisit}</div>
           )}
-        />
-        {touched?.reasonForVisit && errors?.reasonForVisit && (
-          <div className={styles.errorMessage}>{errors.reasonForVisit}</div>
-        )}
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="general.diagnosis" className={styles.formLabel}>
+            Diagnosis
+          </label>
+          <input
+            type="text"
+            id="general.diagnosis"
+            name="general.diagnosis"
+            value={values.diagnosis || ''}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="Enter diagnosis..."
+            className={styles.formInput}
+          />
+        </div>
       </div>
       
       <div className={styles.formGroup}>
