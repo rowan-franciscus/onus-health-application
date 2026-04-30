@@ -133,7 +133,7 @@ const AddVitals = () => {
       if (values.bloodGlucose) {
         vitalsData.bloodGlucose = {
           value: Number(values.bloodGlucose),
-          unit: 'mg/dL'
+          unit: 'mmol/L'
         };
       }
 

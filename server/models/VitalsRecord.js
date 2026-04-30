@@ -66,13 +66,22 @@ const VitalsSchema = new Schema({
       default: '°C'
     }
   },
+  haemoglobin: {
+    value: {
+      type: Number
+    },
+    unit: {
+      type: String,
+      default: 'g/dL'
+    }
+  },
   bloodGlucose: {
     value: {
       type: Number
     },
     unit: {
       type: String,
-      default: 'mg/dL'
+      default: 'mmol/L'
     },
     measurementType: {
       type: String,

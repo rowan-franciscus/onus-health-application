@@ -210,10 +210,16 @@ const ViewConsultation = () => {
                 <label>Respiratory Rate:</label>
                 <span>{formatValue(vitals.respiratoryRate?.value, '/min')}</span>
               </div>
+              {vitals.haemoglobin?.value != null && (
+                <div className={styles.field}>
+                  <label>Haemoglobin:</label>
+                  <span>{formatValue(vitals.haemoglobin.value, 'g/dL')}</span>
+                </div>
+              )}
               <div className={styles.field}>
                 <label>Blood Glucose:</label>
                 <span>
-                  {formatValue(vitals.bloodGlucose?.value, 'mg/dL')}
+                  {formatValue(vitals.bloodGlucose?.value, 'mmol/L')}
                   {vitals.bloodGlucose?.measurementType
                     ? ` (${bloodGlucoseTypeLabels[vitals.bloodGlucose.measurementType] || vitals.bloodGlucose.measurementType})`
                     : ''}

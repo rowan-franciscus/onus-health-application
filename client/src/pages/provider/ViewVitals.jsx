@@ -64,7 +64,7 @@ const ProviderViewVitals = () => {
     const { value, unit, measurementType } = vitalsRecord.bloodGlucose;
     if (value === undefined || value === null) return 'N/A';
     const measurementLabel = measurementType ? ` (${measurementType})` : '';
-    return `${value} ${unit || 'mg/dL'}${measurementLabel}`;
+    return `${value} ${unit || 'mmol/L'}${measurementLabel}`;
   };
 
   const handleBackClick = () => {
@@ -149,6 +149,15 @@ const ProviderViewVitals = () => {
             {formatValueWithUnit(vitalsRecord.respiratoryRate)}
           </p>
         </Card>
+
+        {vitalsRecord.haemoglobin?.value != null && (
+          <Card className={styles.vitalCard}>
+            <h3>Haemoglobin</h3>
+            <p className={styles.vitalValue}>
+              {vitalsRecord.haemoglobin.value} {vitalsRecord.haemoglobin.unit || 'g/dL'}
+            </p>
+          </Card>
+        )}
 
         <Card className={styles.vitalCard}>
           <h3>Blood Glucose</h3>

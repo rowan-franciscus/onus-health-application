@@ -93,6 +93,7 @@ const AddConsultation = () => {
             consultationData.vitals?.bodyTemperature?.value || "",
           respiratoryRate:
             consultationData.vitals?.respiratoryRate?.value || "",
+          haemoglobin: consultationData.vitals?.haemoglobin?.value || "",
           bloodGlucose: consultationData.vitals?.bloodGlucose?.value || "",
           bloodGlucoseType:
             consultationData.vitals?.bloodGlucose?.measurementType || "",
@@ -158,6 +159,7 @@ const AddConsultation = () => {
           bloodPressure: { systolic: "", diastolic: "" },
           bodyTemperature: "",
           respiratoryRate: "",
+          haemoglobin: "",
           bloodGlucose: "",
           bloodGlucoseType: "",
           bloodOxygenSaturation: "",
@@ -397,6 +399,7 @@ const AddConsultation = () => {
             },
             bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
             respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
+            haemoglobin: { value: formData.vitals.haemoglobin || "" },
             bloodGlucose: {
               value: formData.vitals.bloodGlucose || "",
               ...(formData.vitals.bloodGlucoseType
@@ -622,6 +625,7 @@ const AddConsultation = () => {
             },
             bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
             respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
+            haemoglobin: { value: formData.vitals.haemoglobin || "" },
             bloodGlucose: {
               value: formData.vitals.bloodGlucose || "",
               ...(formData.vitals.bloodGlucoseType
