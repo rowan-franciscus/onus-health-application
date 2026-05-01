@@ -440,7 +440,12 @@ const AddConsultation = () => {
           ]
         : [];
 
-      const transformedLabResults = formData.labResults.map((lab) => ({
+      const labResultsToSubmit = [...formData.labResults];
+      const labDraft = formData.draftLabResult;
+      if (labDraft?.testName?.trim() && labDraft?.date && labDraft?.results?.trim()) {
+        labResultsToSubmit.push(labDraft);
+      }
+      const transformedLabResults = labResultsToSubmit.map((lab) => ({
         testName: lab.testName,
         labName: lab.labName,
         dateOfTest: lab.date || lab.dateOfTest,
@@ -448,7 +453,12 @@ const AddConsultation = () => {
         comments: lab.comments,
       }));
 
-      const transformedRadiology = formData.radiology.map((rad) => ({
+      const radiologyToSubmit = [...formData.radiology];
+      const radiologyDraft = formData.draftRadiologyReport;
+      if (radiologyDraft?.scanType && radiologyDraft?.date && radiologyDraft?.bodyPart?.trim() && radiologyDraft?.findings?.trim()) {
+        radiologyToSubmit.push(radiologyDraft);
+      }
+      const transformedRadiology = radiologyToSubmit.map((rad) => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
         bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,
@@ -665,7 +675,12 @@ const AddConsultation = () => {
           ]
         : [];
 
-      const transformedLabResults = formData.labResults.map((lab) => ({
+      const labResultsToSubmit = [...formData.labResults];
+      const labDraft = formData.draftLabResult;
+      if (labDraft?.testName?.trim() && labDraft?.date && labDraft?.results?.trim()) {
+        labResultsToSubmit.push(labDraft);
+      }
+      const transformedLabResults = labResultsToSubmit.map((lab) => ({
         testName: lab.testName,
         labName: lab.labName,
         dateOfTest: lab.date || lab.dateOfTest,
@@ -673,7 +688,12 @@ const AddConsultation = () => {
         comments: lab.comments,
       }));
 
-      const transformedRadiology = formData.radiology.map((rad) => ({
+      const radiologyToSubmit = [...formData.radiology];
+      const radiologyDraft = formData.draftRadiologyReport;
+      if (radiologyDraft?.scanType && radiologyDraft?.date && radiologyDraft?.bodyPart?.trim() && radiologyDraft?.findings?.trim()) {
+        radiologyToSubmit.push(radiologyDraft);
+      }
+      const transformedRadiology = radiologyToSubmit.map((rad) => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
         bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,

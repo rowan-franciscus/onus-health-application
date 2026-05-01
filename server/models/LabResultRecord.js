@@ -10,7 +10,6 @@ const LabResultSchema = new Schema({
   },
   labName: {
     type: String,
-    required: true
   },
   dateOfTest: {
     type: Date,
