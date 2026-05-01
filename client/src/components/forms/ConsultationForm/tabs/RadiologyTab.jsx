@@ -4,96 +4,49 @@ import classNames from 'classnames';
 import { formatDate } from '../../../../utils/dateUtils';
 import styles from './FormTabs.module.css';
 
+const EMPTY_DRAFT = { scanType: '', date: '', bodyPart: '', findings: '', recommendations: '' };
+
 const RadiologyTab = ({
   radiologyReports,
-  errors,
-  touched,
-  setFieldValue
+  draftRadiologyReport,
+  handleChange,
+  handleBlur,
+  setFieldValue,
 }) => {
-  const [newReport, setNewReport] = useState({
-    scanType: '',
-    date: '',
-    bodyPart: '',
-    findings: '',
-    recommendations: ''
-  });
-  
+  const draft = draftRadiologyReport || EMPTY_DRAFT;
   const [formErrors, setFormErrors] = useState({});
-  
+
   const validateReport = (report) => {
     const errors = {};
-    
-    if (!report.scanType.trim()) {
-      errors.scanType = 'Scan type is required';
-    }
-    
-    if (!report.date) {
-      errors.date = 'Scan date is required';
-    }
-    
-    if (!report.bodyPart.trim()) {
-      errors.bodyPart = 'Body part examined is required';
-    }
-    
-    if (!report.findings.trim()) {
-      errors.findings = 'Findings are required';
-    }
-    
+    if (!report.scanType.trim()) errors.scanType = 'Scan type is required';
+    if (!report.date) errors.date = 'Scan date is required';
+    if (!report.bodyPart.trim()) errors.bodyPart = 'Body part examined is required';
+    if (!report.findings.trim()) errors.findings = 'Findings are required';
     return errors;
   };
-  
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewReport(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear errors when typing
-    if (formErrors[name]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
-    }
-  };
-  
+
   const handleAddReport = () => {
-    const validationErrors = validateReport(newReport);
-    
+    const validationErrors = validateReport(draft);
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);
       return;
     }
-    
-    // Add the new report to the list
-    const updatedReports = [...radiologyReports, newReport];
-    setFieldValue('radiology', updatedReports);
-    
-    // Reset the form for the next report
-    setNewReport({
-      scanType: '',
-      date: '',
-      bodyPart: '',
-      findings: '',
-      recommendations: ''
-    });
-    
+    setFieldValue('radiology', [...radiologyReports, draft]);
+    setFieldValue('draftRadiologyReport', EMPTY_DRAFT);
     setFormErrors({});
   };
-  
+
   const handleDeleteReport = (index) => {
-    const updatedReports = radiologyReports.filter((_, i) => i !== index);
-    setFieldValue('radiology', updatedReports);
+    setFieldValue('radiology', radiologyReports.filter((_, i) => i !== index));
   };
-  
+
   return (
     <div className={styles.tabContainer}>
       <h2 className={styles.tabTitle}>Radiology Reports</h2>
       <p className={styles.tabDescription}>
         Add radiology scan reports for this consultation
       </p>
-      
+
       {radiologyReports.length > 0 && (
         <div className={styles.reportsLists}>
           {radiologyReports.map((report, index) => (
@@ -110,29 +63,29 @@ const RadiologyTab = ({
                   Remove
                 </button>
               </div>
-              
+
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Scan Type</label>
                   <p className={styles.formValue}>{report.scanType}</p>
                 </div>
-                
+
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Date</label>
                   <p className={styles.formValue}>{formatDate(report.date)}</p>
                 </div>
-                
+
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Body Part Examined</label>
                   <p className={styles.formValue}>{report.bodyPart}</p>
                 </div>
               </div>
-              
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Findings</label>
                 <p className={styles.formValue}>{report.findings}</p>
               </div>
-              
+
               {report.recommendations && (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Recommendations</label>
@@ -143,20 +96,21 @@ const RadiologyTab = ({
           ))}
         </div>
       )}
-      
+
       <div className={styles.fieldGroup}>
         <h3 className={styles.fieldGroupTitle}>Add New Radiology Report</h3>
-        
+
         <div className={styles.formGrid}>
           <div className={styles.formGroup}>
-            <label htmlFor="scanType" className={styles.formLabel}>
+            <label htmlFor="draftRadiologyReport.scanType" className={styles.formLabel}>
               Scan Type <span className={styles.required}>*</span>
             </label>
             <select
-              id="scanType"
-              name="scanType"
-              value={newReport.scanType}
-              onChange={handleInputChange}
+              id="draftRadiologyReport.scanType"
+              name="draftRadiologyReport.scanType"
+              value={draft.scanType}
+              onChange={handleChange}
+              onBlur={handleBlur}
               className={classNames(
                 styles.formInput,
                 formErrors.scanType ? styles.inputError : ''
@@ -177,17 +131,18 @@ const RadiologyTab = ({
               <div className={styles.errorMessage}>{formErrors.scanType}</div>
             )}
           </div>
-          
+
           <div className={styles.formGroup}>
-            <label htmlFor="date" className={styles.formLabel}>
+            <label htmlFor="draftRadiologyReport.date" className={styles.formLabel}>
               Date <span className={styles.required}>*</span>
             </label>
             <input
               type="date"
-              id="date"
-              name="date"
-              value={newReport.date}
-              onChange={handleInputChange}
+              id="draftRadiologyReport.date"
+              name="draftRadiologyReport.date"
+              value={draft.date}
+              onChange={handleChange}
+              onBlur={handleBlur}
               className={classNames(
                 styles.formInput,
                 formErrors.date ? styles.inputError : ''
@@ -197,17 +152,18 @@ const RadiologyTab = ({
               <div className={styles.errorMessage}>{formErrors.date}</div>
             )}
           </div>
-          
+
           <div className={styles.formGroup}>
-            <label htmlFor="bodyPart" className={styles.formLabel}>
+            <label htmlFor="draftRadiologyReport.bodyPart" className={styles.formLabel}>
               Body Part Examined <span className={styles.required}>*</span>
             </label>
             <input
               type="text"
-              id="bodyPart"
-              name="bodyPart"
-              value={newReport.bodyPart}
-              onChange={handleInputChange}
+              id="draftRadiologyReport.bodyPart"
+              name="draftRadiologyReport.bodyPart"
+              value={draft.bodyPart}
+              onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Enter body part examined"
               className={classNames(
                 styles.formInput,
@@ -219,16 +175,17 @@ const RadiologyTab = ({
             )}
           </div>
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="findings" className={styles.formLabel}>
+          <label htmlFor="draftRadiologyReport.findings" className={styles.formLabel}>
             Findings <span className={styles.required}>*</span>
           </label>
           <textarea
-            id="findings"
-            name="findings"
-            value={newReport.findings}
-            onChange={handleInputChange}
+            id="draftRadiologyReport.findings"
+            name="draftRadiologyReport.findings"
+            value={draft.findings}
+            onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Enter scan findings"
             className={classNames(
               styles.textarea,
@@ -240,22 +197,23 @@ const RadiologyTab = ({
             <div className={styles.errorMessage}>{formErrors.findings}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="recommendations" className={styles.formLabel}>
+          <label htmlFor="draftRadiologyReport.recommendations" className={styles.formLabel}>
             Recommendations
           </label>
           <textarea
-            id="recommendations"
-            name="recommendations"
-            value={newReport.recommendations}
-            onChange={handleInputChange}
+            id="draftRadiologyReport.recommendations"
+            name="draftRadiologyReport.recommendations"
+            value={draft.recommendations}
+            onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Enter recommendations based on the findings"
             className={styles.textarea}
             rows={3}
           />
         </div>
-        
+
         <div className={styles.formActions}>
           <button
             type="button"
@@ -266,7 +224,7 @@ const RadiologyTab = ({
           </button>
         </div>
       </div>
-      
+
       {radiologyReports.length === 0 && (
         <div className={styles.noDataMessage}>
           No radiology reports added yet. Use the form above to add reports.
@@ -278,9 +236,10 @@ const RadiologyTab = ({
 
 RadiologyTab.propTypes = {
   radiologyReports: PropTypes.array.isRequired,
-  errors: PropTypes.object,
-  touched: PropTypes.object,
-  setFieldValue: PropTypes.func.isRequired
+  draftRadiologyReport: PropTypes.object,
+  handleChange: PropTypes.func.isRequired,
+  handleBlur: PropTypes.func.isRequired,
+  setFieldValue: PropTypes.func.isRequired,
 };
 
-export default RadiologyTab; 
+export default RadiologyTab;

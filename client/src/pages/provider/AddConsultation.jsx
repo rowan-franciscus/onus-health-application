@@ -138,6 +138,8 @@ const AddConsultation = () => {
             recommendations: rad.recommendations || "",
           })) || [],
         attachments: consultationData.attachments || [],
+        draftLabResult: { testName: '', labName: '', date: '', results: '', comments: '' },
+        draftRadiologyReport: { scanType: '', date: '', bodyPart: '', findings: '', recommendations: '' },
       };
     } else {
       return {
@@ -172,6 +174,8 @@ const AddConsultation = () => {
         medication: { reason: "", startDate: "", endDate: "" },
         labResults: [],
         radiology: [],
+        draftLabResult: { testName: '', labName: '', date: '', results: '', comments: '' },
+        draftRadiologyReport: { scanType: '', date: '', bodyPart: '', findings: '', recommendations: '' },
         attachments: [],
       };
     }
