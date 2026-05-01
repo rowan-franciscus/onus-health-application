@@ -78,7 +78,7 @@ module.exports = {
       },
       bloodGlucose: {
         value: 132,
-        unit: 'mg/dL',
+        unit: 'mmol/L',
         measurementType: 'random'
       },
       bloodOxygenSaturation: {
@@ -107,7 +107,7 @@ module.exports = {
       },
       bloodGlucose: {
         value: 145,
-        unit: 'mg/dL',
+        unit: 'mmol/L',
         measurementType: 'fasting'
       },
       bloodOxygenSaturation: {

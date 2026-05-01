@@ -33,6 +33,10 @@ export const validationSchema = Yup.object().shape({
       .transform((value) => (isNaN(value) ? undefined : value))
       .min(0, 'Respiratory rate must be a positive number')
       .nullable(),
+    haemoglobin: Yup.number()
+      .transform((value) => (isNaN(value) ? undefined : value))
+      .min(0, 'Haemoglobin must be a positive number')
+      .nullable(),
     bloodGlucose: Yup.number()
       .transform((value) => (isNaN(value) ? undefined : value))
       .min(0, 'Blood glucose must be a positive number')

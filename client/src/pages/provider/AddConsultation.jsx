@@ -93,6 +93,7 @@ const AddConsultation = () => {
             consultationData.vitals?.bodyTemperature?.value || "",
           respiratoryRate:
             consultationData.vitals?.respiratoryRate?.value || "",
+          haemoglobin: consultationData.vitals?.haemoglobin?.value || "",
           bloodGlucose: consultationData.vitals?.bloodGlucose?.value || "",
           bloodGlucoseType:
             consultationData.vitals?.bloodGlucose?.measurementType || "",
@@ -137,6 +138,8 @@ const AddConsultation = () => {
             recommendations: rad.recommendations || "",
           })) || [],
         attachments: consultationData.attachments || [],
+        draftLabResult: { testName: '', labName: '', date: '', results: '', comments: '' },
+        draftRadiologyReport: { scanType: '', date: '', bodyPart: '', findings: '', recommendations: '' },
       };
     } else {
       return {
@@ -158,6 +161,7 @@ const AddConsultation = () => {
           bloodPressure: { systolic: "", diastolic: "" },
           bodyTemperature: "",
           respiratoryRate: "",
+          haemoglobin: "",
           bloodGlucose: "",
           bloodGlucoseType: "",
           bloodOxygenSaturation: "",
@@ -170,6 +174,8 @@ const AddConsultation = () => {
         medication: { reason: "", startDate: "", endDate: "" },
         labResults: [],
         radiology: [],
+        draftLabResult: { testName: '', labName: '', date: '', results: '', comments: '' },
+        draftRadiologyReport: { scanType: '', date: '', bodyPart: '', findings: '', recommendations: '' },
         attachments: [],
       };
     }
@@ -397,6 +403,7 @@ const AddConsultation = () => {
             },
             bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
             respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
+            haemoglobin: { value: formData.vitals.haemoglobin || "" },
             bloodGlucose: {
               value: formData.vitals.bloodGlucose || "",
               ...(formData.vitals.bloodGlucoseType
@@ -433,7 +440,12 @@ const AddConsultation = () => {
           ]
         : [];
 
-      const transformedLabResults = formData.labResults.map((lab) => ({
+      const labResultsToSubmit = [...formData.labResults];
+      const labDraft = formData.draftLabResult;
+      if (labDraft?.testName?.trim() && labDraft?.date && labDraft?.results?.trim()) {
+        labResultsToSubmit.push(labDraft);
+      }
+      const transformedLabResults = labResultsToSubmit.map((lab) => ({
         testName: lab.testName,
         labName: lab.labName,
         dateOfTest: lab.date || lab.dateOfTest,
@@ -441,7 +453,12 @@ const AddConsultation = () => {
         comments: lab.comments,
       }));
 
-      const transformedRadiology = formData.radiology.map((rad) => ({
+      const radiologyToSubmit = [...formData.radiology];
+      const radiologyDraft = formData.draftRadiologyReport;
+      if (radiologyDraft?.scanType && radiologyDraft?.date && radiologyDraft?.bodyPart?.trim() && radiologyDraft?.findings?.trim()) {
+        radiologyToSubmit.push(radiologyDraft);
+      }
+      const transformedRadiology = radiologyToSubmit.map((rad) => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
         bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,
@@ -622,6 +639,7 @@ const AddConsultation = () => {
             },
             bodyTemperature: { value: formData.vitals.bodyTemperature || "" },
             respiratoryRate: { value: formData.vitals.respiratoryRate || "" },
+            haemoglobin: { value: formData.vitals.haemoglobin || "" },
             bloodGlucose: {
               value: formData.vitals.bloodGlucose || "",
               ...(formData.vitals.bloodGlucoseType
@@ -657,7 +675,12 @@ const AddConsultation = () => {
           ]
         : [];
 
-      const transformedLabResults = formData.labResults.map((lab) => ({
+      const labResultsToSubmit = [...formData.labResults];
+      const labDraft = formData.draftLabResult;
+      if (labDraft?.testName?.trim() && labDraft?.date && labDraft?.results?.trim()) {
+        labResultsToSubmit.push(labDraft);
+      }
+      const transformedLabResults = labResultsToSubmit.map((lab) => ({
         testName: lab.testName,
         labName: lab.labName,
         dateOfTest: lab.date || lab.dateOfTest,
@@ -665,7 +688,12 @@ const AddConsultation = () => {
         comments: lab.comments,
       }));
 
-      const transformedRadiology = formData.radiology.map((rad) => ({
+      const radiologyToSubmit = [...formData.radiology];
+      const radiologyDraft = formData.draftRadiologyReport;
+      if (radiologyDraft?.scanType && radiologyDraft?.date && radiologyDraft?.bodyPart?.trim() && radiologyDraft?.findings?.trim()) {
+        radiologyToSubmit.push(radiologyDraft);
+      }
+      const transformedRadiology = radiologyToSubmit.map((rad) => ({
         typeOfScan: rad.scanType || rad.typeOfScan,
         date: rad.date,
         bodyPartExamined: rad.bodyPart || rad.bodyPartExamined,

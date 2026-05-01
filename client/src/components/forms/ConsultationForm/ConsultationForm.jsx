@@ -84,8 +84,9 @@ const ConsultationForm = ({
         return (
           <LabResultsTab
             labResults={values.labResults}
-            errors={errors.labResults || {}}
-            touched={touched.labResults || {}}
+            draftLabResult={values.draftLabResult}
+            handleChange={handleChange}
+            handleBlur={handleBlur}
             setFieldValue={setFieldValue}
           />
         );
@@ -93,8 +94,9 @@ const ConsultationForm = ({
         return (
           <RadiologyTab
             radiologyReports={values.radiology}
-            errors={errors.radiology || {}}
-            touched={touched.radiology || {}}
+            draftRadiologyReport={values.draftRadiologyReport}
+            handleChange={handleChange}
+            handleBlur={handleBlur}
             setFieldValue={setFieldValue}
           />
         );

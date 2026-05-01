@@ -1,7 +1,7 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import classNames from 'classnames';
-import styles from './FormTabs.module.css';
+import React from "react";
+import PropTypes from "prop-types";
+import classNames from "classnames";
+import styles from "./FormTabs.module.css";
 
 const VitalsTab = ({
   values,
@@ -10,7 +10,7 @@ const VitalsTab = ({
   handleChange,
   handleBlur,
   setFieldValue,
-  physicalExamination = ''
+  physicalExamination = "",
 }) => {
   return (
     <div className={styles.tabContainer}>
@@ -18,7 +18,7 @@ const VitalsTab = ({
       <p className={styles.tabDescription}>
         Record patient's vital signs and physical.
       </p>
-      
+
       <div className={styles.formGrid}>
         <div className={styles.formGroup}>
           <label htmlFor="vitals.heartRate" className={styles.formLabel}>
@@ -29,14 +29,16 @@ const VitalsTab = ({
               type="number"
               id="vitals.heartRate"
               name="vitals.heartRate"
-              value={values.heartRate || ''}
+              value={values.heartRate || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter heart rate"
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.heartRate && errors?.heartRate ? styles.inputError : ''
+                touched?.heartRate && errors?.heartRate
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.inputUnit}>bpm</span>
@@ -45,9 +47,12 @@ const VitalsTab = ({
             <div className={styles.errorMessage}>{errors.heartRate}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="vitals.bloodPressure.systolic" className={styles.formLabel}>
+          <label
+            htmlFor="vitals.bloodPressure.systolic"
+            className={styles.formLabel}
+          >
             Blood Pressure
           </label>
           <div className={styles.bloodPressureGroup}>
@@ -55,14 +60,17 @@ const VitalsTab = ({
               type="number"
               id="vitals.bloodPressure.systolic"
               name="vitals.bloodPressure.systolic"
-              value={values.bloodPressure?.systolic || ''}
+              value={values.bloodPressure?.systolic || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Systolic"
               className={classNames(
                 styles.formInput,
                 styles.bloodPressureInput,
-                touched?.bloodPressure?.systolic && errors?.bloodPressure?.systolic ? styles.inputError : ''
+                touched?.bloodPressure?.systolic &&
+                  errors?.bloodPressure?.systolic
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.bloodPressureSeparator}>/</span>
@@ -70,26 +78,35 @@ const VitalsTab = ({
               type="number"
               id="vitals.bloodPressure.diastolic"
               name="vitals.bloodPressure.diastolic"
-              value={values.bloodPressure?.diastolic || ''}
+              value={values.bloodPressure?.diastolic || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Diastolic"
               className={classNames(
                 styles.formInput,
                 styles.bloodPressureInput,
-                touched?.bloodPressure?.diastolic && errors?.bloodPressure?.diastolic ? styles.inputError : ''
+                touched?.bloodPressure?.diastolic &&
+                  errors?.bloodPressure?.diastolic
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.inputUnit}>mmHg</span>
           </div>
-          {(touched?.bloodPressure?.systolic && errors?.bloodPressure?.systolic) && (
-            <div className={styles.errorMessage}>{errors.bloodPressure.systolic}</div>
-          )}
-          {(touched?.bloodPressure?.diastolic && errors?.bloodPressure?.diastolic) && (
-            <div className={styles.errorMessage}>{errors.bloodPressure.diastolic}</div>
-          )}
+          {touched?.bloodPressure?.systolic &&
+            errors?.bloodPressure?.systolic && (
+              <div className={styles.errorMessage}>
+                {errors.bloodPressure.systolic}
+              </div>
+            )}
+          {touched?.bloodPressure?.diastolic &&
+            errors?.bloodPressure?.diastolic && (
+              <div className={styles.errorMessage}>
+                {errors.bloodPressure.diastolic}
+              </div>
+            )}
         </div>
-        
+
         <div className={styles.formGroup}>
           <label htmlFor="vitals.bodyTemperature" className={styles.formLabel}>
             Body Temperature
@@ -99,7 +116,7 @@ const VitalsTab = ({
               type="number"
               id="vitals.bodyTemperature"
               name="vitals.bodyTemperature"
-              value={values.bodyTemperature || ''}
+              value={values.bodyTemperature || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter body temperature"
@@ -107,7 +124,9 @@ const VitalsTab = ({
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.bodyTemperature && errors?.bodyTemperature ? styles.inputError : ''
+                touched?.bodyTemperature && errors?.bodyTemperature
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.inputUnit}>°C</span>
@@ -116,7 +135,7 @@ const VitalsTab = ({
             <div className={styles.errorMessage}>{errors.bodyTemperature}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
           <label htmlFor="vitals.respiratoryRate" className={styles.formLabel}>
             Respiratory Rate
@@ -126,14 +145,16 @@ const VitalsTab = ({
               type="number"
               id="vitals.respiratoryRate"
               name="vitals.respiratoryRate"
-              value={values.respiratoryRate || ''}
+              value={values.respiratoryRate || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter respiratory rate"
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.respiratoryRate && errors?.respiratoryRate ? styles.inputError : ''
+                touched?.respiratoryRate && errors?.respiratoryRate
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.inputUnit}>breaths/min</span>
@@ -142,58 +163,48 @@ const VitalsTab = ({
             <div className={styles.errorMessage}>{errors.respiratoryRate}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
-          <div className={styles.labelRow}>
-            <label htmlFor="vitals.bloodGlucose" className={styles.formLabel}>
-              Blood Glucose
-            </label>
-            <select
-              id="vitals.bloodGlucoseType"
-              name="vitals.bloodGlucoseType"
-              value={values.bloodGlucoseType || ''}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className={styles.contextSelect}
-            >
-              <option value="">Select type</option>
-              <option value="random">Random / Casual</option>
-              <option value="fasting">Fasting</option>
-              <option value="post-prandial">Post-Prandial</option>
-              <option value="rapid">Rapid / Point-of-Care</option>
-            </select>
-          </div>
+          <label htmlFor="vitals.haemoglobin" className={styles.formLabel}>
+            Haemoglobin
+          </label>
           <div className={styles.inputGroup}>
             <input
               type="number"
-              id="vitals.bloodGlucose"
-              name="vitals.bloodGlucose"
-              value={values.bloodGlucose || ''}
+              id="vitals.haemoglobin"
+              name="vitals.haemoglobin"
+              value={values.haemoglobin || ""}
               onChange={handleChange}
               onBlur={handleBlur}
-              placeholder="Enter blood glucose level"
+              placeholder="Enter haemoglobin level"
+              step="0.1"
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.bloodGlucose && errors?.bloodGlucose ? styles.inputError : ''
+                touched?.haemoglobin && errors?.haemoglobin
+                  ? styles.inputError
+                  : "",
               )}
             />
-            <span className={styles.inputUnit}>mg/dL</span>
+            <span className={styles.inputUnit}>g/dL</span>
           </div>
-          {touched?.bloodGlucose && errors?.bloodGlucose && (
-            <div className={styles.errorMessage}>{errors.bloodGlucose}</div>
+          {touched?.haemoglobin && errors?.haemoglobin && (
+            <div className={styles.errorMessage}>{errors.haemoglobin}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
           <div className={styles.labelRow}>
-            <label htmlFor="vitals.bloodOxygenSaturation" className={styles.formLabel}>
+            <label
+              htmlFor="vitals.bloodOxygenSaturation"
+              className={styles.formLabel}
+            >
               Blood Oxygen Saturation
             </label>
             <select
               id="vitals.spo2Context"
               name="vitals.spo2Context"
-              value={values.spo2Context || ''}
+              value={values.spo2Context || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               className={styles.contextSelect}
@@ -210,7 +221,7 @@ const VitalsTab = ({
               type="number"
               id="vitals.bloodOxygenSaturation"
               name="vitals.bloodOxygenSaturation"
-              value={values.bloodOxygenSaturation || ''}
+              value={values.bloodOxygenSaturation || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter blood oxygen level"
@@ -219,17 +230,65 @@ const VitalsTab = ({
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.bloodOxygenSaturation && errors?.bloodOxygenSaturation ? styles.inputError : ''
+                touched?.bloodOxygenSaturation && errors?.bloodOxygenSaturation
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.inputUnit}>%</span>
           </div>
           {touched?.bloodOxygenSaturation && errors?.bloodOxygenSaturation && (
-            <div className={styles.errorMessage}>{errors.bloodOxygenSaturation}</div>
+            <div className={styles.errorMessage}>
+              {errors.bloodOxygenSaturation}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.formGroup}>
+          <div className={styles.labelRow}>
+            <label htmlFor="vitals.bloodGlucose" className={styles.formLabel}>
+              Blood Glucose
+            </label>
+            <select
+              id="vitals.bloodGlucoseType"
+              name="vitals.bloodGlucoseType"
+              value={values.bloodGlucoseType || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              className={styles.contextSelect}
+            >
+              <option value="">Select type</option>
+              <option value="random">Random / Casual</option>
+              <option value="fasting">Fasting</option>
+              <option value="post-prandial">Post-Prandial</option>
+              <option value="rapid">Rapid / Point-of-Care</option>
+            </select>
+          </div>
+          <div className={styles.inputGroup}>
+            <input
+              type="number"
+              id="vitals.bloodGlucose"
+              name="vitals.bloodGlucose"
+              value={values.bloodGlucose || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              placeholder="Enter blood glucose level"
+              className={classNames(
+                styles.formInput,
+                styles.inputWithUnit,
+                touched?.bloodGlucose && errors?.bloodGlucose
+                  ? styles.inputError
+                  : "",
+              )}
+            />
+            <span className={styles.inputUnit}>mmol/L</span>
+          </div>
+          {touched?.bloodGlucose && errors?.bloodGlucose && (
+            <div className={styles.errorMessage}>{errors.bloodGlucose}</div>
           )}
         </div>
       </div>
-      
+
       <div className={styles.formGrid}>
         <div className={styles.formGroup}>
           <label htmlFor="vitals.bmi" className={styles.formLabel}>
@@ -239,23 +298,26 @@ const VitalsTab = ({
             type="number"
             id="vitals.bmi"
             name="vitals.bmi"
-            value={values.bmi || ''}
+            value={values.bmi || ""}
             onChange={handleChange}
             onBlur={handleBlur}
             placeholder="Enter BMI"
             step="0.1"
             className={classNames(
               styles.formInput,
-              touched?.bmi && errors?.bmi ? styles.inputError : ''
+              touched?.bmi && errors?.bmi ? styles.inputError : "",
             )}
           />
           {touched?.bmi && errors?.bmi && (
             <div className={styles.errorMessage}>{errors.bmi}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="vitals.bodyFatPercentage" className={styles.formLabel}>
+          <label
+            htmlFor="vitals.bodyFatPercentage"
+            className={styles.formLabel}
+          >
             Body Fat Percentage
           </label>
           <div className={styles.inputGroup}>
@@ -263,7 +325,7 @@ const VitalsTab = ({
               type="number"
               id="vitals.bodyFatPercentage"
               name="vitals.bodyFatPercentage"
-              value={values.bodyFatPercentage || ''}
+              value={values.bodyFatPercentage || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter body fat percentage"
@@ -273,16 +335,20 @@ const VitalsTab = ({
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.bodyFatPercentage && errors?.bodyFatPercentage ? styles.inputError : ''
+                touched?.bodyFatPercentage && errors?.bodyFatPercentage
+                  ? styles.inputError
+                  : "",
               )}
             />
             <span className={styles.inputUnit}>%</span>
           </div>
           {touched?.bodyFatPercentage && errors?.bodyFatPercentage && (
-            <div className={styles.errorMessage}>{errors.bodyFatPercentage}</div>
+            <div className={styles.errorMessage}>
+              {errors.bodyFatPercentage}
+            </div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
           <label htmlFor="vitals.weight" className={styles.formLabel}>
             Weight
@@ -292,7 +358,7 @@ const VitalsTab = ({
               type="number"
               id="vitals.weight"
               name="vitals.weight"
-              value={values.weight || ''}
+              value={values.weight || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter weight"
@@ -300,7 +366,7 @@ const VitalsTab = ({
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.weight && errors?.weight ? styles.inputError : ''
+                touched?.weight && errors?.weight ? styles.inputError : "",
               )}
             />
             <span className={styles.inputUnit}>kg</span>
@@ -309,7 +375,7 @@ const VitalsTab = ({
             <div className={styles.errorMessage}>{errors.weight}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
           <label htmlFor="vitals.height" className={styles.formLabel}>
             Height
@@ -319,7 +385,7 @@ const VitalsTab = ({
               type="number"
               id="vitals.height"
               name="vitals.height"
-              value={values.height || ''}
+              value={values.height || ""}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder="Enter height"
@@ -327,7 +393,7 @@ const VitalsTab = ({
               className={classNames(
                 styles.formInput,
                 styles.inputWithUnit,
-                touched?.height && errors?.height ? styles.inputError : ''
+                touched?.height && errors?.height ? styles.inputError : "",
               )}
             />
             <span className={styles.inputUnit}>cm</span>
@@ -346,7 +412,7 @@ const VitalsTab = ({
           id="physicalExamination"
           name="physicalExamination"
           value={physicalExamination}
-          onChange={(e) => setFieldValue('physicalExamination', e.target.value)}
+          onChange={(e) => setFieldValue("physicalExamination", e.target.value)}
           placeholder="Enter physical examination findings..."
           className={styles.textarea}
           style={{ minHeight: 140 }}
@@ -363,7 +429,7 @@ VitalsTab.propTypes = {
   handleChange: PropTypes.func.isRequired,
   handleBlur: PropTypes.func.isRequired,
   setFieldValue: PropTypes.func.isRequired,
-  physicalExamination: PropTypes.string
+  physicalExamination: PropTypes.string,
 };
 
-export default VitalsTab; 
+export default VitalsTab;

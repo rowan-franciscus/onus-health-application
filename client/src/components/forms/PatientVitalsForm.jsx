@@ -155,7 +155,7 @@ const PatientVitalsForm = ({
                 touched?.bloodGlucose && errors?.bloodGlucose ? styles.inputError : ''
               )}
             />
-            <span className={styles.inputUnit}>mg/dL</span>
+            <span className={styles.inputUnit}>mmol/L</span>
           </div>
           {touched?.bloodGlucose && errors?.bloodGlucose && (
             <div className={styles.errorMessage}>{errors.bloodGlucose}</div>

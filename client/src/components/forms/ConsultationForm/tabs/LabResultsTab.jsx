@@ -4,92 +4,48 @@ import classNames from 'classnames';
 import { formatDate } from '../../../../utils/dateUtils';
 import styles from './FormTabs.module.css';
 
+const EMPTY_DRAFT = { testName: '', labName: '', date: '', results: '', comments: '' };
+
 const LabResultsTab = ({
   labResults,
-  errors,
-  touched,
-  setFieldValue
+  draftLabResult,
+  handleChange,
+  handleBlur,
+  setFieldValue,
 }) => {
-  const [newLabResult, setNewLabResult] = useState({
-    testName: '',
-    labName: '',
-    date: '',
-    results: '',
-    comments: ''
-  });
-  
+  const draft = draftLabResult || EMPTY_DRAFT;
   const [formErrors, setFormErrors] = useState({});
-  
+
   const validateLabResult = (labResult) => {
     const errors = {};
-    
-    if (!labResult.testName.trim()) {
-      errors.testName = 'Test name is required';
-    }
-    
-    if (!labResult.date) {
-      errors.date = 'Test date is required';
-    }
-    
-    if (!labResult.results.trim()) {
-      errors.results = 'Results are required';
-    }
-    
+    if (!labResult.testName.trim()) errors.testName = 'Test name is required';
+    if (!labResult.date) errors.date = 'Test date is required';
+    if (!labResult.results.trim()) errors.results = 'Results are required';
     return errors;
   };
-  
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewLabResult(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear errors when typing
-    if (formErrors[name]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: undefined
-      }));
-    }
-  };
-  
+
   const handleAddLabResult = () => {
-    const validationErrors = validateLabResult(newLabResult);
-    
+    const validationErrors = validateLabResult(draft);
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors);
       return;
     }
-    
-    // Add the new lab result to the list
-    const updatedLabResults = [...labResults, newLabResult];
-    setFieldValue('labResults', updatedLabResults);
-    
-    // Reset the form for the next lab result
-    setNewLabResult({
-      testName: '',
-      labName: '',
-      date: '',
-      results: '',
-      comments: ''
-    });
-    
+    setFieldValue('labResults', [...labResults, draft]);
+    setFieldValue('draftLabResult', EMPTY_DRAFT);
     setFormErrors({});
   };
-  
+
   const handleDeleteLabResult = (index) => {
-    const updatedLabResults = labResults.filter((_, i) => i !== index);
-    setFieldValue('labResults', updatedLabResults);
+    setFieldValue('labResults', labResults.filter((_, i) => i !== index));
   };
-  
+
   return (
     <div className={styles.tabContainer}>
       <h2 className={styles.tabTitle}>Lab Results</h2>
       <p className={styles.tabDescription}>
         Add laboratory test results for this consultation
       </p>
-      
+
       {labResults.length > 0 && (
         <div className={styles.labResultsList}>
           {labResults.map((labResult, index) => (
@@ -106,29 +62,29 @@ const LabResultsTab = ({
                   Remove
                 </button>
               </div>
-              
+
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Test Name</label>
                   <p className={styles.formValue}>{labResult.testName}</p>
                 </div>
-                
+
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Lab Name</label>
                   <p className={styles.formValue}>{labResult.labName || 'Not specified'}</p>
                 </div>
-                
+
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Test Date</label>
                   <p className={styles.formValue}>{formatDate(labResult.date)}</p>
                 </div>
               </div>
-              
+
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Results</label>
                 <p className={styles.formValue}>{labResult.results}</p>
               </div>
-              
+
               {labResult.comments && (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Comments or Diagnosis</label>
@@ -139,21 +95,22 @@ const LabResultsTab = ({
           ))}
         </div>
       )}
-      
+
       <div className={styles.fieldGroup}>
         <h3 className={styles.fieldGroupTitle}>Add New Lab Result</h3>
-        
+
         <div className={styles.formGrid}>
           <div className={styles.formGroup}>
-            <label htmlFor="testName" className={styles.formLabel}>
+            <label htmlFor="draftLabResult.testName" className={styles.formLabel}>
               Test Name <span className={styles.required}>*</span>
             </label>
             <input
               type="text"
-              id="testName"
-              name="testName"
-              value={newLabResult.testName}
-              onChange={handleInputChange}
+              id="draftLabResult.testName"
+              name="draftLabResult.testName"
+              value={draft.testName}
+              onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Enter test name"
               className={classNames(
                 styles.formInput,
@@ -164,32 +121,34 @@ const LabResultsTab = ({
               <div className={styles.errorMessage}>{formErrors.testName}</div>
             )}
           </div>
-          
+
           <div className={styles.formGroup}>
-            <label htmlFor="labName" className={styles.formLabel}>
+            <label htmlFor="draftLabResult.labName" className={styles.formLabel}>
               Lab Name
             </label>
             <input
               type="text"
-              id="labName"
-              name="labName"
-              value={newLabResult.labName}
-              onChange={handleInputChange}
+              id="draftLabResult.labName"
+              name="draftLabResult.labName"
+              value={draft.labName}
+              onChange={handleChange}
+              onBlur={handleBlur}
               placeholder="Enter laboratory name"
               className={styles.formInput}
             />
           </div>
-          
+
           <div className={styles.formGroup}>
-            <label htmlFor="date" className={styles.formLabel}>
+            <label htmlFor="draftLabResult.date" className={styles.formLabel}>
               Test Date <span className={styles.required}>*</span>
             </label>
             <input
               type="date"
-              id="date"
-              name="date"
-              value={newLabResult.date}
-              onChange={handleInputChange}
+              id="draftLabResult.date"
+              name="draftLabResult.date"
+              value={draft.date}
+              onChange={handleChange}
+              onBlur={handleBlur}
               className={classNames(
                 styles.formInput,
                 formErrors.date ? styles.inputError : ''
@@ -200,16 +159,17 @@ const LabResultsTab = ({
             )}
           </div>
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="results" className={styles.formLabel}>
+          <label htmlFor="draftLabResult.results" className={styles.formLabel}>
             Results <span className={styles.required}>*</span>
           </label>
           <textarea
-            id="results"
-            name="results"
-            value={newLabResult.results}
-            onChange={handleInputChange}
+            id="draftLabResult.results"
+            name="draftLabResult.results"
+            value={draft.results}
+            onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Enter test results"
             className={classNames(
               styles.textarea,
@@ -221,22 +181,23 @@ const LabResultsTab = ({
             <div className={styles.errorMessage}>{formErrors.results}</div>
           )}
         </div>
-        
+
         <div className={styles.formGroup}>
-          <label htmlFor="comments" className={styles.formLabel}>
+          <label htmlFor="draftLabResult.comments" className={styles.formLabel}>
             Comments or Diagnosis
           </label>
           <textarea
-            id="comments"
-            name="comments"
-            value={newLabResult.comments}
-            onChange={handleInputChange}
+            id="draftLabResult.comments"
+            name="draftLabResult.comments"
+            value={draft.comments}
+            onChange={handleChange}
+            onBlur={handleBlur}
             placeholder="Enter any comments or diagnosis related to results"
             className={styles.textarea}
             rows={3}
           />
         </div>
-        
+
         <div className={styles.formActions}>
           <button
             type="button"
@@ -247,7 +208,7 @@ const LabResultsTab = ({
           </button>
         </div>
       </div>
-      
+
       {labResults.length === 0 && (
         <div className={styles.noDataMessage}>
           No lab results added yet. Use the form above to add lab results.
@@ -259,9 +220,10 @@ const LabResultsTab = ({
 
 LabResultsTab.propTypes = {
   labResults: PropTypes.array.isRequired,
-  errors: PropTypes.object,
-  touched: PropTypes.object,
-  setFieldValue: PropTypes.func.isRequired
+  draftLabResult: PropTypes.object,
+  handleChange: PropTypes.func.isRequired,
+  handleBlur: PropTypes.func.isRequired,
+  setFieldValue: PropTypes.func.isRequired,
 };
 
-export default LabResultsTab; 
+export default LabResultsTab;

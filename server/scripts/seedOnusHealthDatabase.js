@@ -198,7 +198,7 @@ async function createMedicalRecords(patient, provider, consultations) {
         },
         bloodGlucose: {
           value: Math.floor(Math.random() * 50) + 100, // Random between 100-150
-          unit: 'mg/dL',
+          unit: 'mmol/L',
           measurementType: 'random'
         }
       });
