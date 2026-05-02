@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Formik, Form } from 'formik';
 import { toast } from 'react-toastify';
 
@@ -37,8 +38,17 @@ const StandaloneRecordPage = ({
   mapToPayload,
   createRecord
 }) => {
+  const [searchParams] = useSearchParams();
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePatientsLoaded = (patients) => {
+    const targetId = searchParams.get('patientId');
+    if (targetId && !selectedPatient) {
+      const match = patients.find(p => p.id === targetId);
+      if (match) setSelectedPatient(match);
+    }
+  };
 
   const handleOpen = (patient) => setSelectedPatient(patient);
   const handleClose = () => {
@@ -95,6 +105,7 @@ const StandaloneRecordPage = ({
         title={title}
         subtitle={subtitle}
         renderActions={renderActions}
+        onPatientsLoaded={handlePatientsLoaded}
       />
 
       <Modal

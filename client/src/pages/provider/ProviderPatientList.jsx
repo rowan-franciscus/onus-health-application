@@ -42,7 +42,8 @@ const ProviderPatientList = ({
   headerAction = null,
   renderActions,
   showCategories = true,
-  categories = DEFAULT_CATEGORIES
+  categories = DEFAULT_CATEGORIES,
+  onPatientsLoaded = null
 }) => {
   const [patients, setPatients] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
@@ -101,6 +102,7 @@ const ProviderPatientList = ({
 
       setPatients(enhancedPatients);
       setFilteredPatients(enhancedPatients);
+      if (onPatientsLoaded) onPatientsLoaded(enhancedPatients);
     } catch (error) {
       console.error('Error fetching patients and connections:', error);
       toast.error('Failed to load patients');
