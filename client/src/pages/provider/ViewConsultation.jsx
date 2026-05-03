@@ -7,6 +7,7 @@ import ConsultationService from "../../services/consultation.service";
 import { formatDate } from "../../utils/dateUtils";
 import { useAuth } from "../../contexts/AuthContext";
 
+import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Badge from "../../components/common/Badge/Badge";
 import Timeline from "../../components/common/Timeline/Timeline";
