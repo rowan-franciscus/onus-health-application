@@ -19,7 +19,13 @@ const TimelineItem = ({ item, hasNext }) => {
           onClick={() => setExpanded((v) => !v)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setExpanded((v) => !v);
+            }
+          }}
         >
           <div className={styles.headerLeft}>
             <span className={styles.chevron}>{expanded ? '▾' : '▸'}</span>

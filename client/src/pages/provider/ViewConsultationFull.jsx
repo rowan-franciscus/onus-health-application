@@ -69,7 +69,7 @@ const ViewConsultationFull = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/provider/consultations/${id}/edit`);
+    navigate(`/provider/consultations/${consultation._id}/edit`);
   };
 
   const handleFileView = (file) => {
@@ -92,7 +92,7 @@ const ViewConsultationFull = () => {
 
   const handleFileDelete = async (file) => {
     try {
-      await FileService.deleteConsultationAttachment(id, file.id);
+      await FileService.deleteConsultationAttachment(consultation._id, file.id);
       toast.success('File deleted successfully');
       fetchConsultationData();
     } catch (error) {

@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 import styles from './AddConsultation.module.css';
 
 import Card from '../../components/common/Card';
-import Button from '../../components/common/Button';
 import Tabs from '../../components/common/Tabs';
 import ConsultationForm from '../../components/forms/ConsultationForm';
 import LoadingSpinner from '../../components/common/LoadingSpinner';

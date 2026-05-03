@@ -7,7 +7,6 @@ import ConsultationService from "../../services/consultation.service";
 import { formatDate } from "../../utils/dateUtils";
 import { useAuth } from "../../contexts/AuthContext";
 
-import Button from "../../components/common/Button";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Badge from "../../components/common/Badge/Badge";
 import Timeline from "../../components/common/Timeline/Timeline";
@@ -91,10 +90,8 @@ const ViewConsultation = () => {
           </div>
         </div>
         <div className={styles.viewFullRow}>
-          <Link to={fullUrl}>
-            <button className={styles.viewFullBtn}>
-              <span className={styles.eyeIcon}>👁</span> View Full Consultation
-            </button>
+          <Link to={fullUrl} className={styles.viewFullBtn}>
+            <span className={styles.eyeIcon}>👁</span> View Full Consultation
           </Link>
         </div>
       </div>

@@ -201,7 +201,11 @@ exports.getConsultationById = async (req, res) => {
     }
 
     // Fetch the thread (all follow-ups for this root, sorted chronologically)
-    const followUps = await Consultation.find({ parentConsultation: rootConsultation._id })
+    const threadQuery = { parentConsultation: rootConsultation._id };
+    // Patients may only see completed entries
+    if (req.user.role === 'patient') threadQuery.status = 'completed';
+
+    const followUps = await Consultation.find(threadQuery)
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
@@ -1024,6 +1028,7 @@ exports.addFollowUp = async (req, res) => {
     const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
     delete consultationData.patient;
     delete consultationData.patientEmail;
+    delete consultationData.provider;
     delete consultationData.parentConsultation;
     delete consultationData.caseStatus;
     delete consultationData.immunization;
@@ -1043,8 +1048,19 @@ exports.addFollowUp = async (req, res) => {
 
     const patientId = root.patient;
 
+    const hasVitalsData = (v) => {
+      if (!v) return false;
+      return Object.values(v).some(val => {
+        if (!val) return false;
+        if (typeof val === 'object') {
+          return Object.values(val).some(nested => nested !== null && nested !== undefined && nested !== '');
+        }
+        return true;
+      });
+    };
+
     // Create vitals if provided
-    if (vitals && Object.values(vitals).some(val => val && (typeof val === 'object' ? val.value : val))) {
+    if (hasVitalsData(vitals)) {
       const vitalsRecord = new VitalsRecord({
         patient: patientId,
         provider: providerId,
@@ -1157,7 +1173,11 @@ exports.closeCase = async (req, res) => {
       return res.status(403).json({ message: 'Only the assigned provider can close this case' });
     }
 
-    consultation.closeCase();
+    try {
+      consultation.closeCase();
+    } catch (domainError) {
+      return res.status(400).json({ message: domainError.message });
+    }
     await consultation.save();
 
     const followUps = await Consultation.find({ parentConsultation: consultation._id })
@@ -1203,7 +1223,11 @@ exports.reopenCase = async (req, res) => {
       return res.status(403).json({ message: 'Only the assigned provider can reopen this case' });
     }
 
-    consultation.reopenCase();
+    try {
+      consultation.reopenCase();
+    } catch (domainError) {
+      return res.status(400).json({ message: domainError.message });
+    }
     await consultation.save();
 
     const followUps = await Consultation.find({ parentConsultation: consultation._id })
