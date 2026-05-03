@@ -292,6 +292,62 @@
   margin-bottom: 1rem;
 }
 
+/* Thread timeline view */
+.threadHeader {
+  margin-bottom: 24px;
+}
+
+.timelineWrapper {
+  max-width: 760px;
+  margin: 0 auto 24px;
+}
+
+.threadActions {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.closeButton {
+  border-color: #e0e0e0 !important;
+  color: #555 !important;
+}
+
+.threadEntryContent {
+  padding-top: 12px;
+}
+
+.threadCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.threadColLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.threadColValue {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.5;
+}
+
+.viewFullLink {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .viewContainer {

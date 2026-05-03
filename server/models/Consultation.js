@@ -89,6 +89,25 @@ const ConsultationSchema = new Schema({
     ref: 'SurgeryRecord'
   }],
   
+  // Thread support: follow-ups point to their root consultation
+  parentConsultation: {
+    type: Schema.Types.ObjectId,
+    ref: 'Consultation',
+    default: null,
+    index: true
+  },
+
+  // Case lifecycle status (meaningful only on root consultations)
+  caseStatus: {
+    type: String,
+    enum: ['open', 'closed'],
+    default: 'open'
+  },
+  caseClosedAt: {
+    type: Date,
+    default: null
+  },
+
   // Consultation status and metadata
   status: {
     type: String,
@@ -126,5 +145,23 @@ ConsultationSchema.virtual('title').get(function() {
 // Index for faster queries
 ConsultationSchema.index({ patient: 1, date: -1 });
 ConsultationSchema.index({ provider: 1, date: -1 });
+
+ConsultationSchema.methods.isRoot = function() {
+  return this.parentConsultation == null;
+};
+
+ConsultationSchema.methods.closeCase = function() {
+  if (!this.isRoot()) throw new Error('Only the root consultation can be closed');
+  if (this.caseStatus === 'closed') throw new Error('Case is already closed');
+  this.caseStatus = 'closed';
+  this.caseClosedAt = new Date();
+};
+
+ConsultationSchema.methods.reopenCase = function() {
+  if (!this.isRoot()) throw new Error('Only the root consultation can be reopened');
+  if (this.caseStatus === 'open') throw new Error('Case is already open');
+  this.caseStatus = 'open';
+  this.caseClosedAt = null;
+};
 
 module.exports = mongoose.model('Consultation', ConsultationSchema); 

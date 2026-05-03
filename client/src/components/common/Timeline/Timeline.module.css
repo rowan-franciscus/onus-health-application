@@ -1,0 +1,111 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.item {
+  display: flex;
+  gap: 16px;
+  position: relative;
+}
+
+.dotWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 20px;
+  padding-top: 20px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #5b5fc7;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.dotDashed {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px dashed #aaa;
+  flex-shrink: 0;
+}
+
+.line {
+  width: 2px;
+  flex: 1;
+  background-color: #e0e0e0;
+  margin-top: 4px;
+  min-height: 16px;
+}
+
+.card {
+  flex: 1;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cardHeader:hover {
+  background-color: #fafafa;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chevron {
+  font-size: 14px;
+  color: #888;
+  width: 14px;
+  text-align: center;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.badgeSlot {
+  flex-shrink: 0;
+}
+
+.cardContent {
+  padding: 0 20px 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.trailing {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 0 16px 0;
+  font-size: 14px;
+  color: #aaa;
+  font-style: italic;
+}

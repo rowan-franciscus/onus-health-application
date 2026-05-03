@@ -85,6 +85,19 @@
   font-weight: 600;
 }
 
+.visitCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: rgba(91, 95, 199, 0.12);
+  color: #5b5fc7;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .header {

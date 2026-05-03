@@ -124,8 +124,43 @@ router.put('/:id', authenticateJWT, isProvider,
   }
 );
 
+// Add a follow-up to a consultation (provider only)
+router.post('/:id/follow-ups', authenticateJWT, isProvider,
+  param('id').isMongoId().withMessage('Invalid consultation ID'),
+  body('general.specialistName').notEmpty().withMessage('Specialist name is required'),
+  body('general.specialty').notEmpty().withMessage('Specialty is required'),
+  body('general.reasonForVisit').custom((value, { req }) => {
+    if (req.body.status === 'completed' && (!value || value.trim() === '')) {
+      throw new Error('Reason for visit is required for completed consultations');
+    }
+    return true;
+  }),
+  validateRequest,
+  (req, res) => {
+    consultationController.addFollowUp(req, res);
+  }
+);
+
+// Close a consultation case (provider only)
+router.post('/:id/close', authenticateJWT, isProvider,
+  param('id').isMongoId().withMessage('Invalid consultation ID'),
+  validateRequest,
+  (req, res) => {
+    consultationController.closeCase(req, res);
+  }
+);
+
+// Reopen a closed consultation case (provider only)
+router.post('/:id/reopen', authenticateJWT, isProvider,
+  param('id').isMongoId().withMessage('Invalid consultation ID'),
+  validateRequest,
+  (req, res) => {
+    consultationController.reopenCase(req, res);
+  }
+);
+
 // Delete a consultation (provider only)
-router.delete('/:id', authenticateJWT, isProvider, 
+router.delete('/:id', authenticateJWT, isProvider,
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest, 
   (req, res) => {

@@ -988,3 +988,19 @@
     padding-right: 10px;
   }
 } 
+
+.consultationBadges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.visitCount {
+  font-size: 12px;
+  color: #888;
+}
+
+.visitCountSmall {
+  font-size: 12px;
+  color: #888;
+}

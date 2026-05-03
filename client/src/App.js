@@ -54,6 +54,8 @@ const ProviderAddPatient = lazy(() => import('./pages/provider/AddPatient'));
 const ProviderConsultations = lazy(() => import('./pages/provider/Consultations'));
 const ProviderAddConsultation = lazy(() => import('./pages/provider/AddConsultation'));
 const ProviderViewConsultation = lazy(() => import('./pages/provider/ViewConsultation'));
+const ProviderViewConsultationFull = lazy(() => import('./pages/provider/ViewConsultationFull'));
+const ProviderAddFollowUp = lazy(() => import('./pages/provider/AddFollowUp'));
 const ProviderViewVitals = lazy(() => import('./pages/provider/ViewVitals'));
 const ProviderImmunizations = lazy(() => import('./pages/provider/Immunizations'));
 const ProviderHospitalRecords = lazy(() => import('./pages/provider/HospitalRecords'));
@@ -445,15 +447,35 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/provider/consultations/:id" 
+            <Route
+              path="/provider/consultations/:id/full"
               element={
-                <ProtectedRoute 
-                  element={<ProviderViewConsultation />} 
-                  allowedRoles={['provider']} 
+                <ProtectedRoute
+                  element={<ProviderViewConsultationFull />}
+                  allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
-              } 
+              }
+            />
+            <Route
+              path="/provider/consultations/:rootId/follow-ups/new"
+              element={
+                <ProtectedRoute
+                  element={<ProviderAddFollowUp />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/consultations/:id"
+              element={
+                <ProtectedRoute
+                  element={<ProviderViewConsultation />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
             />
             <Route
               path="/provider/medical-records/vitals/:id"

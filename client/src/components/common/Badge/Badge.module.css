@@ -1,0 +1,55 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.default {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #555;
+}
+
+.success {
+  background-color: rgba(76, 175, 80, 0.12);
+  color: #2e7d32;
+}
+
+.warning {
+  background-color: rgba(255, 152, 0, 0.12);
+  color: #e65100;
+}
+
+.error {
+  background-color: rgba(244, 67, 54, 0.12);
+  color: #c62828;
+}
+
+.info {
+  background-color: rgba(33, 150, 243, 0.12);
+  color: #1565c0;
+}
+
+.draft {
+  background-color: rgba(158, 158, 158, 0.12);
+  color: #616161;
+}
+
+.completed {
+  background-color: rgba(76, 175, 80, 0.12);
+  color: #2e7d32;
+}
+
+.open {
+  background-color: rgba(255, 152, 0, 0.12);
+  color: #e65100;
+}
+
+.closed {
+  background-color: rgba(76, 175, 80, 0.12);
+  color: #2e7d32;
+}
