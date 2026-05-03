@@ -1,3 +1,140 @@
+/* ===== Thread timeline page ===== */
+.threadPage {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.timelineArea {
+  margin-top: 24px;
+}
+
+/* Action bar at the bottom */
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+.actionBarLeft {
+  display: flex;
+}
+
+.closeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #d0d0d8;
+  border-radius: 8px;
+  background: #fff;
+  color: #444;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.closeBtn:hover:not(:disabled) { background: #f5f5f7; }
+.closeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.reopenBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #5b5fc7;
+  border-radius: 8px;
+  background: #fff;
+  color: #5b5fc7;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.reopenBtn:hover:not(:disabled) { background: #f0f0fc; }
+.reopenBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.addFollowUpBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #5b5fc7;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.addFollowUpBtn:hover:not(:disabled) { background: #4a4eb5; }
+.addFollowUpBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Entry expanded content */
+.entryContent {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entryCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 4px 0 8px;
+}
+
+.entryCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.entryColLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #aaa;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.entryColValue {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  min-height: 20px;
+}
+
+.viewFullRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.viewFullBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border: 1px solid #e0e0e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.viewFullBtn:hover { background: #f5f5f7; }
+
+.eyeIcon {
+  font-size: 14px;
+}
+
+/* ===== Full-tabbed view (ViewConsultationFull) — existing classes below ===== */
 .viewContainer {
   max-width: 1200px;
   margin: 0 auto;

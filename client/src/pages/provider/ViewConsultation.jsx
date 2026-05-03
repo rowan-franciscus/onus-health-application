@@ -28,9 +28,7 @@ const ViewConsultation = () => {
     setIsLoading(true);
     try {
       const response = await ApiService.get(`/consultations/${id}`);
-      if (response) {
-        setConsultation(response);
-      }
+      if (response) setConsultation(response);
     } catch (error) {
       console.error('Error fetching consultation:', error);
       toast.error('Failed to load consultation');
@@ -40,7 +38,6 @@ const ViewConsultation = () => {
   };
 
   const handleCloseCase = async () => {
-    if (!window.confirm('Are you sure you want to close this case? No further follow-ups can be added until it is reopened.')) return;
     setIsActing(true);
     try {
       const updated = await ConsultationService.closeCase(consultation._id);
@@ -70,48 +67,79 @@ const ViewConsultation = () => {
     navigate(`/provider/consultations/${consultation._id}/follow-ups/new`);
   };
 
-  const buildEntryContent = (entry) => (
-    <div className={styles.threadEntryContent}>
-      <div className={styles.threadCols}>
-        <div className={styles.threadCol}>
-          <div className={styles.threadColLabel}>DIAGNOSIS</div>
-          <div className={styles.threadColValue}>{entry.general?.diagnosis || '—'}</div>
+  /* Build the expandable content for a single thread entry */
+  const buildEntryContent = (entry, rootId) => {
+    const isFollowUp = !!entry.parentConsultation;
+    const fullUrl = isFollowUp
+      ? `/provider/consultations/${rootId}/full?followUpId=${entry._id}`
+      : `/provider/consultations/${rootId}/full`;
+
+    return (
+      <div className={styles.entryContent}>
+        <div className={styles.entryCols}>
+          <div className={styles.entryCol}>
+            <div className={styles.entryColLabel}>DIAGNOSIS</div>
+            <div className={styles.entryColValue}>
+              {entry.general?.diagnosis || '—'}
+            </div>
+          </div>
+          <div className={styles.entryCol}>
+            <div className={styles.entryColLabel}>TREATMENT</div>
+            <div className={styles.entryColValue}>
+              {entry.management || '—'}
+            </div>
+          </div>
         </div>
-        <div className={styles.threadCol}>
-          <div className={styles.threadColLabel}>TREATMENT</div>
-          <div className={styles.threadColValue}>{entry.management || '—'}</div>
+        <div className={styles.viewFullRow}>
+          <Link to={fullUrl}>
+            <button className={styles.viewFullBtn}>
+              <span className={styles.eyeIcon}>👁</span> View Full Consultation
+            </button>
+          </Link>
         </div>
       </div>
-      <div className={styles.viewFullLink}>
-        <Link to={`/provider/consultations/${id}/full${entry.parentConsultation ? `?followUpId=${entry._id}` : ''}`}>
-          <Button variant="tertiary" size="small">👁 View Full Consultation</Button>
-        </Link>
-      </div>
-    </div>
-  );
+    );
+  };
 
-  const buildTimelineItems = (root, thread) => {
-    const items = [];
+  /* Convert root + thread into Timeline items */
+  const buildTimelineItems = (root, thread = []) => {
+    const rootId = root._id;
 
-    // Initial consultation entry (expanded by default)
-    items.push({
-      id: root._id,
-      title: `${formatDate(root.date)}  —  Initial Consultation`,
-      subtitle: `${root.provider?.firstName ? `Dr. ${root.provider.firstName} ${root.provider.lastName}` : 'Unknown Provider'} · ${root.general?.specialty || ''}`,
-      badge: <Badge variant={root.status === 'completed' ? 'completed' : 'draft'}>{root.status || 'draft'}</Badge>,
-      content: buildEntryContent(root),
-      defaultExpanded: true
-    });
+    const providerLabel = (entry) => {
+      const p = entry.provider;
+      if (!p) return 'Unknown Provider';
+      const name = p.firstName ? `Dr. ${p.firstName} ${p.lastName}` : 'Unknown Provider';
+      const specialty = entry.general?.specialty || '';
+      return specialty ? `${name} · ${specialty}` : name;
+    };
 
-    // Follow-up entries
-    (thread || []).forEach((followUp, index) => {
+    const items = [
+      {
+        id: root._id,
+        title: `${formatDate(root.date)}  —  Initial Consultation`,
+        subtitle: providerLabel(root),
+        badge: (
+          <Badge variant={root.status === 'completed' ? 'completed' : 'draft'}>
+            {root.status || 'draft'}
+          </Badge>
+        ),
+        content: buildEntryContent(root, rootId),
+        defaultExpanded: true,
+      },
+    ];
+
+    thread.forEach((followUp, idx) => {
       items.push({
         id: followUp._id,
-        title: `${formatDate(followUp.date)}  —  Follow-Up #${index + 1}`,
-        subtitle: `${followUp.provider?.firstName ? `Dr. ${followUp.provider.firstName} ${followUp.provider.lastName}` : 'Unknown Provider'} · ${followUp.general?.specialty || ''}`,
-        badge: <Badge variant={followUp.status === 'completed' ? 'completed' : 'draft'}>{followUp.status || 'draft'}</Badge>,
-        content: buildEntryContent(followUp),
-        defaultExpanded: false
+        title: `${formatDate(followUp.date)}  —  Follow-Up #${idx + 1}`,
+        subtitle: providerLabel(followUp),
+        badge: (
+          <Badge variant={followUp.status === 'completed' ? 'completed' : 'draft'}>
+            {followUp.status || 'draft'}
+          </Badge>
+        ),
+        content: buildEntryContent(followUp, rootId),
+        defaultExpanded: false,
       });
     });
 
@@ -141,52 +169,54 @@ const ViewConsultation = () => {
 
   const isAssignedProvider = consultation.provider?._id === user?.id;
   const isClosed = consultation.caseStatus === 'closed';
-  const timelineItems = buildTimelineItems(consultation, consultation.thread);
+  const timelineItems = buildTimelineItems(consultation, consultation.thread || []);
 
   return (
-    <div className={styles.viewContainer}>
-      <div className={styles.threadHeader}>
-        <Link to="/provider/consultations" className={styles.backLink}>
-          &larr; Back to Consultations
-        </Link>
-      </div>
+    <div className={styles.threadPage}>
+      {/* Back link */}
+      <Link to="/provider/consultations" className={styles.backLink}>
+        ← Back to Consultations
+      </Link>
 
-      <div className={styles.timelineWrapper}>
+      {/* Timeline */}
+      <div className={styles.timelineArea}>
         <Timeline
           items={timelineItems}
           trailing={!isClosed ? 'Next follow-up not yet scheduled' : null}
         />
       </div>
 
+      {/* Action bar */}
       {isAssignedProvider && (
-        <div className={styles.threadActions}>
-          {isClosed ? (
-            <Button
-              variant="secondary"
-              onClick={handleReopenCase}
-              disabled={isActing}
-            >
-              ↺ Reopen Case
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              onClick={handleCloseCase}
-              disabled={isActing}
-              className={styles.closeButton}
-            >
-              ✕ Close Case
-            </Button>
-          )}
+        <div className={styles.actionBar}>
+          <div className={styles.actionBarLeft}>
+            {isClosed ? (
+              <button
+                className={styles.reopenBtn}
+                onClick={handleReopenCase}
+                disabled={isActing}
+              >
+                ↺ Reopen Case
+              </button>
+            ) : (
+              <button
+                className={styles.closeBtn}
+                onClick={handleCloseCase}
+                disabled={isActing}
+              >
+                ✕ Close Case
+              </button>
+            )}
+          </div>
 
           {!isClosed && (
-            <Button
-              variant="primary"
+            <button
+              className={styles.addFollowUpBtn}
               onClick={handleAddFollowUp}
               disabled={isActing}
             >
               + Add Follow-Up
-            </Button>
+            </button>
           )}
         </div>
       )}

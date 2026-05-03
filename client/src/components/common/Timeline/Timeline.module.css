@@ -1,22 +1,41 @@
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
-.item {
+/* Each row = dot/line spine + card side-by-side */
+.row {
   display: flex;
-  gap: 16px;
-  position: relative;
+  align-items: stretch;
+  gap: 20px;
+  padding-bottom: 20px;
 }
 
-.dotWrapper {
+/* ---- Spine (dot + vertical connector) ---- */
+.spine {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
-  width: 20px;
-  padding-top: 20px;
+  width: 14px;
+  /* Align dot with the card header (~28px from top of card) */
+  padding-top: 22px;
+}
+
+/* Connector line rendered as a pseudo-element so it can extend into the
+   row's padding-bottom gap and reach the next row's dot */
+.spineConnected::after {
+  content: '';
+  position: absolute;
+  /* top: below the dot (padding-top + dot-height + small gap) */
+  top: 40px;
+  /* bottom: -20px bleeds into the 20px padding-bottom of the row */
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background-color: #e0e0e8;
 }
 
 .dot {
@@ -25,34 +44,28 @@
   border-radius: 50%;
   background-color: #5b5fc7;
   flex-shrink: 0;
-  z-index: 1;
 }
 
 .dotDashed {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px dashed #aaa;
+  border: 2px dashed #b0b0c0;
+  background: transparent;
   flex-shrink: 0;
 }
 
-.line {
-  width: 2px;
-  flex: 1;
-  background-color: #e0e0e0;
-  margin-top: 4px;
-  min-height: 16px;
-}
-
+/* ---- Card ---- */
 .card {
   flex: 1;
-  border: 1px solid #e8e8e8;
+  border: 1px solid #e8e8ef;
   border-radius: 8px;
-  margin-bottom: 16px;
-  overflow: hidden;
   background: #fff;
+  overflow: hidden;
+  align-self: flex-start;
 }
 
+/* Clickable header strip */
 .cardHeader {
   display: flex;
   align-items: center;
@@ -60,52 +73,65 @@
   padding: 16px 20px;
   cursor: pointer;
   user-select: none;
+  gap: 12px;
 }
 
 .cardHeader:hover {
-  background-color: #fafafa;
+  background: #fafafa;
 }
 
 .headerLeft {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+  min-width: 0;
 }
 
 .chevron {
-  font-size: 14px;
-  color: #888;
+  font-size: 13px;
+  color: #999;
+  padding-top: 2px;
+  flex-shrink: 0;
   width: 14px;
   text-align: center;
 }
 
+.headerText {
+  min-width: 0;
+}
+
 .title {
-  font-weight: 600;
   font-size: 15px;
-  color: #1a1a1a;
+  font-weight: 600;
+  color: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .subtitle {
   font-size: 13px;
   color: #888;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .badgeSlot {
   flex-shrink: 0;
 }
 
-.cardContent {
-  padding: 0 20px 20px;
-  border-top: 1px solid #f0f0f0;
+/* Expanded content area */
+.cardBody {
+  border-top: 1px solid #f0f0f5;
+  padding: 16px 20px 20px;
 }
 
-.trailing {
+/* ---- Trailing (dashed dot + italic text) ---- */
+.trailingText {
   flex: 1;
-  display: flex;
-  align-items: center;
-  padding: 0 0 16px 0;
+  align-self: flex-start;
   font-size: 14px;
   color: #aaa;
   font-style: italic;
+  padding-top: 18px;
+  padding-bottom: 8px;
 }

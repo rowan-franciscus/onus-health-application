@@ -133,7 +133,7 @@ const Consultations = () => {
       sortable: false,
       render: (value, item) => (
         <Badge variant={item.caseStatus === 'closed' ? 'closed' : 'open'}>
-          {item.caseStatus === 'closed' ? '● Closed' : '+ Open'}
+          {item.caseStatus === 'closed' ? 'Closed' : 'Open'}
         </Badge>
       )
     },
