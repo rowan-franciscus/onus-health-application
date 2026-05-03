@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import styles from './ViewConsultation.module.css';
-import ApiService from '../../services/api.service';
-import ConsultationService from '../../services/consultation.service';
-import { formatDate } from '../../utils/dateUtils';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import styles from "./ViewConsultation.module.css";
+import ApiService from "../../services/api.service";
+import ConsultationService from "../../services/consultation.service";
+import { formatDate } from "../../utils/dateUtils";
+import { useAuth } from "../../contexts/AuthContext";
 
-import Button from '../../components/common/Button';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
-import Badge from '../../components/common/Badge/Badge';
-import Timeline from '../../components/common/Timeline/Timeline';
+import Button from "../../components/common/Button";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import Badge from "../../components/common/Badge/Badge";
+import Timeline from "../../components/common/Timeline/Timeline";
 
 const ViewConsultation = () => {
   const { id } = useParams();
@@ -30,8 +30,8 @@ const ViewConsultation = () => {
       const response = await ApiService.get(`/consultations/${id}`);
       if (response) setConsultation(response);
     } catch (error) {
-      console.error('Error fetching consultation:', error);
-      toast.error('Failed to load consultation');
+      console.error("Error fetching consultation:", error);
+      toast.error("Failed to load consultation");
     } finally {
       setIsLoading(false);
     }
@@ -42,9 +42,9 @@ const ViewConsultation = () => {
     try {
       const updated = await ConsultationService.closeCase(consultation._id);
       setConsultation(updated);
-      toast.success('Case closed successfully');
+      toast.success("Case closed successfully");
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Failed to close case');
+      toast.error(error?.response?.data?.message || "Failed to close case");
     } finally {
       setIsActing(false);
     }
@@ -55,9 +55,9 @@ const ViewConsultation = () => {
     try {
       const updated = await ConsultationService.reopenCase(consultation._id);
       setConsultation(updated);
-      toast.success('Case reopened successfully');
+      toast.success("Case reopened successfully");
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Failed to reopen case');
+      toast.error(error?.response?.data?.message || "Failed to reopen case");
     } finally {
       setIsActing(false);
     }
@@ -80,13 +80,13 @@ const ViewConsultation = () => {
           <div className={styles.entryCol}>
             <div className={styles.entryColLabel}>DIAGNOSIS</div>
             <div className={styles.entryColValue}>
-              {entry.general?.diagnosis || '—'}
+              {entry.general?.diagnosis || "—"}
             </div>
           </div>
           <div className={styles.entryCol}>
             <div className={styles.entryColLabel}>TREATMENT</div>
             <div className={styles.entryColValue}>
-              {entry.management || '—'}
+              {entry.management || "—"}
             </div>
           </div>
         </div>
@@ -107,9 +107,11 @@ const ViewConsultation = () => {
 
     const providerLabel = (entry) => {
       const p = entry.provider;
-      if (!p) return 'Unknown Provider';
-      const name = p.firstName ? `Dr. ${p.firstName} ${p.lastName}` : 'Unknown Provider';
-      const specialty = entry.general?.specialty || '';
+      if (!p) return "Unknown Provider";
+      const name = p.firstName
+        ? `Dr. ${p.firstName} ${p.lastName}`
+        : "Unknown Provider";
+      const specialty = entry.general?.specialty || "";
       return specialty ? `${name} · ${specialty}` : name;
     };
 
@@ -119,8 +121,8 @@ const ViewConsultation = () => {
         title: `${formatDate(root.date)}  —  Initial Consultation`,
         subtitle: providerLabel(root),
         badge: (
-          <Badge variant={root.status === 'completed' ? 'completed' : 'draft'}>
-            {root.status || 'draft'}
+          <Badge variant={root.status === "completed" ? "completed" : "draft"}>
+            {root.status || "draft"}
           </Badge>
         ),
         content: buildEntryContent(root, rootId),
@@ -134,8 +136,10 @@ const ViewConsultation = () => {
         title: `${formatDate(followUp.date)}  —  Follow-Up #${idx + 1}`,
         subtitle: providerLabel(followUp),
         badge: (
-          <Badge variant={followUp.status === 'completed' ? 'completed' : 'draft'}>
-            {followUp.status || 'draft'}
+          <Badge
+            variant={followUp.status === "completed" ? "completed" : "draft"}
+          >
+            {followUp.status || "draft"}
           </Badge>
         ),
         content: buildEntryContent(followUp, rootId),
@@ -168,8 +172,11 @@ const ViewConsultation = () => {
   }
 
   const isAssignedProvider = consultation.provider?._id === user?.id;
-  const isClosed = consultation.caseStatus === 'closed';
-  const timelineItems = buildTimelineItems(consultation, consultation.thread || []);
+  const isClosed = consultation.caseStatus === "closed";
+  const timelineItems = buildTimelineItems(
+    consultation,
+    consultation.thread || [],
+  );
 
   return (
     <div className={styles.threadPage}>
@@ -182,7 +189,7 @@ const ViewConsultation = () => {
       <div className={styles.timelineArea}>
         <Timeline
           items={timelineItems}
-          trailing={!isClosed ? 'Next follow-up not yet scheduled' : null}
+          trailing={!isClosed ? "Next follow-up not yet scheduled" : null}
         />
       </div>
 
