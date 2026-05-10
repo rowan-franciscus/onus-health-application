@@ -949,34 +949,47 @@ exports.deleteAttachment = async (req, res) => {
 exports.getPatientConsultations = async (req, res) => {
   try {
     const patientId = req.user.id;
-    const limit = parseInt(req.query.limit) || 10;
-    
-    // Patients should only see completed consultations, not drafts
-    const consultations = await Consultation.find({ 
+    const limit = parseInt(req.query.limit) || 50;
+
+    // Patients see only completed root consultations (one row per case)
+    const consultations = await Consultation.find({
       patient: patientId,
-      status: 'completed'  // Only show completed consultations to patients
+      status: 'completed',
+      parentConsultation: null
     })
       .populate('provider', 'firstName lastName providerProfile')
-      .sort({ date: -1, createdAt: -1, _id: -1 })  // Sort by date desc, then createdAt desc, then _id desc for consistent ordering
+      .sort({ date: -1, createdAt: -1, _id: -1 })
       .limit(limit);
-    
+
+    // Aggregate follow-up counts for visitCount
+    const consultationIds = consultations.map(c => c._id);
+    const followUpCounts = await Consultation.aggregate([
+      { $match: { parentConsultation: { $in: consultationIds } } },
+      { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+    ]);
+    const countMap = {};
+    followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+
     return res.json({
       success: true,
       consultations: consultations.map(consultation => {
-        // Format date properly
         const consultationDate = consultation.date || consultation.createdAt;
         const formattedDate = consultationDate ? formatDate(consultationDate) : 'N/A';
-        
+
         return {
-        id: consultation._id,
+          id: consultation._id,
           date: formattedDate,
-        type: consultation.general?.specialty || 'General',
-        specialist: consultation.general?.specialistName || 
-                   `${consultation.provider.firstName} ${consultation.provider.lastName}`,
-        clinic: consultation.general?.practice || 
-                consultation.provider.providerProfile?.practiceName || 'N/A',
-        reason: consultation.general?.reasonForVisit || 'N/A',
-        status: consultation.status
+          rawDate: consultationDate,
+          providerName: `${consultation.provider.firstName} ${consultation.provider.lastName}`,
+          type: consultation.general?.specialty || 'General',
+          specialist: consultation.general?.specialistName ||
+                     `${consultation.provider.firstName} ${consultation.provider.lastName}`,
+          clinic: consultation.general?.practice ||
+                  consultation.provider.providerProfile?.practiceName || 'N/A',
+          reason: consultation.general?.reasonForVisit || 'N/A',
+          status: consultation.status,
+          caseStatus: consultation.caseStatus || 'open',
+          visitCount: 1 + (countMap[consultation._id.toString()] || 0)
         };
       })
     });

@@ -2,169 +2,175 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import styles from './Consultations.module.css';
+import { formatDate } from '../../utils/dateUtils';
 
-// Component imports
-import SearchBox from '../../components/common/SearchBox';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import SearchBox from '../../components/common/SearchBox';
+import Table from '../../components/common/Table';
+import Pagination from '../../components/common/Pagination';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Badge from '../../components/common/Badge/Badge';
 import ConsultationService from '../../services/consultation.service';
 
 const PatientConsultations = () => {
   const [consultations, setConsultations] = useState([]);
-  const [filteredConsultations, setFilteredConsultations] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchConsultations();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchConsultations = async () => {
     setIsLoading(true);
-    setError(null);
-    
     try {
       const response = await ConsultationService.getPatientConsultations();
-      const consultationsData = response?.consultations || [];
-      console.log('Fetched consultations:', consultationsData);
-      
-      setConsultations(consultationsData);
-      setFilteredConsultations(consultationsData);
-    } catch (err) {
-      console.error('Error fetching consultations:', err);
-      setError('Failed to load consultations. Please try again later.');
-      toast.error('Failed to load consultations');
+      const data = response?.consultations || [];
+
+      const formatted = data.map(c => ({
+        id: c.id,
+        providerName: c.providerName || c.specialist || 'Unknown Provider',
+        date: c.rawDate || null,
+        reasonForVisit: c.reason || 'N/A',
+        status: c.status || 'completed',
+        caseStatus: c.caseStatus || 'open',
+        visitCount: c.visitCount || 1,
+      }));
+
+      setConsultations(formatted);
+      setTotalPages(1);
+    } catch (error) {
+      console.error('Error fetching consultations:', error);
+      toast.error('Failed to fetch consultations');
+      setConsultations([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle search input
   const handleSearch = (value) => {
     setSearchTerm(value);
-    
-    if (!value.trim()) {
-      setFilteredConsultations(consultations);
-      return;
-    }
-    
-    const lowercasedTerm = value.toLowerCase();
-    
-    const results = consultations.filter(
-      (consultation) =>
-        (consultation.type || '').toLowerCase().includes(lowercasedTerm) ||
-        (consultation.specialist || '').toLowerCase().includes(lowercasedTerm) ||
-        (consultation.clinic || '').toLowerCase().includes(lowercasedTerm) ||
-        (consultation.reason || '').toLowerCase().includes(lowercasedTerm) ||
-        (consultation.date || '').includes(lowercasedTerm) ||
-        (consultation.status || 'draft').toLowerCase().includes(lowercasedTerm)
-    );
-    
-    setFilteredConsultations(results);
+    setCurrentPage(1);
   };
 
-  // Render empty state
-  const renderEmptyState = () => (
-    <div className={styles.emptyState}>
-      <h3>No Consultations Found</h3>
-      <p>You don't have any consultations recorded yet.</p>
-      <p className={styles.hint}>Consultations will appear here once your healthcare providers create them.</p>
-    </div>
+  const filteredConsultations = consultations.filter(c =>
+    c.providerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (c.reasonForVisit && c.reasonForVisit.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.caseStatus && c.caseStatus.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (c.date && c.date.toString().includes(searchTerm))
   );
+
+  const columns = [
+    {
+      title: 'Provider',
+      dataIndex: 'providerName',
+      sortable: false,
+    },
+    {
+      title: 'Reason for Visit',
+      dataIndex: 'reasonForVisit',
+      sortable: false,
+    },
+    {
+      title: 'Last Visit',
+      dataIndex: 'date',
+      sortable: false,
+      render: (value, item) => {
+        if (!item || !item.date) return 'Not set';
+        try {
+          const formatted = formatDate(item.date);
+          const invalidSentinels = ['Invalid date', 'Error', 'N/A'];
+          return !formatted || invalidSentinels.includes(formatted) ? 'Not set' : formatted;
+        } catch {
+          return 'Not set';
+        }
+      },
+    },
+    {
+      title: 'Visits',
+      dataIndex: 'visitCount',
+      sortable: false,
+      render: (value, item) => (
+        <span className={styles.visitCount}>{item.visitCount || 1}</span>
+      ),
+    },
+    {
+      title: 'Case Status',
+      dataIndex: 'caseStatus',
+      sortable: false,
+      render: (value, item) => (
+        <Badge variant={item.caseStatus === 'closed' ? 'closed' : 'open'}>
+          {item.caseStatus === 'closed' ? 'Closed' : 'Open'}
+        </Badge>
+      ),
+    },
+    {
+      title: 'Actions',
+      dataIndex: 'actions',
+      sortable: false,
+      render: (value, item) => (
+        <div className={styles.actionButtons}>
+          <Link to={`/patient/consultations/${item.id}`}>
+            <Button variant="tertiary" size="small">View</Button>
+          </Link>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className={styles.consultationsContainer}>
       <div className={styles.header}>
-        <h1>Consultations</h1>
-        <p>View your consultation history and details</p>
-      </div>
-      
-      {error && (
-        <div className={styles.errorMessage}>
-          {error}
-          <Button 
-            variant="primary" 
-            className={styles.retryButton}
-            onClick={fetchConsultations}
-          >
-            Retry
-          </Button>
+        <div className={styles.titleSection}>
+          <h1>Consultations</h1>
+          <p>View your consultation history and details</p>
         </div>
-      )}
-      
-      <Card className={styles.consultationsCard}>
-        <div className={styles.searchContainer}>
+      </div>
+
+      <Card className={styles.filterCard}>
+        <div className={styles.filters}>
           <SearchBox
-            placeholder="Search consultations by type, doctor, clinic, reason, date, or status (draft/completed)..."
+            placeholder="Search by provider, reason, date, or status..."
             value={searchTerm}
             onChange={handleSearch}
-            className={styles.searchBox}
           />
         </div>
-        
-        {searchTerm && consultations.length > 0 && (
-          <div className={styles.searchResultsInfo}>
-            Found {filteredConsultations.length} {filteredConsultations.length === 1 ? 'consultation' : 'consultations'} matching "{searchTerm}"
-          </div>
-        )}
-        
+      </Card>
+
+      <Card className={styles.tableCard}>
         {isLoading ? (
-          <div className={styles.loading}>Loading consultations...</div>
-        ) : consultations.length === 0 ? (
-          renderEmptyState()
-        ) : filteredConsultations.length > 0 ? (
-          <div className={styles.consultationsList}>
-            <div className={styles.consultationsHeader}>
-              <div className={styles.date}>Date</div>
-              <div className={styles.type}>Type</div>
-              <div className={styles.specialist}>Specialist</div>
-              <div className={styles.clinic}>Clinic / Practice</div>
-              <div className={styles.reason}>Reason for Visit</div>
-              <div className={styles.status}>Status</div>
-              <div className={styles.actions}>Actions</div>
-            </div>
-            
-            {filteredConsultations.map((consultation) => (
-              <div key={consultation.id} className={styles.consultationRow}>
-                <div className={styles.date}>{consultation.date}</div>
-                <div className={styles.type}>{consultation.type || 'General'}</div>
-                <div className={styles.specialist}>{consultation.specialist || 'Not specified'}</div>
-                <div className={styles.clinic}>{consultation.clinic || 'Not specified'}</div>
-                <div className={styles.reason}>{consultation.reason || 'Not specified'}</div>
-                <div className={`${styles.status} ${styles[`status-${(consultation.status || 'draft').toLowerCase()}`]}`}>
-                  {(consultation.status || 'draft').charAt(0).toUpperCase() + (consultation.status || 'draft').slice(1)}
-                </div>
-                <div className={styles.actions}>
-                  <Link
-                    to={`/patient/consultations/${consultation.id}`}
-                    className={styles.viewButton}
-                  >
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            ))}
+          <div className={styles.loadingContainer}>
+            <LoadingSpinner />
+            <p>Loading consultations...</p>
           </div>
         ) : (
-          <div className={styles.noResults}>
-            <p>No consultations found matching "{searchTerm}".</p>
-            {searchTerm && (
-              <button 
-                className={styles.clearButton}
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilteredConsultations(consultations);
-                }}
-              >
-                Clear Search
-              </button>
+          <>
+            {filteredConsultations.length === 0 ? (
+              <div className={styles.emptyState}>
+                <p>{searchTerm ? 'No consultations found' : "You don't have any consultations yet."}</p>
+              </div>
+            ) : (
+              <>
+                <Table
+                  columns={columns}
+                  data={filteredConsultations}
+                  emptyMessage="No consultations found"
+                />
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </>
             )}
-          </div>
+          </>
         )}
       </Card>
     </div>
   );
 };
 
-export default PatientConsultations; 
+export default PatientConsultations;

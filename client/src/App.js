@@ -32,6 +32,7 @@ const ProviderVerificationPending = lazy(() => import('./pages/provider/Verifica
 const PatientDashboard = lazy(() => import('./pages/patient/Dashboard'));
 const PatientConsultations = lazy(() => import('./pages/patient/Consultations'));
 const PatientViewConsultation = lazy(() => import('./pages/patient/ViewConsultation'));
+const PatientViewConsultationFull = lazy(() => import('./pages/patient/ViewConsultationFull'));
 const PatientConnections = lazy(() => import('./pages/patient/Connections'));
 const PatientMedicalRecords = lazy(() => import('./pages/patient/MedicalRecords'));
 const PatientVitals = lazy(() => import('./pages/patient/medical-records/Vitals'));
@@ -223,12 +224,22 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/patient/consultations/:id" 
+            <Route
+              path="/patient/consultations/:id/full"
               element={
-                <ProtectedRoute 
-                  element={<PatientViewConsultation />} 
-                  allowedRoles={['patient']} 
+                <ProtectedRoute
+                  element={<PatientViewConsultationFull />}
+                  allowedRoles={['patient']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/patient/consultations/:id"
+              element={
+                <ProtectedRoute
+                  element={<PatientViewConsultation />}
+                  allowedRoles={['patient']}
                   requireOnboarding={true}
                 />
               } 
