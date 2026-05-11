@@ -10,6 +10,7 @@ const connectionRoutes = require('./connection.routes');
 const adminRoutes = require('./admin.routes');
 const providerRoutes = require('./provider.routes');
 const fileRoutes = require('./file.routes');
+const physicalRecordRoutes = require('./physicalRecord.routes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -20,5 +21,6 @@ router.use('/connections', connectionRoutes);
 router.use('/admin', adminRoutes);
 router.use('/provider', providerRoutes);
 router.use('/files', fileRoutes);
+router.use('/', physicalRecordRoutes);
 
 module.exports = router; 

@@ -31,6 +31,12 @@ if (!fs.existsSync(consultationUploadDir)) {
   fs.mkdirSync(consultationUploadDir, { recursive: true });
 }
 
+// Configure physical records uploads directory
+const physicalRecordsUploadDir = path.join(uploadDir, 'physical-records');
+if (!fs.existsSync(physicalRecordsUploadDir)) {
+  fs.mkdirSync(physicalRecordsUploadDir, { recursive: true });
+}
+
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -56,6 +62,8 @@ const storage = multer.diskStorage({
     } else if (req.path.includes('/attachments')) {
       // For consultation attachments
       destinationPath = consultationUploadDir;
+    } else if (req.path.includes('/physical-records')) {
+      destinationPath = physicalRecordsUploadDir;
     }
     
     cb(null, destinationPath);
@@ -100,6 +108,24 @@ const uploadConsultationFile = multer({
   }
 });
 
+// Dedicated filter for physical records: PDF + images (including WEBP)
+const physicalRecordsFileFilter = (req, file, cb) => {
+  const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+  if (allowed.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new ApiError(400, 'Only PDF, JPG, PNG, or WEBP files are allowed.'), false);
+  }
+};
+
+const uploadPhysicalRecordFile = multer({
+  storage,
+  fileFilter: physicalRecordsFileFilter,
+  limits: {
+    fileSize: config.maxFileSize // Default 5MB
+  }
+});
+
 // Handle multer errors
 const handleUploadErrors = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
@@ -114,5 +140,6 @@ const handleUploadErrors = (err, req, res, next) => {
 module.exports = {
   upload,
   uploadConsultationFile,
+  uploadPhysicalRecordFile,
   handleUploadErrors
 }; 

@@ -5,6 +5,8 @@ const fs = require('fs');
 const { authenticateJWT, isProvider, isPatient, isAdmin } = require('../middleware/auth.middleware');
 const Consultation = require('../models/Consultation');
 const User = require('../models/User');
+const PhysicalRecord = require('../models/PhysicalRecord');
+const Connection = require('../models/Connection');
 const logger = require('../utils/logger');
 
 // Determine base upload directory based on environment
@@ -338,11 +340,22 @@ async function checkFilePermission(user, fileType, filename) {
         // Users can access their own profile images
         const profileUser = await User.findById(user.id);
         if (!profileUser || !profileUser.profileImage) return false;
-        
+
         // Extract filename from the stored path
         const storedFilename = path.basename(profileUser.profileImage);
         return storedFilename === filename;
-        
+
+      case 'physical-records':
+        const physicalRecord = await PhysicalRecord.findOne({ 'file.filename': filename });
+        if (!physicalRecord) return false;
+        if (physicalRecord.patient.toString() === user.id) return true;
+        if (physicalRecord.provider.toString() === user.id) return true;
+        if (user.role === 'provider') {
+          const conn = await Connection.findOne({ provider: user.id, patient: physicalRecord.patient });
+          return !!conn;
+        }
+        return false;
+
       default:
         return false;
     }
@@ -385,11 +398,16 @@ async function checkDeletePermission(user, fileType, filename) {
         // Users can delete their own profile images
         const profileUser = await User.findById(user.id);
         if (!profileUser || !profileUser.profileImage) return false;
-        
+
         // Extract filename from the stored path
         const storedFilename = path.basename(profileUser.profileImage);
         return storedFilename === filename;
-        
+
+      case 'physical-records':
+        const physicalRecord = await PhysicalRecord.findOne({ 'file.filename': filename });
+        if (!physicalRecord) return false;
+        return physicalRecord.provider.toString() === user.id;
+
       default:
         return false;
     }
