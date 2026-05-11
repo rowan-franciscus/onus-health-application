@@ -12,6 +12,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
 import ApiService from '../../services/api.service';
 import { formatDate } from '../../utils/dateUtils';
+import Badge from '../../components/common/Badge/Badge';
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
@@ -164,7 +165,9 @@ const ProviderViewPatient = () => {
           reason: consultation.general?.reasonForVisit || 'N/A',
           notes: consultation.general?.notes || 'No notes',
           status: consultation.status || 'draft',
-          practice: consultation.general?.practice || 'N/A'
+          practice: consultation.general?.practice || 'N/A',
+          caseStatus: consultation.caseStatus || 'open',
+          visitCount: consultation.visitCount || 1
         }));
         
         setConsultations(formattedConsultations);
@@ -710,7 +713,12 @@ const ProviderViewPatient = () => {
               <div className={styles.consultationHeader}>
                 <div className={styles.consultationDate}>{consultation.date}</div>
                 <div className={styles.consultationProvider}>{consultation.provider}</div>
-                <span className={styles[`status-${consultation.status}`]}>{consultation.status}</span>
+                <div className={styles.consultationBadges}>
+                  <Badge variant={consultation.caseStatus === 'closed' ? 'closed' : 'open'}>
+                    {consultation.caseStatus === 'closed' ? 'Closed' : 'Open'}
+                  </Badge>
+                  <span className={styles.visitCount}>{consultation.visitCount} {consultation.visitCount === 1 ? 'visit' : 'visits'}</span>
+                </div>
               </div>
               <div className={styles.consultationReason}>
                 <span className={styles.reasonLabel}>Reason:</span> {consultation.reason}
@@ -761,7 +769,10 @@ const ProviderViewPatient = () => {
               <div className={styles.consultationCardHeader}>
                 <div className={styles.consultationMeta}>
                   <span className={styles.consultationDate}>{consultation.date}</span>
-                  <span className={styles[`status-${consultation.status}`]}>{consultation.status}</span>
+                  <Badge variant={consultation.caseStatus === 'closed' ? 'closed' : 'open'}>
+                    {consultation.caseStatus === 'closed' ? 'Closed' : 'Open'}
+                  </Badge>
+                  <span className={styles.visitCountSmall}>{consultation.visitCount} {consultation.visitCount === 1 ? 'visit' : 'visits'}</span>
                 </div>
                 <div className={styles.consultationActions}>
                   <Link to={`/provider/consultations/${consultation.id}`}>

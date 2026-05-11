@@ -12,6 +12,7 @@ import Table from '../../components/common/Table';
 import Pagination from '../../components/common/Pagination';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ApiService from '../../services/api.service';
+import Badge from '../../components/common/Badge/Badge';
 
 const Consultations = () => {
   const [consultations, setConsultations] = useState([]);
@@ -41,12 +42,14 @@ const Consultations = () => {
         // Transform the data to match our component's expected format
         const formattedConsultations = response.map(consultation => ({
           id: consultation._id,
-          patientName: consultation.patient ? 
-            `${consultation.patient.firstName} ${consultation.patient.lastName}` : 
+          patientName: consultation.patient ?
+            `${consultation.patient.firstName} ${consultation.patient.lastName}` :
             'Unknown Patient',
           date: consultation.date || null,
           reasonForVisit: consultation.general?.reasonForVisit || 'N/A',
-          status: consultation.status || 'draft'
+          status: consultation.status || 'draft',
+          caseStatus: consultation.caseStatus || 'open',
+          visitCount: consultation.visitCount || 1
         }));
         
         setConsultations(formattedConsultations);
@@ -85,6 +88,7 @@ const Consultations = () => {
     consultation.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (consultation.reasonForVisit && consultation.reasonForVisit.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (consultation.status && consultation.status.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (consultation.caseStatus && consultation.caseStatus.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (consultation.date && consultation.date.includes(searchTerm))
   );
 
@@ -96,34 +100,41 @@ const Consultations = () => {
       sortable: true
     },
     {
-      title: 'Date',
+      title: 'Reason for Visit',
+      dataIndex: 'reasonForVisit',
+      sortable: false
+    },
+    {
+      title: 'Last Visit',
       dataIndex: 'date',
-      sortable: true,
+      sortable: false,
       render: (value, item) => {
         if (!item || !item.date) return 'Not set';
         try {
           const formatted = formatDate(item.date);
           const invalidSentinels = ['Invalid date', 'Error', 'N/A'];
           return !formatted || invalidSentinels.includes(formatted) ? 'Not set' : formatted;
-        } catch (error) {
-          console.error('Error formatting date:', error);
+        } catch {
           return 'Not set';
         }
       }
     },
     {
-      title: 'Reason for Visit',
-      dataIndex: 'reasonForVisit',
-      sortable: false
+      title: 'Visits',
+      dataIndex: 'visitCount',
+      sortable: false,
+      render: (value, item) => (
+        <span className={styles.visitCount}>{item.visitCount || 1}</span>
+      )
     },
     {
-      title: 'Status',
-      dataIndex: 'status',
-      sortable: true,
+      title: 'Case Status',
+      dataIndex: 'caseStatus',
+      sortable: false,
       render: (value, item) => (
-        <span className={styles[`status-${(item.status || '').toLowerCase()}`]}>
-          {item.status || 'Unknown'}
-        </span>
+        <Badge variant={item.caseStatus === 'closed' ? 'closed' : 'open'}>
+          {item.caseStatus === 'closed' ? 'Closed' : 'Open'}
+        </Badge>
       )
     },
     {
@@ -161,7 +172,7 @@ const Consultations = () => {
       <Card className={styles.filterCard}>
         <div className={styles.filters}>
           <SearchBox
-            placeholder="Search consultations by patient name, reason, date, or status (draft/completed)..."
+            placeholder="Search by patient name, reason, date, or status..."
             value={searchTerm}
             onChange={handleSearch}
           />

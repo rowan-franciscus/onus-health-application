@@ -1,0 +1,137 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Each row = dot/line spine + card side-by-side */
+.row {
+  display: flex;
+  align-items: stretch;
+  gap: 20px;
+  padding-bottom: 20px;
+}
+
+/* ---- Spine (dot + vertical connector) ---- */
+.spine {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 14px;
+  /* Align dot with the card header (~28px from top of card) */
+  padding-top: 22px;
+}
+
+/* Connector line rendered as a pseudo-element so it can extend into the
+   row's padding-bottom gap and reach the next row's dot */
+.spineConnected::after {
+  content: '';
+  position: absolute;
+  /* top: below the dot (padding-top + dot-height + small gap) */
+  top: 40px;
+  /* bottom: -20px bleeds into the 20px padding-bottom of the row */
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background-color: #e0e0e8;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: #5b5fc7;
+  flex-shrink: 0;
+}
+
+.dotDashed {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px dashed #b0b0c0;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+/* ---- Card ---- */
+.card {
+  flex: 1;
+  border: 1px solid #e8e8ef;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  align-self: flex-start;
+}
+
+/* Clickable header strip */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+
+.cardHeader:hover {
+  background: #fafafa;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chevron {
+  font-size: 13px;
+  color: #999;
+  padding-top: 2px;
+  flex-shrink: 0;
+  width: 14px;
+  text-align: center;
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #888;
+  margin-top: 3px;
+}
+
+.badgeSlot {
+  flex-shrink: 0;
+}
+
+/* Expanded content area */
+.cardBody {
+  border-top: 1px solid #f0f0f5;
+  padding: 16px 20px 20px;
+}
+
+/* ---- Trailing (dashed dot + italic text) ---- */
+.trailingText {
+  flex: 1;
+  align-self: flex-start;
+  font-size: 14px;
+  color: #aaa;
+  font-style: italic;
+  padding-top: 18px;
+  padding-bottom: 8px;
+}

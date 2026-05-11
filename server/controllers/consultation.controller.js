@@ -80,6 +80,11 @@ exports.getAllConsultations = async (req, res) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
     
+    // For provider and admin roles, show only root consultations (not follow-ups)
+    if (userRole === 'provider' || userRole === 'admin') {
+      query.parentConsultation = null;
+    }
+
     // Get consultations with populated patient/provider and medical records
     const consultations = await Consultation.find(query)
       .populate('patient', 'firstName lastName email profileImage patientProfile')
@@ -89,7 +94,25 @@ exports.getAllConsultations = async (req, res) => {
       .populate('labResults')
       .populate('radiologyReports')
       .sort({ createdAt: -1 });
-    
+
+    // Attach visitCount (root + follow-ups) for provider/admin views
+    if (userRole === 'provider' || userRole === 'admin') {
+      const consultationIds = consultations.map(c => c._id);
+      const followUpCounts = await Consultation.aggregate([
+        { $match: { parentConsultation: { $in: consultationIds } } },
+        { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+      ]);
+      const countMap = {};
+      followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+
+      const result = consultations.map(c => {
+        const obj = c.toObject({ virtuals: true });
+        obj.visitCount = 1 + (countMap[c._id.toString()] || 0);
+        return obj;
+      });
+      return res.json(result);
+    }
+
     return res.json(consultations);
   } catch (error) {
     console.error('Error fetching consultations:', error);
@@ -161,8 +184,40 @@ exports.getConsultationById = async (req, res) => {
     if (userRole === 'patient' && consultation.status !== 'completed') {
       return res.status(403).json({ message: 'Consultation not available for viewing' });
     }
-    
-    return res.json(consultation);
+
+    // Resolve to root consultation if this is a follow-up
+    let rootConsultation = consultation;
+    if (consultation.parentConsultation) {
+      rootConsultation = await Consultation.findById(consultation.parentConsultation)
+        .populate('patient', 'firstName lastName email profileImage patientProfile')
+        .populate('provider', 'firstName lastName email')
+        .populate('vitals')
+        .populate('medications')
+        .populate('labResults')
+        .populate('radiologyReports');
+      if (!rootConsultation) {
+        return res.status(404).json({ message: 'Root consultation not found' });
+      }
+    }
+
+    // Fetch the thread (all follow-ups for this root, sorted chronologically)
+    const threadQuery = { parentConsultation: rootConsultation._id };
+    // Patients may only see completed entries
+    if (req.user.role === 'patient') threadQuery.status = 'completed';
+
+    const followUps = await Consultation.find(threadQuery)
+      .populate('provider', 'firstName lastName email')
+      .populate('vitals')
+      .populate('medications')
+      .populate('labResults')
+      .populate('radiologyReports')
+      .sort({ date: 1, createdAt: 1 });
+
+    const rootObj = rootConsultation.toObject({ virtuals: true });
+    rootObj.thread = followUps.map(f => f.toObject({ virtuals: true }));
+    rootObj.visitCount = 1 + followUps.length;
+
+    return res.json(rootObj);
   } catch (error) {
     console.error('Error fetching consultation:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
@@ -501,6 +556,8 @@ exports.updateConsultation = async (req, res) => {
     delete consultationData.immunization;
     delete consultationData.hospital;
     delete consultationData.surgery;
+    // parentConsultation is immutable after creation
+    delete consultationData.parentConsultation;
     
     console.log('Consultation data keys:', Object.keys(consultationData));
     console.log('Has vitals:', !!vitals);
@@ -892,34 +949,47 @@ exports.deleteAttachment = async (req, res) => {
 exports.getPatientConsultations = async (req, res) => {
   try {
     const patientId = req.user.id;
-    const limit = parseInt(req.query.limit) || 10;
-    
-    // Patients should only see completed consultations, not drafts
-    const consultations = await Consultation.find({ 
+    const limit = parseInt(req.query.limit) || 50;
+
+    // Patients see only completed root consultations (one row per case)
+    const consultations = await Consultation.find({
       patient: patientId,
-      status: 'completed'  // Only show completed consultations to patients
+      status: 'completed',
+      parentConsultation: null
     })
       .populate('provider', 'firstName lastName providerProfile')
-      .sort({ date: -1, createdAt: -1, _id: -1 })  // Sort by date desc, then createdAt desc, then _id desc for consistent ordering
+      .sort({ date: -1, createdAt: -1, _id: -1 })
       .limit(limit);
-    
+
+    // Aggregate follow-up counts for visitCount
+    const consultationIds = consultations.map(c => c._id);
+    const followUpCounts = await Consultation.aggregate([
+      { $match: { parentConsultation: { $in: consultationIds } } },
+      { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+    ]);
+    const countMap = {};
+    followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+
     return res.json({
       success: true,
       consultations: consultations.map(consultation => {
-        // Format date properly
         const consultationDate = consultation.date || consultation.createdAt;
         const formattedDate = consultationDate ? formatDate(consultationDate) : 'N/A';
-        
+
         return {
-        id: consultation._id,
+          id: consultation._id,
           date: formattedDate,
-        type: consultation.general?.specialty || 'General',
-        specialist: consultation.general?.specialistName || 
-                   `${consultation.provider.firstName} ${consultation.provider.lastName}`,
-        clinic: consultation.general?.practice || 
-                consultation.provider.providerProfile?.practiceName || 'N/A',
-        reason: consultation.general?.reasonForVisit || 'N/A',
-        status: consultation.status
+          rawDate: consultationDate,
+          providerName: `${consultation.provider.firstName} ${consultation.provider.lastName}`,
+          type: consultation.general?.specialty || 'General',
+          specialist: consultation.general?.specialistName ||
+                     `${consultation.provider.firstName} ${consultation.provider.lastName}`,
+          clinic: consultation.general?.practice ||
+                  consultation.provider.providerProfile?.practiceName || 'N/A',
+          reason: consultation.general?.reasonForVisit || 'N/A',
+          status: consultation.status,
+          caseStatus: consultation.caseStatus || 'open',
+          visitCount: 1 + (countMap[consultation._id.toString()] || 0)
         };
       })
     });
@@ -929,6 +999,266 @@ exports.getPatientConsultations = async (req, res) => {
       success: false,
       message: 'Failed to load consultations'
     });
+  }
+};
+
+/**
+ * Add a follow-up consultation to an existing root consultation
+ */
+exports.addFollowUp = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+    const providerId = req.user.id;
+
+    // Load the root consultation
+    const root = await Consultation.findById(id).session(session);
+    if (!root) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: 'Consultation not found' });
+    }
+
+    // Must be a root consultation
+    if (root.parentConsultation) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: 'Cannot add a follow-up to a follow-up consultation' });
+    }
+
+    // Only the assigned provider can add follow-ups
+    if (root.provider.toString() !== providerId) {
+      await session.abortTransaction();
+      return res.status(403).json({ message: 'Only the assigned provider can add follow-ups' });
+    }
+
+    // Cannot add follow-ups to a closed case
+    if (root.caseStatus === 'closed') {
+      await session.abortTransaction();
+      return res.status(400).json({ message: 'Cannot add a follow-up to a closed case. Reopen the case first.' });
+    }
+
+    const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    delete consultationData.patient;
+    delete consultationData.patientEmail;
+    delete consultationData.provider;
+    delete consultationData.parentConsultation;
+    delete consultationData.caseStatus;
+    delete consultationData.immunization;
+    delete consultationData.hospital;
+    delete consultationData.surgery;
+
+    const followUp = new Consultation({
+      patient: root.patient,
+      provider: providerId,
+      parentConsultation: root._id,
+      caseStatus: 'open',
+      ...consultationData,
+      status: consultationData.status || 'draft',
+      attachments: []
+    });
+    await followUp.save({ session });
+
+    const patientId = root.patient;
+
+    const hasVitalsData = (v) => {
+      if (!v) return false;
+      return Object.values(v).some(val => {
+        if (!val) return false;
+        if (typeof val === 'object') {
+          return Object.values(val).some(nested => nested !== null && nested !== undefined && nested !== '');
+        }
+        return true;
+      });
+    };
+
+    // Create vitals if provided
+    if (hasVitalsData(vitals)) {
+      const vitalsRecord = new VitalsRecord({
+        patient: patientId,
+        provider: providerId,
+        consultation: followUp._id,
+        date: followUp.date,
+        ...vitals
+      });
+      await vitalsRecord.save({ session });
+      followUp.vitals = vitalsRecord._id;
+    }
+
+    // Create medications if provided
+    if (medication && Array.isArray(medication) && medication.length > 0) {
+      const medicationRecords = await Promise.all(
+        medication.map(async (med) => {
+          const medicationRecord = new MedicationRecord({
+            patient: patientId,
+            provider: providerId,
+            consultation: followUp._id,
+            date: followUp.date,
+            ...med
+          });
+          await medicationRecord.save({ session });
+          return medicationRecord._id;
+        })
+      );
+      followUp.medications = medicationRecords;
+    }
+
+    // Create lab results if provided
+    if (labResults && Array.isArray(labResults) && labResults.length > 0) {
+      const labResultRecords = await Promise.all(
+        labResults.map(async (lab) => {
+          const labResultRecord = new LabResultRecord({
+            patient: patientId,
+            provider: providerId,
+            consultation: followUp._id,
+            date: followUp.date,
+            ...lab
+          });
+          await labResultRecord.save({ session });
+          return labResultRecord._id;
+        })
+      );
+      followUp.labResults = labResultRecords;
+    }
+
+    // Create radiology reports if provided
+    if (radiology && Array.isArray(radiology) && radiology.length > 0) {
+      const radiologyRecords = await Promise.all(
+        radiology.map(async (rad) => {
+          const radiologyRecord = new RadiologyReport({
+            patient: patientId,
+            provider: providerId,
+            consultation: followUp._id,
+            date: followUp.date,
+            ...rad
+          });
+          await radiologyRecord.save({ session });
+          return radiologyRecord._id;
+        })
+      );
+      followUp.radiologyReports = radiologyRecords;
+    }
+
+    await followUp.save({ session });
+    await session.commitTransaction();
+
+    const populatedFollowUp = await Consultation.findById(followUp._id)
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
+      .populate('provider', 'firstName lastName email')
+      .populate('vitals')
+      .populate('medications')
+      .populate('labResults')
+      .populate('radiologyReports');
+
+    return res.status(201).json(populatedFollowUp);
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    console.error('Error adding follow-up:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Close a consultation case
+ */
+exports.closeCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const providerId = req.user.id;
+
+    const consultation = await Consultation.findById(id)
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
+      .populate('provider', 'firstName lastName email')
+      .populate('vitals')
+      .populate('medications')
+      .populate('labResults')
+      .populate('radiologyReports');
+
+    if (!consultation) {
+      return res.status(404).json({ message: 'Consultation not found' });
+    }
+
+    if (consultation.provider._id.toString() !== providerId) {
+      return res.status(403).json({ message: 'Only the assigned provider can close this case' });
+    }
+
+    try {
+      consultation.closeCase();
+    } catch (domainError) {
+      return res.status(400).json({ message: domainError.message });
+    }
+    await consultation.save();
+
+    const followUps = await Consultation.find({ parentConsultation: consultation._id })
+      .populate('provider', 'firstName lastName email')
+      .populate('vitals')
+      .populate('medications')
+      .populate('labResults')
+      .populate('radiologyReports')
+      .sort({ date: 1, createdAt: 1 });
+
+    const result = consultation.toObject({ virtuals: true });
+    result.thread = followUps.map(f => f.toObject({ virtuals: true }));
+    result.visitCount = 1 + followUps.length;
+
+    return res.json(result);
+  } catch (error) {
+    console.error('Error closing case:', error);
+    return res.status(500).json({ message: error.message || 'Server error' });
+  }
+};
+
+/**
+ * Reopen a closed consultation case
+ */
+exports.reopenCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const providerId = req.user.id;
+
+    const consultation = await Consultation.findById(id)
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
+      .populate('provider', 'firstName lastName email')
+      .populate('vitals')
+      .populate('medications')
+      .populate('labResults')
+      .populate('radiologyReports');
+
+    if (!consultation) {
+      return res.status(404).json({ message: 'Consultation not found' });
+    }
+
+    if (consultation.provider._id.toString() !== providerId) {
+      return res.status(403).json({ message: 'Only the assigned provider can reopen this case' });
+    }
+
+    try {
+      consultation.reopenCase();
+    } catch (domainError) {
+      return res.status(400).json({ message: domainError.message });
+    }
+    await consultation.save();
+
+    const followUps = await Consultation.find({ parentConsultation: consultation._id })
+      .populate('provider', 'firstName lastName email')
+      .populate('vitals')
+      .populate('medications')
+      .populate('labResults')
+      .populate('radiologyReports')
+      .sort({ date: 1, createdAt: 1 });
+
+    const result = consultation.toObject({ virtuals: true });
+    result.thread = followUps.map(f => f.toObject({ virtuals: true }));
+    result.visitCount = 1 + followUps.length;
+
+    return res.json(result);
+  } catch (error) {
+    console.error('Error reopening case:', error);
+    return res.status(500).json({ message: error.message || 'Server error' });
   }
 };
 

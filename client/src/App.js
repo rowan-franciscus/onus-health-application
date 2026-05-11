@@ -32,6 +32,7 @@ const ProviderVerificationPending = lazy(() => import('./pages/provider/Verifica
 const PatientDashboard = lazy(() => import('./pages/patient/Dashboard'));
 const PatientConsultations = lazy(() => import('./pages/patient/Consultations'));
 const PatientViewConsultation = lazy(() => import('./pages/patient/ViewConsultation'));
+const PatientViewConsultationFull = lazy(() => import('./pages/patient/ViewConsultationFull'));
 const PatientConnections = lazy(() => import('./pages/patient/Connections'));
 const PatientMedicalRecords = lazy(() => import('./pages/patient/MedicalRecords'));
 const PatientVitals = lazy(() => import('./pages/patient/medical-records/Vitals'));
@@ -54,6 +55,8 @@ const ProviderAddPatient = lazy(() => import('./pages/provider/AddPatient'));
 const ProviderConsultations = lazy(() => import('./pages/provider/Consultations'));
 const ProviderAddConsultation = lazy(() => import('./pages/provider/AddConsultation'));
 const ProviderViewConsultation = lazy(() => import('./pages/provider/ViewConsultation'));
+const ProviderViewConsultationFull = lazy(() => import('./pages/provider/ViewConsultationFull'));
+const ProviderAddFollowUp = lazy(() => import('./pages/provider/AddFollowUp'));
 const ProviderViewVitals = lazy(() => import('./pages/provider/ViewVitals'));
 const ProviderImmunizations = lazy(() => import('./pages/provider/Immunizations'));
 const ProviderHospitalRecords = lazy(() => import('./pages/provider/HospitalRecords'));
@@ -221,12 +224,22 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/patient/consultations/:id" 
+            <Route
+              path="/patient/consultations/:id/full"
               element={
-                <ProtectedRoute 
-                  element={<PatientViewConsultation />} 
-                  allowedRoles={['patient']} 
+                <ProtectedRoute
+                  element={<PatientViewConsultationFull />}
+                  allowedRoles={['patient']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/patient/consultations/:id"
+              element={
+                <ProtectedRoute
+                  element={<PatientViewConsultation />}
+                  allowedRoles={['patient']}
                   requireOnboarding={true}
                 />
               } 
@@ -445,15 +458,35 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/provider/consultations/:id" 
+            <Route
+              path="/provider/consultations/:id/full"
               element={
-                <ProtectedRoute 
-                  element={<ProviderViewConsultation />} 
-                  allowedRoles={['provider']} 
+                <ProtectedRoute
+                  element={<ProviderViewConsultationFull />}
+                  allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
-              } 
+              }
+            />
+            <Route
+              path="/provider/consultations/:rootId/follow-ups/new"
+              element={
+                <ProtectedRoute
+                  element={<ProviderAddFollowUp />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/consultations/:id"
+              element={
+                <ProtectedRoute
+                  element={<ProviderViewConsultation />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
             />
             <Route
               path="/provider/medical-records/vitals/:id"

@@ -94,6 +94,52 @@ const ConsultationService = {
       console.error('Error updating consultation:', error);
       throw error;
     }
+  },
+
+  /**
+   * Add a follow-up consultation to an existing root consultation
+   * @param {string} consultationId - Root consultation ID
+   * @param {Object} payload - Follow-up consultation data
+   * @returns {Promise} - A promise that resolves to the created follow-up
+   */
+  addFollowUp: async (consultationId, payload) => {
+    try {
+      const response = await ApiService.post(`/consultations/${consultationId}/follow-ups`, payload);
+      return response;
+    } catch (error) {
+      console.error('Error adding follow-up:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Close a consultation case
+   * @param {string} consultationId - Root consultation ID
+   * @returns {Promise} - A promise that resolves to the updated consultation
+   */
+  closeCase: async (consultationId) => {
+    try {
+      const response = await ApiService.post(`/consultations/${consultationId}/close`);
+      return response;
+    } catch (error) {
+      console.error('Error closing case:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reopen a closed consultation case
+   * @param {string} consultationId - Root consultation ID
+   * @returns {Promise} - A promise that resolves to the updated consultation
+   */
+  reopenCase: async (consultationId) => {
+    try {
+      const response = await ApiService.post(`/consultations/${consultationId}/reopen`);
+      return response;
+    } catch (error) {
+      console.error('Error reopening case:', error);
+      throw error;
+    }
   }
 };
 
