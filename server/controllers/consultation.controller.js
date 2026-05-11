@@ -80,8 +80,10 @@ exports.getAllConsultations = async (req, res) => {
       if (endDate) query.createdAt.$lte = new Date(endDate);
     }
     
-    // For provider and admin roles, show only root consultations (not follow-ups)
-    if (userRole === 'provider' || userRole === 'admin') {
+    // For provider and admin roles, filter to root consultations only when explicitly
+    // requested (e.g. the consultation list table). Callers like ViewPatient that need
+    // all entries (including follow-ups) for medical record extraction omit this flag.
+    if ((userRole === 'provider' || userRole === 'admin') && req.query.rootsOnly === 'true') {
       query.parentConsultation = null;
     }
 
@@ -206,6 +208,7 @@ exports.getConsultationById = async (req, res) => {
     if (req.user.role === 'patient') threadQuery.status = 'completed';
 
     const followUps = await Consultation.find(threadQuery)
+      .populate('patient', 'firstName lastName email profileImage patientProfile')
       .populate('provider', 'firstName lastName email')
       .populate('vitals')
       .populate('medications')
@@ -961,10 +964,10 @@ exports.getPatientConsultations = async (req, res) => {
       .sort({ date: -1, createdAt: -1, _id: -1 })
       .limit(limit);
 
-    // Aggregate follow-up counts for visitCount
+    // Aggregate follow-up counts for visitCount — patients only see completed entries
     const consultationIds = consultations.map(c => c._id);
     const followUpCounts = await Consultation.aggregate([
-      { $match: { parentConsultation: { $in: consultationIds } } },
+      { $match: { parentConsultation: { $in: consultationIds }, status: 'completed' } },
       { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
     ]);
     const countMap = {};

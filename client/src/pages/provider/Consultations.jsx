@@ -35,7 +35,8 @@ const Consultations = () => {
         page: currentPage,
         limit: 10,
         sort: sortField,
-        order: sortDirection
+        order: sortDirection,
+        rootsOnly: 'true'
       });
 
       if (response) {
