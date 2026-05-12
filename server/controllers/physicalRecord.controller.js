@@ -98,7 +98,7 @@ exports.deletePhysicalRecord = async (req, res) => {
       return res.status(403).json({ message: 'Only the uploading provider can delete this record' });
     }
 
-    const filePath = path.join(getBaseUploadDir(), 'physical-records', record.file.filename);
+    const filePath = record.file.path;
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }

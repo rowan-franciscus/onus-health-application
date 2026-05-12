@@ -207,6 +207,7 @@ const PhysicalRecordsTab = ({ patientId }) => {
                 type="button"
                 className={styles.modalClose}
                 onClick={() => setPendingFile(null)}
+                aria-label="Close upload dialog"
               >
                 &times;
               </button>
@@ -278,7 +279,12 @@ const PhysicalRecordsTab = ({ patientId }) => {
               onClick={() => handleViewFile(record)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && handleViewFile(record)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleViewFile(record);
+                }
+              }}
             >
               <div className={styles.cardThumbnail}>
                 <FileIcon mimetype={record.file.mimetype} />
