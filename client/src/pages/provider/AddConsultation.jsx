@@ -232,7 +232,7 @@ const AddConsultation = () => {
 
   const fetchConsultationData = async () => {
     try {
-      const response = await ApiService.get(`/consultations/${consultationId}`);
+      const response = await ApiService.get(`/consultations/${consultationId}`, { raw: 'true' });
 
       if (response) {
         setConsultationData(response);

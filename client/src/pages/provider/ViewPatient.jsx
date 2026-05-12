@@ -13,6 +13,7 @@ import PatientService from '../../services/patient.service';
 import ApiService from '../../services/api.service';
 import { formatDate } from '../../utils/dateUtils';
 import Badge from '../../components/common/Badge/Badge';
+import PhysicalRecordsTab from './PhysicalRecordsTab';
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
@@ -44,7 +45,8 @@ const ProviderViewPatient = () => {
     { id: 'lab-results', label: 'Lab Results' },
     { id: 'radiology', label: 'Radiology' },
     { id: 'hospital', label: 'Hospital' },
-    { id: 'surgery', label: 'Surgery' }
+    { id: 'surgery', label: 'Surgery' },
+    { id: 'physical-records', label: 'Physical Records' }
   ];
 
   useEffect(() => {
@@ -1253,6 +1255,12 @@ const ProviderViewPatient = () => {
           <Card className={styles.medicalRecordCard}>
             {renderMedicalRecordsTab(recordType)}
           </Card>
+        );
+      case 'physical-records':
+        return (
+          <div className={styles.medicalRecordCard}>
+            <PhysicalRecordsTab patientId={id} />
+          </div>
         );
       default:
         return (

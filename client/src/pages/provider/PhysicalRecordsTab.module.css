@@ -1,0 +1,395 @@
+.container {
+  padding: 0;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0 0 0.4rem 0;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: #666;
+  margin: 0;
+}
+
+/* Drop zone */
+.dropZone {
+  border: 2px dashed #d0d0e0;
+  border-radius: 10px;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 2rem;
+}
+
+.dropZone.dragging {
+  border-color: #6039cc;
+  background: #f5f0ff;
+}
+
+.uploadIconSvg {
+  width: 2rem;
+  height: 2rem;
+  color: #6039cc;
+  margin-bottom: 0.25rem;
+}
+
+.dropZoneText {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  margin: 0;
+}
+
+.dropZoneHint {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0;
+}
+
+.dropZoneActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.browseButton {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  background: #6039cc;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.browseButton:hover {
+  background: #4f2fa8;
+}
+
+.btnIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* Modal overlay */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.modalTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #888;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  transition: color 0.15s;
+}
+
+.modalClose:hover {
+  color: #333;
+}
+
+/* File row inside modal */
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f5f5fb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.fileRowIcon {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: #6039cc;
+}
+
+.iconSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.fileRowInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.fileRowName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileRowSize {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+/* Form fields in modal */
+.fieldGroup {
+  margin-bottom: 1.1rem;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.4rem;
+}
+
+.docTypeDisplay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  border: 1.5px solid #6039cc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #222;
+  background: #fff;
+}
+
+.chevronIcon {
+  width: 1rem;
+  height: 1rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.descriptionInput {
+  width: 100%;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #222;
+  resize: vertical;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.descriptionInput:focus {
+  outline: none;
+  border-color: #6039cc;
+}
+
+/* Modal actions */
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.cancelButton {
+  padding: 0.6rem 1.25rem;
+  background: #fff;
+  color: #444;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.cancelButton:disabled,
+.uploadButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uploadButton {
+  padding: 0.6rem 1.5rem;
+  background: #6039cc;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.uploadButton:hover:not(:disabled) {
+  background: #4f2fa8;
+}
+
+/* Records grid */
+.recordsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .recordsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .recordsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Record card */
+.recordCard {
+  border: 1px solid #e8e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  background: #fff;
+}
+
+.recordCard:hover {
+  box-shadow: 0 4px 16px rgba(96, 57, 204, 0.12);
+  border-color: #c8b8f0;
+}
+
+.cardThumbnail {
+  background: #f5f5fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  height: 130px;
+  color: #6039cc;
+}
+
+.cardThumbnail .iconSvg {
+  width: 3rem;
+  height: 3rem;
+}
+
+.cardBody {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cardFileName {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #222;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.docTypePill {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  background: #ede8ff;
+  color: #6039cc;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.cardSize {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.cardDescription {
+  font-size: 0.8rem;
+  color: #555;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.cardFooter {
+  font-size: 0.75rem;
+  color: #999;
+  margin: 0;
+  margin-top: 0.15rem;
+}
+
+.loadingState {
+  padding: 2rem;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+}
