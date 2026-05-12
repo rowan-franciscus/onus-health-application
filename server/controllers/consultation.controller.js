@@ -187,6 +187,14 @@ exports.getConsultationById = async (req, res) => {
       return res.status(403).json({ message: 'Consultation not available for viewing' });
     }
 
+    // When raw=true (e.g. edit forms), skip root resolution and return this document directly
+    if (req.query.raw === 'true') {
+      const obj = consultation.toObject({ virtuals: true });
+      obj.thread = [];
+      obj.visitCount = 1;
+      return res.json(obj);
+    }
+
     // Resolve to root consultation if this is a follow-up
     let rootConsultation = consultation;
     if (consultation.parentConsultation) {
