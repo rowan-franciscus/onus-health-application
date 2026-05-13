@@ -198,6 +198,58 @@
   border-radius: 8px;
 }
 
+.tabs {
+  margin-bottom: 0;
+}
+
+.tabContent {
+  padding-top: 1.5rem;
+}
+
+.infoBanner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: #f0f0ff;
+  border: 1px solid #ddd8f8;
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  color: #333;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.infoBannerIcon {
+  color: #6039cc;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.required {
+  color: #dc3545;
+}
+
+.registerForm {
+  max-width: 700px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.formSelect {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .addPatientContainer {
@@ -211,9 +263,13 @@
   .formActions {
     flex-direction: column;
   }
-  
+
   .cancelButton,
   .submitButton {
     width: 100%;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
   }
 } 

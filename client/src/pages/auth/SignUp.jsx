@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { authStart, authFail } from '../../store/slices/authSlice';
 import AuthService from '../../services/auth.service';
@@ -11,10 +11,13 @@ import { ReactComponent as GoogleIcon } from '../../assets/icons/google-icon.svg
 import { ReactComponent as FacebookIcon } from '../../assets/icons/facebook-icon.svg';
 
 const SignUp = () => {
+  const [searchParams] = useSearchParams();
+  const prefillEmail = searchParams.get('email') || '';
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: '',
+    email: prefillEmail,
     password: '',
     confirmPassword: '',
   });

@@ -8,15 +8,15 @@ const UserSchema = new mongoose.Schema({
   // Common fields for all users
   email: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true,
     trim: true,
     lowercase: true
   },
   password: {
     type: String,
     required: function() {
-      return !this.googleId && !this.facebookId; // Only required if not using social auth
+      return !this.googleId && !this.facebookId && this.isOnusUser !== false;
     },
     minlength: 8
   },
@@ -61,6 +61,16 @@ const UserSchema = new mongoose.Schema({
   },
   lastLogin: {
     type: Date
+  },
+  // Whether this user was created by a provider (non-Onus placeholder) or is a real Onus account
+  isOnusUser: {
+    type: Boolean,
+    default: true
+  },
+  // Provider who registered this patient (only set for non-Onus placeholder patients)
+  registeredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   // Profile image field
   profileImage: {
