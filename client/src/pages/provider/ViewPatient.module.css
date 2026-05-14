@@ -136,10 +136,51 @@
   gap: 24px;
   grid-template-areas:
     "info info"
+    "biometrics biometrics"
     "history emergency"
     "lifestyle medications"
     "immunization immunization"
     "consultations consultations";
+}
+
+.biometricsRow {
+  grid-area: biometrics;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.biometricCard {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.biometricLabel {
+  color: #6b7280;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.biometricValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.2;
+}
+
+.biometricSubtitle {
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .biometricsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .infoCard, .medicalHistoryCard, .emergencyContactCard, .consultationsCard, .medicalRecordCard, .lifestyleCard, .medicationsCard, .immunizationCard {
@@ -737,6 +778,7 @@
     gap: 16px;
     grid-template-areas:
       "info"
+      "biometrics"
       "history"
       "emergency"
       "lifestyle"
