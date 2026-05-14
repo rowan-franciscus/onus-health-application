@@ -225,7 +225,12 @@ const ProviderViewPatient = () => {
           bmi: formatVitalValue(record.bmi),
           bloodGlucose: formatVitalValue(record.bloodGlucose),
           bodyFatPercentage: formatVitalValue(record.bodyFatPercentage),
-          createdByPatient: record.createdByPatient || false
+          createdByPatient: record.createdByPatient || false,
+          weightRaw: record.weight?.value ?? null,
+          heightRaw: record.height?.value ?? null,
+          bmiRaw: record.bmi?.value ?? null,
+          bodyFatRaw: record.bodyFatPercentage?.value ?? null,
+          dateRaw: record.date || null
         }));
         
         setMedicalRecords(prev => ({
@@ -1164,7 +1169,29 @@ const ProviderViewPatient = () => {
     }
     
     switch (activeTab) {
-      case 'overview':
+      case 'overview': {
+        const sortedVitals = [...medicalRecords.vitals]
+          .filter(v => v.dateRaw)
+          .sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+        const pickLatest = (key) => {
+          const hit = sortedVitals.find(v => v[key] != null && v[key] !== '');
+          return hit ? { value: hit[key], date: hit.dateRaw } : null;
+        };
+        const latestWeight = pickLatest('weightRaw');
+        const latestHeight = pickLatest('heightRaw');
+        const latestBodyFat = pickLatest('bodyFatRaw');
+        let bmi = null;
+        if (latestWeight && latestHeight && latestHeight.value > 0) {
+          const m = latestHeight.value / 100;
+          const value = +(latestWeight.value / (m * m)).toFixed(1);
+          const classification =
+            value < 18.5 ? 'Underweight' :
+            value < 25   ? 'Normal weight' :
+            value < 30   ? 'Overweight' : 'Obese';
+          const date = new Date(latestWeight.date) > new Date(latestHeight.date)
+            ? latestWeight.date : latestHeight.date;
+          bmi = { value, classification, date };
+        }
         return (
           <div className={styles.overviewTab}>
             {patient?.accessLevel === 'pending' || patient?.accessLevel === 'limited' ? (
@@ -1209,7 +1236,30 @@ const ProviderViewPatient = () => {
                 <Card className={styles.infoCard}>
                   {renderPatientInfo()}
                 </Card>
-                
+
+                <div className={styles.biometricsRow}>
+                  <Card className={styles.biometricCard}>
+                    <div className={styles.biometricLabel}>BMI</div>
+                    <div className={styles.biometricValue}>{bmi ? bmi.value : '—'}</div>
+                    <div className={styles.biometricSubtitle}>{bmi ? bmi.classification : '—'}</div>
+                  </Card>
+                  <Card className={styles.biometricCard}>
+                    <div className={styles.biometricLabel}>Body Fat %</div>
+                    <div className={styles.biometricValue}>{latestBodyFat ? `${latestBodyFat.value}%` : '—'}</div>
+                    <div className={styles.biometricSubtitle}>{latestBodyFat ? formatDate(latestBodyFat.date) : '—'}</div>
+                  </Card>
+                  <Card className={styles.biometricCard}>
+                    <div className={styles.biometricLabel}>Weight</div>
+                    <div className={styles.biometricValue}>{latestWeight ? `${latestWeight.value} kg` : '—'}</div>
+                    <div className={styles.biometricSubtitle}>{latestWeight ? formatDate(latestWeight.date) : '—'}</div>
+                  </Card>
+                  <Card className={styles.biometricCard}>
+                    <div className={styles.biometricLabel}>Height</div>
+                    <div className={styles.biometricValue}>{latestHeight ? `${latestHeight.value} cm` : '—'}</div>
+                    <div className={styles.biometricSubtitle}>{latestHeight ? formatDate(latestHeight.date) : '—'}</div>
+                  </Card>
+                </div>
+
                 <Card className={styles.medicalHistoryCard}>
                   {renderMedicalHistory()}
                 </Card>
@@ -1237,6 +1287,7 @@ const ProviderViewPatient = () => {
             )}
           </div>
         );
+      }
       case 'consultations':
         return (
           <Card className={styles.medicalRecordCard}>
