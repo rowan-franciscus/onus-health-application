@@ -778,6 +778,7 @@
     gap: 16px;
     grid-template-areas:
       "info"
+      "biometrics"
       "history"
       "emergency"
       "lifestyle"
