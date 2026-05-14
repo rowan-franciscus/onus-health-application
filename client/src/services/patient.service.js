@@ -83,6 +83,16 @@ const PatientService = {
   requestAccess: async (patientId, requestData = {}) => {
     const response = await ApiService.post(`/patients/${patientId}/request-access`, requestData);
     return response;
+  },
+
+  /**
+   * Register a new non-Onus patient on behalf of the provider
+   * @param {Object} patientData - Patient registration data
+   * @returns {Promise} - A promise that resolves to the created patient
+   */
+  registerNewPatient: async (patientData) => {
+    const response = await ApiService.post('/patients/register-new', patientData);
+    return response;
   }
 };
 

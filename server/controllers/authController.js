@@ -32,23 +32,62 @@ exports.register = async (req, res) => {
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
-      logger.warn(
-        `Registration failed: User already exists with email ${email}`,
-      );
-      return res.status(400).json({ message: "User already exists" });
+      // Allow claiming a non-Onus placeholder patient record
+      if (user.isOnusUser === false && user.role === 'patient') {
+        logger.info(`Claiming non-Onus placeholder for email ${email}`);
+        user.password = password;
+        user.firstName = firstName || user.firstName;
+        user.lastName = lastName || user.lastName;
+        user.isOnusUser = true;
+        user.isEmailVerified = false;
+        await user.save();
+        logger.info(`Non-Onus patient ${user._id} claimed via registration`);
+
+        // Notify the provider who registered this patient, if any
+        if (user.registeredBy) {
+          try {
+            const emailService = require('../services/email.service');
+            const provider = await User.findById(user.registeredBy).select('firstName lastName email');
+            if (provider && provider.email) {
+              await emailService.sendTemplateEmail(
+                provider.email,
+                'patientClaimed',
+                {
+                  providerFirstName: provider.firstName,
+                  patientName: `${user.firstName} ${user.lastName}`,
+                  patientEmail: user.email,
+                  frontendUrl: config.frontendUrl,
+                },
+                {
+                  subject: `${user.firstName} ${user.lastName} has joined Onus Health`,
+                  userId: provider._id,
+                  queue: true,
+                }
+              );
+            }
+          } catch (notifyErr) {
+            logger.error(`Failed to notify provider of patient claim:`, notifyErr);
+          }
+        }
+      } else {
+        logger.warn(
+          `Registration failed: User already exists with email ${email}`,
+        );
+        return res.status(400).json({ message: "User already exists" });
+      }
+    } else {
+      // Create new user
+      user = new User({
+        email,
+        password,
+        firstName,
+        lastName,
+        role: role || "patient",
+      });
+
+      await user.save();
+      logger.info(`User created with ID ${user._id} and email ${email}`);
     }
-
-    // Create new user
-    user = new User({
-      email,
-      password,
-      firstName,
-      lastName,
-      role: role || "patient",
-    });
-
-    await user.save();
-    logger.info(`User created with ID ${user._id} and email ${email}`);
 
     // Generate verification token
     const verificationToken = jwt.sign({ id: user._id }, config.jwtSecret, {
