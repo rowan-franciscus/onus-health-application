@@ -65,7 +65,7 @@ const EllipsisMenu = ({ patient, canRequestFullAccess, onRequestFullAccess, acti
       </button>
       <button
         className={styles.dropdownItem}
-        onClick={() => handleAction(() => navigate(`/provider/hospital-records?patientId=${patient.id}`))}
+        onClick={() => handleAction(() => navigate(`/provider/hospital-admissions/new?patientId=${patient.id}`))}
       >
         Admit
       </button>
