@@ -1,32 +1,51 @@
 const mongoose = require('mongoose');
 const HospitalAdmission = require('../models/HospitalAdmission');
 const Connection = require('../models/Connection');
-const User = require('../models/User');
 
 const PATIENT_POPULATE = 'firstName lastName email profileImage patientProfile';
 const PROVIDER_POPULATE = 'firstName lastName email providerProfile';
 
+// Any connection suffices for read access; full approved access required for mutations.
 async function providerCanAccessPatient(providerId, patientId) {
   const connection = await Connection.findOne({ provider: providerId, patient: patientId });
   return Boolean(connection);
 }
 
+async function providerCanMutateAdmission(providerId, patientId) {
+  const connection = await Connection.findOne({
+    provider: providerId,
+    patient: patientId,
+    accessLevel: 'full',
+    fullAccessStatus: 'approved',
+  });
+  return Boolean(connection);
+}
+
+// Converts empty strings to undefined so Mongoose never tries to cast "" → Number.
+const toNum = (x) => {
+  if (x === '' || x === null || x === undefined) return undefined;
+  const n = Number(x);
+  return Number.isFinite(n) ? n : undefined;
+};
+
 function sanitizeObservationInput(input = {}, recordedBy) {
   const v = input.vitals || {};
+  const heartRate = toNum(v.heartRate);
+  const bpSystolic = toNum(v.bpSystolic);
+  const bpDiastolic = toNum(v.bpDiastolic);
+  const temperature = toNum(v.temperature);
+  const respiratoryRate = toNum(v.respiratoryRate);
+  const bloodGlucose = toNum(v.bloodGlucose);
+  const spo2 = toNum(v.spo2);
+
+  // Only persist context enums when the corresponding numeric value is present.
+  const bloodGlucoseType = bloodGlucose !== undefined ? (v.bloodGlucoseType || '') : '';
+  const spo2Context = spo2 !== undefined ? (v.spo2Context || '') : '';
+
   return {
     recordedBy,
     recordedAt: input.recordedAt ? new Date(input.recordedAt) : new Date(),
-    vitals: {
-      heartRate: v.heartRate ?? undefined,
-      bpSystolic: v.bpSystolic ?? undefined,
-      bpDiastolic: v.bpDiastolic ?? undefined,
-      temperature: v.temperature ?? undefined,
-      respiratoryRate: v.respiratoryRate ?? undefined,
-      bloodGlucose: v.bloodGlucose ?? undefined,
-      bloodGlucoseType: v.bloodGlucoseType || '',
-      spo2: v.spo2 ?? undefined,
-      spo2Context: v.spo2Context || '',
-    },
+    vitals: { heartRate, bpSystolic, bpDiastolic, temperature, respiratoryRate, bloodGlucose, bloodGlucoseType, spo2, spo2Context },
     medicationsAdministered: input.medicationsAdministered || '',
     notes: input.notes || '',
     assessment: input.assessment || '',
@@ -34,16 +53,28 @@ function sanitizeObservationInput(input = {}, recordedBy) {
   };
 }
 
+// Returns true when the observation carries at least one meaningful piece of clinical data.
+function hasObservationContent(input = {}) {
+  const v = input.vitals || {};
+  return (
+    toNum(v.heartRate) !== undefined ||
+    toNum(v.bpSystolic) !== undefined ||
+    toNum(v.bpDiastolic) !== undefined ||
+    toNum(v.temperature) !== undefined ||
+    toNum(v.respiratoryRate) !== undefined ||
+    toNum(v.bloodGlucose) !== undefined ||
+    toNum(v.spo2) !== undefined ||
+    !!(input.medicationsAdministered || '').trim() ||
+    !!(input.notes || '').trim() ||
+    !!(input.assessment || '').trim() ||
+    !!(input.plan || '').trim()
+  );
+}
+
 exports.createAdmission = async (req, res) => {
   try {
     const providerId = req.user.id;
-    const {
-      patient,
-      hospitalName,
-      admissionDate,
-      reasonForHospitalization,
-      observation,
-    } = req.body;
+    const { patient, hospitalName, admissionDate, reasonForHospitalization, observation } = req.body;
 
     if (!patient || !hospitalName || !admissionDate || !reasonForHospitalization) {
       return res.status(400).json({ success: false, message: 'Missing required admission fields' });
@@ -57,6 +88,11 @@ exports.createAdmission = async (req, res) => {
       return res.status(403).json({ success: false, message: 'No connection to this patient' });
     }
 
+    // Only seed an initial observation when the provider actually filled something in.
+    const observations = hasObservationContent(observation || {})
+      ? [sanitizeObservationInput(observation, providerId)]
+      : [];
+
     const admission = await HospitalAdmission.create({
       patient,
       provider: providerId,
@@ -64,7 +100,7 @@ exports.createAdmission = async (req, res) => {
       admissionDate: new Date(admissionDate),
       reasonForHospitalization,
       status: 'admitted',
-      observations: [sanitizeObservationInput(observation || {}, providerId)],
+      observations,
     });
 
     const populated = await HospitalAdmission.findById(admission._id)
@@ -84,9 +120,6 @@ exports.listAdmissionsForProvider = async (req, res) => {
     const providerId = req.user.id;
     const { search = '', patientId } = req.query;
 
-    const query = {};
-
-    // Provider sees admissions they created, plus any for patients they have full approved access to
     const fullAccessConnections = await Connection.find({
       provider: providerId,
       accessLevel: 'full',
@@ -94,32 +127,51 @@ exports.listAdmissionsForProvider = async (req, res) => {
     }).select('patient');
     const fullAccessPatientIds = fullAccessConnections.map(c => c.patient);
 
-    query.$or = [
-      { provider: providerId },
-      { patient: { $in: fullAccessPatientIds } },
+    const accessFilter = {
+      $or: [{ provider: new mongoose.Types.ObjectId(providerId) }, { patient: { $in: fullAccessPatientIds } }],
+    };
+    const baseMatch = patientId && mongoose.isValidObjectId(patientId)
+      ? { ...accessFilter, patient: new mongoose.Types.ObjectId(patientId) }
+      : accessFilter;
+
+    const pipeline = [
+      { $match: baseMatch },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'patient',
+          foreignField: '_id',
+          as: '_patientDoc',
+        },
+      },
+      { $unwind: { path: '$_patientDoc', preserveNullAndEmptyArrays: true } },
     ];
 
-    if (patientId && mongoose.isValidObjectId(patientId)) {
-      query.patient = patientId;
+    if (search) {
+      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      pipeline.push({
+        $match: {
+          $or: [
+            { '_patientDoc.firstName': regex },
+            { '_patientDoc.lastName': regex },
+            { hospitalName: regex },
+            { reasonForHospitalization: regex },
+            { status: regex },
+          ],
+        },
+      });
     }
 
-    let admissions = await HospitalAdmission.find(query)
+    pipeline.push({ $sort: { admissionDate: -1, createdAt: -1 } });
+
+    const raw = await HospitalAdmission.aggregate(pipeline);
+
+    // Populate provider and recordedBy via mongoose after aggregation.
+    const ids = raw.map(a => a._id);
+    const admissions = await HospitalAdmission.find({ _id: { $in: ids } })
       .populate('patient', PATIENT_POPULATE)
       .populate('provider', PROVIDER_POPULATE)
       .sort({ admissionDate: -1, createdAt: -1 });
-
-    if (search) {
-      const needle = String(search).toLowerCase();
-      admissions = admissions.filter(a => {
-        const patientName = `${a.patient?.firstName || ''} ${a.patient?.lastName || ''}`.toLowerCase();
-        return (
-          patientName.includes(needle) ||
-          (a.hospitalName || '').toLowerCase().includes(needle) ||
-          (a.reasonForHospitalization || '').toLowerCase().includes(needle) ||
-          (a.status || '').toLowerCase().includes(needle)
-        );
-      });
-    }
 
     const result = admissions.map(a => {
       const obj = a.toObject({ virtuals: true });
@@ -143,7 +195,7 @@ exports.listAdmissionsForPatient = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid patient ID' });
     }
 
-    if (role === 'patient' && patientId !== userId) {
+    if (role === 'patient' && String(patientId) !== String(userId)) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
     if (role === 'provider') {
@@ -190,11 +242,11 @@ exports.getAdmissionById = async (req, res) => {
     }
 
     const patientId = admission.patient._id.toString();
-    if (role === 'patient' && patientId !== userId) {
+    if (role === 'patient' && String(patientId) !== String(userId)) {
       return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
     if (role === 'provider') {
-      const isCreator = admission.provider._id.toString() === userId;
+      const isCreator = admission.provider._id.toString() === String(userId);
       if (!isCreator) {
         const hasAccess = await providerCanAccessPatient(userId, patientId);
         if (!hasAccess) {
@@ -215,24 +267,27 @@ exports.addObservation = async (req, res) => {
     const { admissionId } = req.params;
     const providerId = req.user.id;
 
+    if (!hasObservationContent(req.body || {})) {
+      return res.status(400).json({ success: false, message: 'Observation must include at least one vital, medication, note, assessment, or plan' });
+    }
+
     const admission = await HospitalAdmission.findById(admissionId);
     if (!admission) {
       return res.status(404).json({ success: false, message: 'Admission not found' });
     }
-
     if (admission.status === 'discharged') {
       return res.status(400).json({ success: false, message: 'Cannot add observation to a discharged admission' });
     }
 
-    const isCreator = admission.provider.toString() === providerId;
+    const isCreator = admission.provider.toString() === String(providerId);
     if (!isCreator) {
-      const hasAccess = await providerCanAccessPatient(providerId, admission.patient);
+      const hasAccess = await providerCanMutateAdmission(providerId, admission.patient);
       if (!hasAccess) {
         return res.status(403).json({ success: false, message: 'Unauthorized' });
       }
     }
 
-    admission.observations.push(sanitizeObservationInput(req.body || {}, providerId));
+    admission.observations.push(sanitizeObservationInput(req.body, providerId));
     await admission.save();
 
     const populated = await HospitalAdmission.findById(admission._id)
@@ -260,9 +315,9 @@ exports.reAdmitPatient = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Patient is already admitted' });
     }
 
-    const isCreator = admission.provider.toString() === providerId;
+    const isCreator = admission.provider.toString() === String(providerId);
     if (!isCreator) {
-      const hasAccess = await providerCanAccessPatient(providerId, admission.patient);
+      const hasAccess = await providerCanMutateAdmission(providerId, admission.patient);
       if (!hasAccess) {
         return res.status(403).json({ success: false, message: 'Unauthorized' });
       }
@@ -297,9 +352,9 @@ exports.dischargePatient = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Already discharged' });
     }
 
-    const isCreator = admission.provider.toString() === providerId;
+    const isCreator = admission.provider.toString() === String(providerId);
     if (!isCreator) {
-      const hasAccess = await providerCanAccessPatient(providerId, admission.patient);
+      const hasAccess = await providerCanMutateAdmission(providerId, admission.patient);
       if (!hasAccess) {
         return res.status(403).json({ success: false, message: 'Unauthorized' });
       }

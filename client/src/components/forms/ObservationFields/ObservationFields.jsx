@@ -26,6 +26,8 @@ export const emptyObservationValues = {
 export const buildObservationPayload = (values) => {
   const v = values.vitals || {};
   const num = (x) => (x === '' || x === null || x === undefined ? undefined : Number(x));
+  const bloodGlucose = num(v.bloodGlucose);
+  const spo2 = num(v.spo2);
   return {
     vitals: {
       heartRate: num(v.heartRate),
@@ -33,10 +35,11 @@ export const buildObservationPayload = (values) => {
       bpDiastolic: num(v.bpDiastolic),
       temperature: num(v.temperature),
       respiratoryRate: num(v.respiratoryRate),
-      bloodGlucose: num(v.bloodGlucose),
-      bloodGlucoseType: v.bloodGlucoseType || '',
-      spo2: num(v.spo2),
-      spo2Context: v.spo2Context || '',
+      bloodGlucose,
+      // Only send context when the paired numeric value is present.
+      bloodGlucoseType: bloodGlucose !== undefined ? (v.bloodGlucoseType || '') : '',
+      spo2,
+      spo2Context: spo2 !== undefined ? (v.spo2Context || '') : '',
     },
     medicationsAdministered: values.medicationsAdministered || '',
     notes: values.notes || '',

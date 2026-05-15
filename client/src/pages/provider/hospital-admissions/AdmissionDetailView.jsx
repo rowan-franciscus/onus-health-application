@@ -77,21 +77,14 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
   const [showAddObs, setShowAddObs] = useState(false);
   const [obsValues, setObsValues] = useState(emptyObservationValues);
 
-  const fetchAdmission = async () => {
-    setLoading(true);
-    try {
-      const data = await HospitalAdmissionService.getAdmission(admissionId);
-      setAdmission(data);
-    } catch {
-      toast.error('Failed to load admission');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchAdmission();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+    setLoading(true);
+    HospitalAdmissionService.getAdmission(admissionId)
+      .then((data) => { if (!cancelled) setAdmission(data); })
+      .catch(() => { if (!cancelled) toast.error('Failed to load admission'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [admissionId]);
 
   const handleReAdmit = async () => {
@@ -217,9 +210,9 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
 
   const isAdmitted = admission.status !== 'discharged';
   const patientName =
-    admission.patient
+    (admission.patient
       ? `${admission.patient.firstName || ''} ${admission.patient.lastName || ''}`.trim()
-      : 'Patient';
+      : '') || 'Patient';
   const avatarUrl = admission.patient?.profileImage
     ? FileService.getProfilePictureUrl(
         admission.patient.profileImage,
@@ -232,13 +225,10 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
     <div className={styles.detailPage}>
       <div className={styles.detailHeader}>
         <div className={styles.detailHeaderAvatar}>
-          {avatarUrl && <img src={avatarUrl} alt={patientName} />}
+          {avatarUrl && <img src={avatarUrl} alt={patientName || 'Patient'} />}
         </div>
         <div className={styles.detailHeaderMain}>
-          <h1 className={styles.detailHeaderTitle}>
-            {patientName}
-            {admission.reasonForHospitalization ? ` — ${admission.reasonForHospitalization}` : ''}
-          </h1>
+          <h1 className={styles.detailHeaderTitle}>{patientName}</h1>
           <div className={styles.detailHeaderMeta}>
             <span>Admitted: {formatDate(admission.admissionDate)}</span>
             <span>Reason: {admission.reasonForHospitalization || '—'}</span>

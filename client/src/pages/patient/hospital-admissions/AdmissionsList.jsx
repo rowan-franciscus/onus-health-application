@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
+import { useAuth } from '../../../contexts/AuthContext';
 
 import Card from '../../../components/common/Card';
 import Button from '../../../components/common/Button';
@@ -18,7 +18,7 @@ import styles from '../../provider/hospital-admissions/Admissions.module.css';
 const PAGE_SIZE = 10;
 
 const PatientAdmissions = () => {
-  const user = useSelector((s) => s.auth.user);
+  const { user } = useAuth();
   const patientId = user?.id || user?._id;
 
   const [admissions, setAdmissions] = useState([]);

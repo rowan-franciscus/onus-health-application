@@ -710,6 +710,9 @@ function App() {
           {/* Redirect from root */}
           <Route path="/" element={<Navigate to="/sign-in" />} />
 
+          {/* Preserve old hospital-records bookmark URLs */}
+          <Route path="/provider/hospital-records" element={<Navigate to="/provider/hospital-admissions" replace />} />
+
           {/* 404 page */}
           <Route path="*" element={<NotFound />} />
         </Routes>

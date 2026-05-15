@@ -16,7 +16,7 @@ import styles from './Admissions.module.css';
 
 const PAGE_SIZE = 10;
 
-const PatientAdmissionsList = ({ patientOnly = false }) => {
+const ProviderAdmissionsList = () => {
   const [admissions, setAdmissions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -114,11 +114,9 @@ const PatientAdmissionsList = ({ patientOnly = false }) => {
           <h1 className={styles.title}>Hospital Admissions</h1>
           <p className={styles.subtitle}>View and manage patient hospital admissions</p>
         </div>
-        {!patientOnly && (
-          <Link to="/provider/hospital-admissions/new">
-            <Button>+ New Admission</Button>
-          </Link>
-        )}
+        <Link to="/provider/hospital-admissions/new">
+          <Button>+ New Admission</Button>
+        </Link>
       </div>
 
       <Card className={styles.tableCard}>
@@ -155,4 +153,4 @@ const PatientAdmissionsList = ({ patientOnly = false }) => {
   );
 };
 
-export default PatientAdmissionsList;
+export default ProviderAdmissionsList;

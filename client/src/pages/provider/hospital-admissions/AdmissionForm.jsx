@@ -125,12 +125,18 @@ const AdmissionForm = () => {
             </div>
           )}
 
-          {presetPatientId && selectedPatient && (
+          {presetPatientId && (
             <div className={`${styles.formField} ${styles.fullWidth}`} style={{ marginBottom: 16 }}>
               <label>Patient</label>
               <input
                 type="text"
-                value={`${selectedPatient.firstName || ''} ${selectedPatient.lastName || ''}`.trim()}
+                value={
+                  patientsLoading
+                    ? 'Loading patient...'
+                    : selectedPatient
+                    ? `${selectedPatient.firstName || ''} ${selectedPatient.lastName || ''}`.trim()
+                    : 'Patient not found'
+                }
                 disabled
               />
             </div>
