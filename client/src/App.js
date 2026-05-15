@@ -59,7 +59,11 @@ const ProviderViewConsultationFull = lazy(() => import('./pages/provider/ViewCon
 const ProviderAddFollowUp = lazy(() => import('./pages/provider/AddFollowUp'));
 const ProviderViewVitals = lazy(() => import('./pages/provider/ViewVitals'));
 const ProviderImmunizations = lazy(() => import('./pages/provider/Immunizations'));
-const ProviderHospitalRecords = lazy(() => import('./pages/provider/HospitalRecords'));
+const ProviderHospitalAdmissionsList = lazy(() => import('./pages/provider/hospital-admissions/AdmissionsList'));
+const ProviderHospitalAdmissionForm = lazy(() => import('./pages/provider/hospital-admissions/AdmissionForm'));
+const ProviderHospitalAdmissionDetail = lazy(() => import('./pages/provider/hospital-admissions/AdmissionDetail'));
+const PatientHospitalAdmissionsList = lazy(() => import('./pages/patient/hospital-admissions/AdmissionsList'));
+const PatientHospitalAdmissionDetail = lazy(() => import('./pages/patient/hospital-admissions/AdmissionDetail'));
 const ProviderSurgeries = lazy(() => import('./pages/provider/Surgeries'));
 const ProviderProfile = lazy(() => import('./pages/provider/Profile'));
 const ProviderSettings = lazy(() => import('./pages/provider/Settings'));
@@ -244,18 +248,38 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/patient/connections" 
+            <Route
+              path="/patient/connections"
               element={
-                <ProtectedRoute 
-                  element={<PatientConnections />} 
-                  allowedRoles={['patient']} 
+                <ProtectedRoute
+                  element={<PatientConnections />}
+                  allowedRoles={['patient']}
                   requireOnboarding={true}
                 />
-              } 
+              }
             />
-            <Route 
-              path="/patient/medical-records" 
+            <Route
+              path="/patient/hospital-admissions"
+              element={
+                <ProtectedRoute
+                  element={<PatientHospitalAdmissionsList />}
+                  allowedRoles={['patient']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/patient/hospital-admissions/:admissionId"
+              element={
+                <ProtectedRoute
+                  element={<PatientHospitalAdmissionDetail />}
+                  allowedRoles={['patient']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/patient/medical-records"
               element={
                 <ProtectedRoute 
                   element={<PatientMedicalRecords />} 
@@ -509,10 +533,30 @@ function App() {
               }
             />
             <Route
-              path="/provider/hospital-records"
+              path="/provider/hospital-admissions"
               element={
                 <ProtectedRoute
-                  element={<ProviderHospitalRecords />}
+                  element={<ProviderHospitalAdmissionsList />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/hospital-admissions/new"
+              element={
+                <ProtectedRoute
+                  element={<ProviderHospitalAdmissionForm />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/hospital-admissions/:admissionId"
+              element={
+                <ProtectedRoute
+                  element={<ProviderHospitalAdmissionDetail />}
                   allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
@@ -665,6 +709,9 @@ function App() {
 
           {/* Redirect from root */}
           <Route path="/" element={<Navigate to="/sign-in" />} />
+
+          {/* Preserve old hospital-records bookmark URLs */}
+          <Route path="/provider/hospital-records" element={<Navigate to="/provider/hospital-admissions" replace />} />
 
           {/* 404 page */}
           <Route path="*" element={<NotFound />} />

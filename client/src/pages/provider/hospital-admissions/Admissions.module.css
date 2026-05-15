@@ -1,0 +1,372 @@
+.pageContainer {
+  padding: 20px;
+  width: 100%;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0;
+}
+
+.tableCard {
+  padding: 0;
+  overflow: hidden;
+}
+
+.searchWrap {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f4;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  gap: 12px;
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 0;
+  color: #666;
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(91, 95, 199, 0.12);
+  color: #5b5fc7;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ===== Admission form page ===== */
+.formPage {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #5b5fc7;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.backLink:hover { text-decoration: underline; }
+
+.formCard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.formCard h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: #1f2937;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formField label {
+  font-size: 0.8125rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.formField .required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.formField input,
+.formField select,
+.formField textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.formField input:focus,
+.formField select:focus,
+.formField textarea:focus {
+  outline: none;
+  border-color: #5b5fc7;
+  box-shadow: 0 0 0 2px rgba(91, 95, 199, 0.15);
+}
+
+.formField input:disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ===== Admission detail / thread ===== */
+.detailPage {
+  width: 100%;
+}
+
+.detailHeader {
+  background: #eef0fb;
+  padding: 24px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detailHeaderAvatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #d4d7f4;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.detailHeaderAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detailHeaderMain {
+  flex: 1;
+}
+
+.detailHeaderTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.detailHeaderMeta {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.875rem;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.detailBody {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.threadActionBar {
+  max-width: 900px;
+  margin: 16px auto 32px;
+  padding: 16px 24px 0;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.discharge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #d0d0d8;
+  border-radius: 8px;
+  background: #fff;
+  color: #444;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.discharge:hover:not(:disabled) { background: #f5f5f7; }
+.discharge:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.readmit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: 1px solid #5b5fc7;
+  border-radius: 8px;
+  background: #fff;
+  color: #5b5fc7;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.readmit:hover:not(:disabled) { background: #f0f0fc; }
+.readmit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.addObs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #5b5fc7;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.addObs:hover:not(:disabled) { background: #4a4eb5; }
+.addObs:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Card body content for observations */
+.obsBody {
+  padding-top: 12px;
+}
+
+.obsSection {
+  margin-bottom: 14px;
+}
+
+.obsLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.obsValue {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.obsCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.modalClose {
+  border: none;
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+  .formGrid,
+  .obsCols { grid-template-columns: 1fr; }
+  .detailHeader { padding: 16px; }
+  .threadActionBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
