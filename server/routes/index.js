@@ -13,6 +13,7 @@ const fileRoutes = require('./file.routes');
 const physicalRecordRoutes = require('./physicalRecord.routes');
 const patientRoutes = require('./patient.routes');
 const hospitalAdmissionRoutes = require('./hospitalAdmission.routes');
+const surgeryRoutes = require('./surgery.routes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -25,6 +26,7 @@ router.use('/provider', providerRoutes);
 router.use('/files', fileRoutes);
 router.use('/patients', patientRoutes);
 router.use('/hospital-admissions', hospitalAdmissionRoutes);
+router.use('/surgeries', surgeryRoutes);
 router.use('/', physicalRecordRoutes);
 
 module.exports = router; 
