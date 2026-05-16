@@ -49,6 +49,7 @@ const getNavItems = (role, logoutFn) => {
       { to: '/patient/consultations', label: 'Consultations', icon: <img src={consultationsIcon} alt="Consultations" /> },
       { to: '/patient/medical-records', label: 'Medical Records', icon: <img src={medicalRecordsIcon} alt="Medical Records" /> },
       { to: '/patient/hospital-admissions', label: 'Hospital Admissions', icon: <img src={hospitalIcon} alt="Hospital Admissions" /> },
+      { to: '/patient/surgeries', label: 'Surgeries', icon: <img src={surgeryIcon} alt="Surgeries" /> },
       { to: '/patient/connections', label: 'Connections', icon: <img src={connectionsIcon} alt="Connections" /> },
       { to: '/patient/profile', label: 'Profile', icon: <img src={profileIcon} alt="Profile" /> },
       { to: '/patient/settings', label: 'Settings', icon: <img src={settingsIcon} alt="Settings" /> },

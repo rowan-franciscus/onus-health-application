@@ -64,7 +64,11 @@ const ProviderHospitalAdmissionForm = lazy(() => import('./pages/provider/hospit
 const ProviderHospitalAdmissionDetail = lazy(() => import('./pages/provider/hospital-admissions/AdmissionDetail'));
 const PatientHospitalAdmissionsList = lazy(() => import('./pages/patient/hospital-admissions/AdmissionsList'));
 const PatientHospitalAdmissionDetail = lazy(() => import('./pages/patient/hospital-admissions/AdmissionDetail'));
-const ProviderSurgeries = lazy(() => import('./pages/provider/Surgeries'));
+const ProviderSurgeriesList = lazy(() => import('./pages/provider/surgeries/SurgeriesList'));
+const ProviderSurgeryForm = lazy(() => import('./pages/provider/surgeries/SurgeryForm'));
+const ProviderSurgeryDetail = lazy(() => import('./pages/provider/surgeries/SurgeryDetail'));
+const PatientSurgeriesList = lazy(() => import('./pages/patient/surgeries/SurgeriesList'));
+const PatientSurgeryDetail = lazy(() => import('./pages/patient/surgeries/SurgeryDetail'));
 const ProviderProfile = lazy(() => import('./pages/provider/Profile'));
 const ProviderSettings = lazy(() => import('./pages/provider/Settings'));
 
@@ -273,6 +277,26 @@ function App() {
               element={
                 <ProtectedRoute
                   element={<PatientHospitalAdmissionDetail />}
+                  allowedRoles={['patient']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/patient/surgeries"
+              element={
+                <ProtectedRoute
+                  element={<PatientSurgeriesList />}
+                  allowedRoles={['patient']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/patient/surgeries/:surgeryId"
+              element={
+                <ProtectedRoute
+                  element={<PatientSurgeryDetail />}
                   allowedRoles={['patient']}
                   requireOnboarding={true}
                 />
@@ -566,7 +590,27 @@ function App() {
               path="/provider/surgeries"
               element={
                 <ProtectedRoute
-                  element={<ProviderSurgeries />}
+                  element={<ProviderSurgeriesList />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/surgeries/new"
+              element={
+                <ProtectedRoute
+                  element={<ProviderSurgeryForm />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/surgeries/:surgeryId"
+              element={
+                <ProtectedRoute
+                  element={<ProviderSurgeryDetail />}
                   allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
