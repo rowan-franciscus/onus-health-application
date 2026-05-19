@@ -29,8 +29,9 @@ exports.createBiometric = async (req, res) => {
     const weightNum = Number(weight);
     const heightNum = Number(height);
 
-    if (!Number.isFinite(weightNum) || !Number.isFinite(heightNum)) {
-      return res.status(400).json({ success: false, message: 'Weight and height must be valid numbers' });
+    if (!Number.isFinite(weightNum) || weightNum <= 0 ||
+        !Number.isFinite(heightNum) || heightNum <= 0) {
+      return res.status(400).json({ success: false, message: 'Weight and height must be positive numbers' });
     }
 
     const hasAccess = await providerCanAccessPatient(providerId, patientId);
@@ -51,9 +52,10 @@ exports.createBiometric = async (req, res) => {
 
     if (bodyFatPercentage !== undefined && bodyFatPercentage !== null && bodyFatPercentage !== '') {
       const bfNum = Number(bodyFatPercentage);
-      if (Number.isFinite(bfNum)) {
-        biometricData.bodyFatPercentage = bfNum;
+      if (!Number.isFinite(bfNum) || bfNum < 0 || bfNum > 100) {
+        return res.status(400).json({ success: false, message: 'Body fat percentage must be a number between 0 and 100' });
       }
+      biometricData.bodyFatPercentage = bfNum;
     }
 
     const biometric = await Biometric.create(biometricData);
