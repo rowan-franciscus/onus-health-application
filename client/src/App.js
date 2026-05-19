@@ -69,6 +69,8 @@ const ProviderSurgeryForm = lazy(() => import('./pages/provider/surgeries/Surger
 const ProviderSurgeryDetail = lazy(() => import('./pages/provider/surgeries/SurgeryDetail'));
 const PatientSurgeriesList = lazy(() => import('./pages/patient/surgeries/SurgeriesList'));
 const PatientSurgeryDetail = lazy(() => import('./pages/patient/surgeries/SurgeryDetail'));
+const ProviderBiometricsList = lazy(() => import('./pages/provider/biometrics/BiometricsList'));
+const ProviderPatientBiometrics = lazy(() => import('./pages/provider/biometrics/PatientBiometrics'));
 const ProviderProfile = lazy(() => import('./pages/provider/Profile'));
 const ProviderSettings = lazy(() => import('./pages/provider/Settings'));
 
@@ -616,7 +618,27 @@ function App() {
                 />
               }
             />
-            <Route 
+            <Route
+              path="/provider/biometrics"
+              element={
+                <ProtectedRoute
+                  element={<ProviderBiometricsList />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/biometrics/:patientId"
+              element={
+                <ProtectedRoute
+                  element={<ProviderPatientBiometrics />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
               path="/provider/profile" 
               element={
                 <ProtectedRoute 

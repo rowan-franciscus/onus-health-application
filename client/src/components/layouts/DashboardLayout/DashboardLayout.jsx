@@ -20,6 +20,7 @@ import medicalRecordsIcon from '../../../assets/icons/medical-records-icon.svg';
 import immunizationsIcon from '../../../assets/icons/immunizations-icon.svg';
 import hospitalIcon from '../../../assets/icons/hospital-icon.svg';
 import surgeryIcon from '../../../assets/icons/surgery-icon.svg';
+import biometricsIcon from '../../../assets/icons/vitals-icon.svg';
 import connectionsIcon from '../../../assets/icons/connections-icon.svg';
 import profileIcon from '../../../assets/icons/profile-icon.svg';
 import signOutIcon from '../../../assets/icons/sign-out-icon.svg';
@@ -41,6 +42,7 @@ const getNavItems = (role, logoutFn) => {
       { to: '/provider/immunizations', label: 'Immunizations', icon: <img src={immunizationsIcon} alt="Immunizations" /> },
       { to: '/provider/hospital-admissions', label: 'Hospital', icon: <img src={hospitalIcon} alt="Hospital" /> },
       { to: '/provider/surgeries', label: 'Surgeries', icon: <img src={surgeryIcon} alt="Surgeries" /> },
+      { to: '/provider/biometrics', label: 'Biometrics', icon: <img src={biometricsIcon} alt="Biometrics" /> },
       { to: '/provider/profile', label: 'Profile', icon: <img src={profileIcon} alt="Profile" /> },
       { to: '/provider/settings', label: 'Settings', icon: <img src={settingsIcon} alt="Settings" /> },
     ],
