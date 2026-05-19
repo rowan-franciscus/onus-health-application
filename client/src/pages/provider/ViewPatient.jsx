@@ -11,7 +11,9 @@ import Tabs from '../../components/common/Tabs';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
 import ApiService from '../../services/api.service';
+import HospitalAdmissionService from '../../services/hospitalAdmission.service';
 import { formatDate } from '../../utils/dateUtils';
+import { ordinal } from '../../utils/ordinal';
 import Badge from '../../components/common/Badge/Badge';
 import PhysicalRecordsTab from './PhysicalRecordsTab';
 
@@ -159,18 +161,59 @@ const ProviderViewPatient = () => {
       });
       
       if (response && Array.isArray(response)) {
-        const formattedConsultations = response.map(consultation => ({
-          id: consultation._id,
-          date: consultation.date ? formatDate(consultation.date) : 'N/A',
-          provider: consultation.general?.specialistName || 'Unknown Provider',
-          specialty: consultation.general?.specialty || 'General',
-          reason: consultation.general?.reasonForVisit || 'N/A',
-          notes: consultation.general?.notes || 'No notes',
-          status: consultation.status || 'draft',
-          practice: consultation.general?.practice || 'N/A',
-          caseStatus: consultation.caseStatus || 'open',
-          visitCount: consultation.visitCount || 1
-        }));
+        // Build root lookup (entries without a parentConsultation)
+        const rootsById = {};
+        response.forEach(c => {
+          if (!c.parentConsultation) rootsById[c._id] = c;
+        });
+
+        // Group follow-ups by their parent, sorted ascending by date then createdAt
+        const followUpsByParent = {};
+        response.forEach(c => {
+          if (c.parentConsultation) {
+            const parentId = typeof c.parentConsultation === 'object'
+              ? c.parentConsultation._id
+              : c.parentConsultation;
+            if (!followUpsByParent[parentId]) followUpsByParent[parentId] = [];
+            followUpsByParent[parentId].push(c);
+          }
+        });
+        Object.values(followUpsByParent).forEach(arr => {
+          arr.sort((a, b) => {
+            const d = new Date(a.date) - new Date(b.date);
+            return d !== 0 ? d : new Date(a.createdAt) - new Date(b.createdAt);
+          });
+        });
+
+        const formattedConsultations = response.map(consultation => {
+          let threadLabel;
+          let derivedCaseStatus;
+          if (!consultation.parentConsultation) {
+            threadLabel = 'Initial Consultation';
+            derivedCaseStatus = consultation.caseStatus || 'open';
+          } else {
+            const parentId = typeof consultation.parentConsultation === 'object'
+              ? consultation.parentConsultation._id
+              : consultation.parentConsultation;
+            const siblings = followUpsByParent[parentId] || [];
+            const pos = siblings.findIndex(c => c._id === consultation._id) + 1;
+            threadLabel = `${ordinal(pos)} Follow-Up`;
+            derivedCaseStatus = rootsById[parentId]?.caseStatus ?? 'open';
+          }
+          return {
+            id: consultation._id,
+            date: consultation.date ? formatDate(consultation.date) : 'N/A',
+            provider: consultation.general?.specialistName || 'Unknown Provider',
+            specialty: consultation.general?.specialty || 'General',
+            reason: consultation.general?.reasonForVisit || 'N/A',
+            notes: consultation.general?.notes || 'No notes',
+            status: consultation.status || 'draft',
+            practice: consultation.general?.practice || 'N/A',
+            caseStatus: derivedCaseStatus,
+            visitCount: consultation.visitCount || 1,
+            threadLabel
+          };
+        });
         
         setConsultations(formattedConsultations);
         
@@ -266,7 +309,7 @@ const ProviderViewPatient = () => {
     try {
       const [immRes, hospRes, surgRes] = await Promise.all([
         ApiService.get('/medical-records/provider/immunizations', { patientId, limit: 100 }),
-        ApiService.get('/medical-records/provider/hospital-records', { patientId, limit: 100 }),
+        HospitalAdmissionService.listPatientAdmissions(patientId),
         ApiService.get('/medical-records/provider/surgery-records', { patientId, limit: 100 })
       ]);
 
@@ -280,18 +323,17 @@ const ProviderViewPatient = () => {
         nextDueDate: r.nextDueDate ? formatDate(r.nextDueDate) : 'N/A'
       }));
 
-      const hospRecords = (hospRes?.records || []).map(r => ({
-        id: r._id,
-        date: r.date ? formatDate(r.date) : (r.createdAt ? formatDate(r.createdAt) : 'N/A'),
-        provider: r.provider ? `${r.provider.firstName || ''} ${r.provider.lastName || ''}`.trim() || 'Unknown Provider' : 'Unknown Provider',
-        hospitalName: formatFieldValue(r.hospitalName) || 'Unknown Hospital',
-        admissionDate: r.admissionDate ? formatDate(r.admissionDate) : 'N/A',
-        dischargeDate: r.dischargeDate ? formatDate(r.dischargeDate) : 'N/A',
-        reason: formatFieldValue(r.reasonForHospitalization),
-        treatments: formatArrayValue(r.treatmentsReceived),
-        attendingDoctors: formatArrayValue(r.attendingDoctors),
-        dischargeSummary: formatFieldValue(r.dischargeSummary),
-        investigations: formatArrayValue(r.investigationsDone)
+      const hospRecords = (Array.isArray(hospRes) ? hospRes : []).map(a => ({
+        id: a._id,
+        hospitalName: a.hospitalName || 'Unknown Hospital',
+        admissionDate: a.admissionDate ? formatDate(a.admissionDate) : 'N/A',
+        status: a.status || 'admitted',
+        dischargeDate: a.dischargedAt ? formatDate(a.dischargedAt) : '—',
+        reason: a.reasonForHospitalization || 'N/A',
+        observationCount: a.observationCount ?? (a.observations ? a.observations.length : 0),
+        provider: a.provider
+          ? `${a.provider.firstName || ''} ${a.provider.lastName || ''}`.trim() || 'Unknown Provider'
+          : 'Unknown Provider'
       }));
 
       const surgRecords = (surgRes?.records || []).map(r => ({
@@ -776,6 +818,9 @@ const ProviderViewPatient = () => {
               <div className={styles.consultationCardHeader}>
                 <div className={styles.consultationMeta}>
                   <span className={styles.consultationDate}>{consultation.date}</span>
+                  {consultation.threadLabel && (
+                    <span className={styles.threadLabel}>{consultation.threadLabel}</span>
+                  )}
                   <Badge variant={consultation.caseStatus === 'closed' ? 'closed' : 'open'}>
                     {consultation.caseStatus === 'closed' ? 'Closed' : 'Open'}
                   </Badge>
@@ -1062,14 +1107,16 @@ const ProviderViewPatient = () => {
         return (
           <div className={styles.hospitalTab}>
             <div className={styles.recordsHeader}>
-              <h3>Hospital Records ({records.length})</h3>
+              <h3>Hospital Admissions ({records.length})</h3>
             </div>
             <div className={styles.recordsList}>
               {records.map(record => (
                 <Card key={record.id} className={styles.recordCard}>
                   <div className={styles.recordHeader}>
                     <h4>{record.hospitalName}</h4>
-                    <span className={styles.recordDate}>{record.date}</span>
+                    <Badge variant={record.status === 'discharged' ? 'completed' : 'open'}>
+                      {record.status === 'discharged' ? '● Discharged' : '● Admitted'}
+                    </Badge>
                   </div>
                   <div className={styles.hospitalDetails}>
                     <div className={styles.detailRow}>
@@ -1085,17 +1132,18 @@ const ProviderViewPatient = () => {
                       <span className={styles.detailValue}>{record.reason}</span>
                     </div>
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Treatments:</span>
-                      <span className={styles.detailValue}>{record.treatments}</span>
+                      <span className={styles.detailLabel}>Observations:</span>
+                      <span className={styles.detailValue}>{record.observationCount}</span>
                     </div>
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Attending Doctors:</span>
-                      <span className={styles.detailValue}>{record.attendingDoctors}</span>
+                      <span className={styles.detailLabel}>Provider:</span>
+                      <span className={styles.detailValue}>{record.provider}</span>
                     </div>
-                    <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Discharge Summary:</span>
-                      <span className={styles.detailValue}>{record.dischargeSummary}</span>
-                    </div>
+                  </div>
+                  <div className={styles.consultationActions}>
+                    <Link to={`/provider/hospital-admissions/${record.id}`}>
+                      <Button variant="tertiary" size="small">View</Button>
+                    </Link>
                   </div>
                 </Card>
               ))}

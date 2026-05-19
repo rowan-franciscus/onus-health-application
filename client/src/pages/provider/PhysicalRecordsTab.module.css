@@ -200,22 +200,9 @@
 }
 
 .docTypeDisplay {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0.9rem;
-  border: 1.5px solid #6039cc;
-  border-radius: 6px;
+  padding: 0.4rem 0;
   font-size: 0.9rem;
   color: #222;
-  background: #fff;
-}
-
-.chevronIcon {
-  width: 1rem;
-  height: 1rem;
-  color: #888;
-  flex-shrink: 0;
 }
 
 .descriptionInput {

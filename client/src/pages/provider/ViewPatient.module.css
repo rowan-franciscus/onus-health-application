@@ -1046,3 +1046,9 @@
   font-size: 12px;
   color: #888;
 }
+
+.threadLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6039cc;
+}

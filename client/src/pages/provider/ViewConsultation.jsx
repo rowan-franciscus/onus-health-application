@@ -5,6 +5,7 @@ import styles from "./ViewConsultation.module.css";
 import ApiService from "../../services/api.service";
 import ConsultationService from "../../services/consultation.service";
 import { formatDate } from "../../utils/dateUtils";
+import { ordinal } from "../../utils/ordinal";
 import { useAuth } from "../../contexts/AuthContext";
 
 import Button from "../../components/common/Button";
@@ -131,7 +132,7 @@ const ViewConsultation = () => {
     thread.forEach((followUp, idx) => {
       items.push({
         id: followUp._id,
-        title: `${formatDate(followUp.date)}  —  Follow-Up #${idx + 1}`,
+        title: `${formatDate(followUp.date)}  —  ${ordinal(idx + 1)} Follow-Up`,
         subtitle: providerLabel(followUp),
         badge: (
           <Badge
