@@ -346,6 +346,10 @@ exports.dischargePatient = async (req, res) => {
     const providerId = req.user.id;
     const { dischargeSummary } = req.body || {};
 
+    if (!mongoose.isValidObjectId(admissionId)) {
+      return res.status(400).json({ success: false, message: 'Invalid admission ID' });
+    }
+
     const admission = await HospitalAdmission.findById(admissionId);
     if (!admission) {
       return res.status(404).json({ success: false, message: 'Admission not found' });

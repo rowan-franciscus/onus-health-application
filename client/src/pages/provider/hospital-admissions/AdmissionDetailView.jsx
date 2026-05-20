@@ -311,7 +311,7 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
                 Patient discharged on {formatDate(admission.dischargedAt)}.
               </div>
               {admission.dischargeSummary && (
-                <div>Summary: {admission.dischargeSummary}</div>
+                <div style={{ whiteSpace: 'pre-wrap' }}>Summary: {admission.dischargeSummary}</div>
               )}
             </div>
           </div>
