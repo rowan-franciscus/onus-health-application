@@ -46,6 +46,7 @@ const HospitalAdmissionSchema = new Schema(
       index: true,
     },
     dischargedAt: { type: Date, default: null },
+    dischargeSummary: { type: String, default: null, trim: true },
     observations: { type: [ObservationSchema], default: [] },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
