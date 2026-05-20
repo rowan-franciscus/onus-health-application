@@ -296,6 +296,26 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
             isAdmitted ? 'Patient currently admitted — awaiting next observation' : null
           }
         />
+
+        {!readOnly && !isAdmitted && (
+          <div className={styles.dischargeFooter}>
+            <button
+              className={styles.readmit}
+              onClick={handleReAdmit}
+              disabled={acting}
+            >
+              ↺ Reopen Admission
+            </button>
+            <div className={styles.dischargeMeta}>
+              <div>
+                Patient discharged on {formatDate(admission.dischargedAt)}.
+              </div>
+              {admission.dischargeSummary && (
+                <div>Summary: {admission.dischargeSummary}</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {!readOnly && isAdmitted && (
@@ -323,26 +343,6 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
           >
             + Add Observation
           </button>
-        </div>
-      )}
-
-      {!readOnly && !isAdmitted && (
-        <div className={styles.dischargeFooter}>
-          <button
-            className={styles.readmit}
-            onClick={handleReAdmit}
-            disabled={acting}
-          >
-            ↺ Reopen Admission
-          </button>
-          <div className={styles.dischargeMeta}>
-            <div>
-              Patient discharged on {formatDate(admission.dischargedAt)}.
-            </div>
-            {admission.dischargeSummary && (
-              <div>Summary: {admission.dischargeSummary}</div>
-            )}
-          </div>
         </div>
       )}
 
