@@ -325,6 +325,7 @@ exports.reAdmitPatient = async (req, res) => {
 
     admission.status = 'admitted';
     admission.dischargedAt = null;
+    admission.dischargeSummary = null;
     await admission.save();
 
     const populated = await HospitalAdmission.findById(admission._id)
@@ -343,6 +344,11 @@ exports.dischargePatient = async (req, res) => {
   try {
     const { admissionId } = req.params;
     const providerId = req.user.id;
+    const { dischargeSummary } = req.body || {};
+
+    if (!mongoose.isValidObjectId(admissionId)) {
+      return res.status(400).json({ success: false, message: 'Invalid admission ID' });
+    }
 
     const admission = await HospitalAdmission.findById(admissionId);
     if (!admission) {
@@ -362,6 +368,10 @@ exports.dischargePatient = async (req, res) => {
 
     admission.status = 'discharged';
     admission.dischargedAt = new Date();
+    admission.dischargeSummary =
+      typeof dischargeSummary === 'string' && dischargeSummary.trim()
+        ? dischargeSummary.trim()
+        : null;
     await admission.save();
 
     const populated = await HospitalAdmission.findById(admission._id)

@@ -370,3 +370,60 @@
     align-items: stretch;
   }
 }
+
+.dischargeForm {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.dischargeFormTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: #111827;
+}
+.dischargeLabel {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 6px;
+}
+.dischargeTextarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.dischargeTextarea:focus {
+  outline: none;
+  border-color: #5b5fc7;
+  box-shadow: 0 0 0 3px rgba(91, 95, 199, 0.15);
+}
+.dischargeActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.dischargeFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 0 0;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 24px;
+}
+.dischargeMeta {
+  text-align: right;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}

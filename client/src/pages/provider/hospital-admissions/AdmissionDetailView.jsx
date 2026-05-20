@@ -76,6 +76,8 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
   const [acting, setActing] = useState(false);
   const [showAddObs, setShowAddObs] = useState(false);
   const [obsValues, setObsValues] = useState(emptyObservationValues);
+  const [showDischarge, setShowDischarge] = useState(false);
+  const [dischargeSummary, setDischargeSummary] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +94,7 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
     try {
       const updated = await HospitalAdmissionService.reAdmitPatient(admissionId);
       setAdmission(updated);
-      toast.success('Patient re-admitted');
+      toast.success('Admission reopened');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to re-admit patient');
     } finally {
@@ -100,11 +102,17 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
     }
   };
 
-  const handleDischarge = async () => {
+  const handleDischarge = async (e) => {
+    if (e) e.preventDefault();
     setActing(true);
     try {
-      const updated = await HospitalAdmissionService.dischargePatient(admissionId);
+      const updated = await HospitalAdmissionService.dischargePatient(
+        admissionId,
+        dischargeSummary.trim()
+      );
       setAdmission(updated);
+      setShowDischarge(false);
+      setDischargeSummary('');
       toast.success('Patient discharged');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to discharge patient');
@@ -249,44 +257,92 @@ const AdmissionDetailView = ({ readOnly = false, backLink = '/provider/hospital-
           ← Back to Admissions
         </Link>
 
+        {isAdmitted && showDischarge && (
+          <form className={styles.dischargeForm} onSubmit={handleDischarge}>
+            <h2 className={styles.dischargeFormTitle}>Discharge Patient</h2>
+            <label className={styles.dischargeLabel} htmlFor="dischargeSummary">
+              Discharge Summary
+            </label>
+            <textarea
+              id="dischargeSummary"
+              className={styles.dischargeTextarea}
+              value={dischargeSummary}
+              onChange={(e) => setDischargeSummary(e.target.value)}
+              rows={4}
+              disabled={acting}
+            />
+            <div className={styles.dischargeActions}>
+              <Button
+                type="button"
+                variant="tertiary"
+                onClick={() => {
+                  setShowDischarge(false);
+                  setDischargeSummary('');
+                }}
+                disabled={acting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={acting}>
+                {acting ? 'Saving...' : 'Confirm Discharge'}
+              </Button>
+            </div>
+          </form>
+        )}
+
         <Timeline
           items={items}
           trailing={
             isAdmitted ? 'Patient currently admitted — awaiting next observation' : null
           }
         />
-      </div>
 
-      {!readOnly && (
-        <div className={styles.threadActionBar}>
-          <div>
-            {isAdmitted ? (
-              <button
-                className={styles.discharge}
-                onClick={handleDischarge}
-                disabled={acting}
-              >
-                ✕ Discharge Patient
-              </button>
-            ) : (
-              <button
-                className={styles.readmit}
-                onClick={handleReAdmit}
-                disabled={acting}
-              >
-                ↺ Re-admit Patient
-              </button>
-            )}
-          </div>
-          {isAdmitted && (
+        {!readOnly && !isAdmitted && (
+          <div className={styles.dischargeFooter}>
             <button
-              className={styles.addObs}
-              onClick={() => setShowAddObs(true)}
+              className={styles.readmit}
+              onClick={handleReAdmit}
               disabled={acting}
             >
-              + Add Observation
+              ↺ Reopen Admission
             </button>
-          )}
+            <div className={styles.dischargeMeta}>
+              <div>
+                Patient discharged on {formatDate(admission.dischargedAt)}.
+              </div>
+              {admission.dischargeSummary && (
+                <div style={{ whiteSpace: 'pre-wrap' }}>Summary: {admission.dischargeSummary}</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {!readOnly && isAdmitted && (
+        <div className={styles.threadActionBar}>
+          <div>
+            <button
+              className={styles.discharge}
+              onClick={() => {
+                if (showDischarge) {
+                  setShowDischarge(false);
+                  setDischargeSummary('');
+                } else {
+                  setShowDischarge(true);
+                }
+              }}
+              disabled={acting}
+            >
+              ✕ Discharge Patient
+            </button>
+          </div>
+          <button
+            className={styles.addObs}
+            onClick={() => setShowAddObs(true)}
+            disabled={acting}
+          >
+            + Add Observation
+          </button>
         </div>
       )}
 

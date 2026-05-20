@@ -16,8 +16,11 @@ const HospitalAdmissionService = {
   addObservation: (admissionId, payload) =>
     ApiService.post(`/hospital-admissions/${admissionId}/observations`, payload),
 
-  dischargePatient: (admissionId) =>
-    ApiService.patch(`/hospital-admissions/${admissionId}/discharge`, {}),
+  dischargePatient(admissionId, dischargeSummary = '') {
+    return ApiService.patch(`/hospital-admissions/${admissionId}/discharge`, {
+      dischargeSummary,
+    });
+  },
 
   reAdmitPatient: (admissionId) =>
     ApiService.patch(`/hospital-admissions/${admissionId}/readmit`, {}),
