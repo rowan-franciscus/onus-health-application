@@ -100,16 +100,26 @@ exports.getAllConsultations = async (req, res) => {
     // Attach visitCount (root + follow-ups) for provider/admin views
     if (userRole === 'provider' || userRole === 'admin') {
       const consultationIds = consultations.map(c => c._id);
-      const followUpCounts = await Consultation.aggregate([
+      const followUpStats = await Consultation.aggregate([
         { $match: { parentConsultation: { $in: consultationIds } } },
-        { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+        { $group: { _id: '$parentConsultation', count: { $sum: 1 }, latestDate: { $max: '$date' } } }
       ]);
       const countMap = {};
-      followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+      const latestDateMap = {};
+      followUpStats.forEach(({ _id, count, latestDate }) => {
+        countMap[_id.toString()] = count;
+        latestDateMap[_id.toString()] = latestDate;
+      });
 
       const result = consultations.map(c => {
         const obj = c.toObject({ virtuals: true });
-        obj.visitCount = 1 + (countMap[c._id.toString()] || 0);
+        const key = c._id.toString();
+        obj.visitCount = 1 + (countMap[key] || 0);
+        // Surface the most recent thread entry date as the consultation's "last visit".
+        const latestFollowUp = latestDateMap[key];
+        if (latestFollowUp && (!obj.date || new Date(latestFollowUp) > new Date(obj.date))) {
+          obj.date = latestFollowUp;
+        }
         return obj;
       });
       return res.json(result);
@@ -974,17 +984,25 @@ exports.getPatientConsultations = async (req, res) => {
 
     // Aggregate follow-up counts for visitCount — patients only see completed entries
     const consultationIds = consultations.map(c => c._id);
-    const followUpCounts = await Consultation.aggregate([
+    const followUpStats = await Consultation.aggregate([
       { $match: { parentConsultation: { $in: consultationIds }, status: 'completed' } },
-      { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+      { $group: { _id: '$parentConsultation', count: { $sum: 1 }, latestDate: { $max: '$date' } } }
     ]);
     const countMap = {};
-    followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+    const latestDateMap = {};
+    followUpStats.forEach(({ _id, count, latestDate }) => {
+      countMap[_id.toString()] = count;
+      latestDateMap[_id.toString()] = latestDate;
+    });
 
     return res.json({
       success: true,
       consultations: consultations.map(consultation => {
-        const consultationDate = consultation.date || consultation.createdAt;
+        const rootDate = consultation.date || consultation.createdAt;
+        const latestFollowUp = latestDateMap[consultation._id.toString()];
+        const consultationDate = latestFollowUp && (!rootDate || new Date(latestFollowUp) > new Date(rootDate))
+          ? latestFollowUp
+          : rootDate;
         const formattedDate = consultationDate ? formatDate(consultationDate) : 'N/A';
 
         return {
