@@ -12,6 +12,8 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PatientService from '../../services/patient.service';
 import ApiService from '../../services/api.service';
 import HospitalAdmissionService from '../../services/hospitalAdmission.service';
+import SurgeryService from '../../services/surgery.service';
+import BiometricService from '../../services/biometric.service';
 import { formatDate } from '../../utils/dateUtils';
 import { ordinal } from '../../utils/ordinal';
 import Badge from '../../components/common/Badge/Badge';
@@ -29,7 +31,8 @@ const ProviderViewPatient = () => {
     labResults: [],
     radiology: [],
     hospital: [],
-    surgery: []
+    surgery: [],
+    biometrics: []
   });
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -235,7 +238,8 @@ const ProviderViewPatient = () => {
           labResults: [],
           radiology: [],
           hospital: [],
-          surgery: []
+          surgery: [],
+          biometrics: []
         });
       }
     } catch (error) {
@@ -286,9 +290,11 @@ const ProviderViewPatient = () => {
     }
   };
 
-  // Fetch standalone records (immunizations, hospital, surgery) — the discriminator-based
-  // endpoint returns both consultation-attached and standalone records for the patient,
-  // so this is the authoritative source for these three tabs.
+  // Fetch standalone records for the patient. Each section uses its own authoritative source:
+  //   - immunizations: the medical-records discriminator endpoint
+  //   - hospital: HospitalAdmissionService
+  //   - surgery: SurgeryService (standalone Surgery model with threaded notes)
+  //   - biometrics: BiometricService (powers the Overview BMI fallback)
   const fetchStandaloneSectionRecords = async (patientId) => {
     const formatFieldValue = (field) => {
       if (!field) return 'N/A';
@@ -298,19 +304,12 @@ const ProviderViewPatient = () => {
       return field;
     };
 
-    const formatArrayValue = (arr) => {
-      if (!arr || !Array.isArray(arr)) return 'N/A';
-      return arr.map(item => {
-        if (typeof item === 'object' && item && item.name) return item.name;
-        return formatFieldValue(item);
-      }).join(', ');
-    };
-
     try {
-      const [immRes, hospRes, surgRes] = await Promise.all([
+      const [immRes, hospRes, surgRes, bioRes] = await Promise.all([
         ApiService.get('/medical-records/provider/immunizations', { patientId, limit: 100 }),
         HospitalAdmissionService.listPatientAdmissions(patientId),
-        ApiService.get('/medical-records/provider/surgery-records', { patientId, limit: 100 })
+        SurgeryService.listPatientSurgeries(patientId),
+        BiometricService.listPatientBiometrics(patientId).catch(() => [])
       ]);
 
       const immRecords = (immRes?.records || []).map(r => ({
@@ -336,22 +335,33 @@ const ProviderViewPatient = () => {
           : 'Unknown Provider'
       }));
 
-      const surgRecords = (surgRes?.records || []).map(r => ({
-        id: r._id,
-        date: r.date ? formatDate(r.date) : (r.createdAt ? formatDate(r.createdAt) : 'N/A'),
-        provider: r.provider ? `${r.provider.firstName || ''} ${r.provider.lastName || ''}`.trim() || 'Unknown Provider' : 'Unknown Provider',
-        surgeryType: formatFieldValue(r.typeOfSurgery) || 'Unknown Surgery',
-        surgeryDate: r.date ? formatDate(r.date) : 'N/A',
-        reason: formatFieldValue(r.reason),
-        complications: formatFieldValue(r.complications) || 'None reported',
-        recoveryNotes: formatFieldValue(r.recoveryNotes)
-      }));
+      const surgList = Array.isArray(surgRes) ? surgRes : [];
+      const surgRecords = surgList.map(r => {
+        const notesArr = Array.isArray(r.notes) ? r.notes : [];
+        const lastNote = notesArr.length ? notesArr[notesArr.length - 1] : null;
+        const summary = lastNote
+          ? (lastNote.noteContent || lastNote.generalNotes || lastNote.recoveryNotes || '')
+          : '';
+        return {
+          id: r._id,
+          surgeryType: r.surgeryType || 'Unknown Surgery',
+          date: r.date ? formatDate(r.date) : 'N/A',
+          leadSurgeon: r.leadSurgeon || '—',
+          reason: r.reason || 'N/A',
+          status: r.status || 'open',
+          noteCount: r.noteCount ?? notesArr.length,
+          summary
+        };
+      });
+
+      const bioList = Array.isArray(bioRes) ? bioRes : (bioRes?.biometrics || []);
 
       setMedicalRecords(prev => ({
         ...prev,
         immunizations: immRecords,
         hospital: hospRecords,
-        surgery: surgRecords
+        surgery: surgRecords,
+        biometrics: bioList
       }));
     } catch (error) {
       console.error('Error fetching standalone section records:', error);
@@ -379,7 +389,8 @@ const ProviderViewPatient = () => {
       labResults: [],
       radiology: [],
       hospital: [],
-      surgery: []
+      surgery: [],
+      biometrics: []
     };
 
     consultations.forEach(consultation => {
@@ -502,7 +513,7 @@ const ProviderViewPatient = () => {
       // Hospital and surgery records are now standalone — sourced via fetchStandaloneSectionRecords.
     });
 
-    setMedicalRecords(records);
+    setMedicalRecords(prev => ({ ...records, biometrics: prev.biometrics || [] }));
   };
 
   // Handle tab change
@@ -874,6 +885,21 @@ const ProviderViewPatient = () => {
     const records = medicalRecords[recordType] || [];
     
     if (records.length === 0) {
+      if (recordType === 'surgery') {
+        return (
+          <div className={styles.surgeryTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Surgery Records (0)</h3>
+              <Link to={`/provider/surgeries/new?patientId=${id}`}>
+                <Button variant="tertiary" size="small">New Surgery</Button>
+              </Link>
+            </div>
+            <div className={styles.noRecords}>
+              <p>No surgery records yet for this patient.</p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className={styles.noRecords}>
           <h3>No {recordType.charAt(0).toUpperCase() + recordType.slice(1)} Records</h3>
@@ -1156,35 +1182,44 @@ const ProviderViewPatient = () => {
           <div className={styles.surgeryTab}>
             <div className={styles.recordsHeader}>
               <h3>Surgery Records ({records.length})</h3>
+              <Link to={`/provider/surgeries/new?patientId=${id}`}>
+                <Button variant="tertiary" size="small">New Surgery</Button>
+              </Link>
             </div>
             <div className={styles.recordsList}>
               {records.map(record => (
                 <Card key={record.id} className={styles.recordCard}>
                   <div className={styles.recordHeader}>
                     <h4>{record.surgeryType}</h4>
-                    <span className={styles.recordDate}>{record.date}</span>
+                    <Badge variant={record.status === 'closed' ? 'completed' : 'open'}>
+                      {record.status === 'closed' ? '● Closed' : '● Open'}
+                    </Badge>
                   </div>
                   <div className={styles.surgeryDetails}>
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Surgery Date:</span>
-                      <span className={styles.detailValue}>{record.surgeryDate}</span>
+                      <span className={styles.detailValue}>
+                        Date: {record.date} · Lead: {record.leadSurgeon}
+                      </span>
                     </div>
                     <div className={styles.detailRow}>
                       <span className={styles.detailLabel}>Reason:</span>
                       <span className={styles.detailValue}>{record.reason}</span>
                     </div>
                     <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Complications:</span>
-                      <span className={styles.detailValue}>{record.complications}</span>
+                      <span className={styles.detailLabel}>Notes:</span>
+                      <span className={styles.detailValue}>{record.noteCount}</span>
                     </div>
-                    <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Recovery Notes:</span>
-                      <span className={styles.detailValue}>{record.recoveryNotes}</span>
-                    </div>
-                    <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Surgeon:</span>
-                      <span className={styles.detailValue}>{record.provider}</span>
-                    </div>
+                    {record.status === 'closed' && record.summary ? (
+                      <div className={styles.detailRow}>
+                        <span className={styles.detailLabel}>Summary:</span>
+                        <span className={styles.detailValue}>{record.summary}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className={styles.consultationActions}>
+                    <Link to={`/provider/surgeries/${record.id}`}>
+                      <Button variant="tertiary" size="small">View</Button>
+                    </Link>
                   </div>
                 </Card>
               ))}
@@ -1228,17 +1263,27 @@ const ProviderViewPatient = () => {
         const latestWeight = pickLatest('weightRaw');
         const latestHeight = pickLatest('heightRaw');
         const latestBodyFat = pickLatest('bodyFatRaw');
+        const classifyBmi = (v) =>
+          v < 18.5 ? 'Underweight' :
+          v < 25   ? 'Normal weight' :
+          v < 30   ? 'Overweight' : 'Obese';
         let bmi = null;
         if (latestWeight && latestHeight && latestHeight.value > 0) {
           const m = latestHeight.value / 100;
           const value = +(latestWeight.value / (m * m)).toFixed(1);
-          const classification =
-            value < 18.5 ? 'Underweight' :
-            value < 25   ? 'Normal weight' :
-            value < 30   ? 'Overweight' : 'Obese';
           const date = new Date(latestWeight.date) > new Date(latestHeight.date)
             ? latestWeight.date : latestHeight.date;
-          bmi = { value, classification, date };
+          bmi = { value, classification: classifyBmi(value), date };
+        }
+        const latestBio = (medicalRecords.biometrics || [])
+          .filter(b => b && b.bmi != null && (b.date || b.createdAt))
+          .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))[0];
+        if (latestBio) {
+          const bioDate = latestBio.date || latestBio.createdAt;
+          if (!bmi || new Date(bioDate) > new Date(bmi.date)) {
+            const value = +Number(latestBio.bmi).toFixed(1);
+            bmi = { value, classification: classifyBmi(value), date: bioDate };
+          }
         }
         return (
           <div className={styles.overviewTab}>

@@ -99,19 +99,44 @@ exports.getAllConsultations = async (req, res) => {
 
     // Attach visitCount (root + follow-ups) for provider/admin views
     if (userRole === 'provider' || userRole === 'admin') {
+      const isRootsOnly = req.query.rootsOnly === 'true';
       const consultationIds = consultations.map(c => c._id);
-      const followUpCounts = await Consultation.aggregate([
+      const followUpStats = await Consultation.aggregate([
         { $match: { parentConsultation: { $in: consultationIds } } },
-        { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+        { $group: { _id: '$parentConsultation', count: { $sum: 1 }, latestDate: { $max: '$date' } } }
       ]);
       const countMap = {};
-      followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
+      const latestDateMap = {};
+      followUpStats.forEach(({ _id, count, latestDate }) => {
+        countMap[_id.toString()] = count;
+        latestDateMap[_id.toString()] = latestDate;
+      });
 
-      const result = consultations.map(c => {
+      let result = consultations.map(c => {
         const obj = c.toObject({ virtuals: true });
-        obj.visitCount = 1 + (countMap[c._id.toString()] || 0);
+        const key = c._id.toString();
+        obj.visitCount = 1 + (countMap[key] || 0);
+        // Only surface the latest thread-entry date for the rootsOnly list view, so
+        // callers that need the actual per-entry date (e.g. ViewPatient extraction)
+        // see unmodified dates on follow-ups.
+        if (isRootsOnly) {
+          const latestFollowUp = latestDateMap[key];
+          if (latestFollowUp && (!obj.date || new Date(latestFollowUp) > new Date(obj.date))) {
+            obj.date = latestFollowUp;
+          }
+        }
         return obj;
       });
+
+      if (isRootsOnly) {
+        result.sort((a, b) => {
+          const ad = new Date(a.date || a.createdAt || 0).getTime();
+          const bd = new Date(b.date || b.createdAt || 0).getTime();
+          if (bd !== ad) return bd - ad;
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+      }
+
       return res.json(result);
     }
 
@@ -974,36 +999,48 @@ exports.getPatientConsultations = async (req, res) => {
 
     // Aggregate follow-up counts for visitCount — patients only see completed entries
     const consultationIds = consultations.map(c => c._id);
-    const followUpCounts = await Consultation.aggregate([
+    const followUpStats = await Consultation.aggregate([
       { $match: { parentConsultation: { $in: consultationIds }, status: 'completed' } },
-      { $group: { _id: '$parentConsultation', count: { $sum: 1 } } }
+      { $group: { _id: '$parentConsultation', count: { $sum: 1 }, latestDate: { $max: '$date' } } }
     ]);
     const countMap = {};
-    followUpCounts.forEach(({ _id, count }) => { countMap[_id.toString()] = count; });
-
-    return res.json({
-      success: true,
-      consultations: consultations.map(consultation => {
-        const consultationDate = consultation.date || consultation.createdAt;
-        const formattedDate = consultationDate ? formatDate(consultationDate) : 'N/A';
-
-        return {
-          id: consultation._id,
-          date: formattedDate,
-          rawDate: consultationDate,
-          providerName: `${consultation.provider.firstName} ${consultation.provider.lastName}`,
-          type: consultation.general?.specialty || 'General',
-          specialist: consultation.general?.specialistName ||
-                     `${consultation.provider.firstName} ${consultation.provider.lastName}`,
-          clinic: consultation.general?.practice ||
-                  consultation.provider.providerProfile?.practiceName || 'N/A',
-          reason: consultation.general?.reasonForVisit || 'N/A',
-          status: consultation.status,
-          caseStatus: consultation.caseStatus || 'open',
-          visitCount: 1 + (countMap[consultation._id.toString()] || 0)
-        };
-      })
+    const latestDateMap = {};
+    followUpStats.forEach(({ _id, count, latestDate }) => {
+      countMap[_id.toString()] = count;
+      latestDateMap[_id.toString()] = latestDate;
     });
+
+    const mapped = consultations.map(consultation => {
+      const rootDate = consultation.date || consultation.createdAt;
+      const latestFollowUp = latestDateMap[consultation._id.toString()];
+      const consultationDate = latestFollowUp && (!rootDate || new Date(latestFollowUp) > new Date(rootDate))
+        ? latestFollowUp
+        : rootDate;
+      const formattedDate = consultationDate ? formatDate(consultationDate) : 'N/A';
+
+      return {
+        id: consultation._id,
+        date: formattedDate,
+        rawDate: consultationDate,
+        providerName: `${consultation.provider.firstName} ${consultation.provider.lastName}`,
+        type: consultation.general?.specialty || 'General',
+        specialist: consultation.general?.specialistName ||
+                   `${consultation.provider.firstName} ${consultation.provider.lastName}`,
+        clinic: consultation.general?.practice ||
+                consultation.provider.providerProfile?.practiceName || 'N/A',
+        reason: consultation.general?.reasonForVisit || 'N/A',
+        status: consultation.status,
+        caseStatus: consultation.caseStatus || 'open',
+        visitCount: 1 + (countMap[consultation._id.toString()] || 0),
+        _sortDate: consultationDate ? new Date(consultationDate).getTime() : 0
+      };
+    });
+
+    // Re-sort by effective last-visit date (latest follow-up if present, otherwise root date).
+    mapped.sort((a, b) => b._sortDate - a._sortDate);
+    mapped.forEach(row => { delete row._sortDate; });
+
+    return res.json({ success: true, consultations: mapped });
   } catch (error) {
     console.error('Error fetching patient consultations:', error);
     return res.status(500).json({
