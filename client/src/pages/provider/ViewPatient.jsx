@@ -238,7 +238,8 @@ const ProviderViewPatient = () => {
           labResults: [],
           radiology: [],
           hospital: [],
-          surgery: []
+          surgery: [],
+          biometrics: []
         });
       }
     } catch (error) {
@@ -289,9 +290,11 @@ const ProviderViewPatient = () => {
     }
   };
 
-  // Fetch standalone records (immunizations, hospital, surgery) — the discriminator-based
-  // endpoint returns both consultation-attached and standalone records for the patient,
-  // so this is the authoritative source for these three tabs.
+  // Fetch standalone records for the patient. Each section uses its own authoritative source:
+  //   - immunizations: the medical-records discriminator endpoint
+  //   - hospital: HospitalAdmissionService
+  //   - surgery: SurgeryService (standalone Surgery model with threaded notes)
+  //   - biometrics: BiometricService (powers the Overview BMI fallback)
   const fetchStandaloneSectionRecords = async (patientId) => {
     const formatFieldValue = (field) => {
       if (!field) return 'N/A';
@@ -299,14 +302,6 @@ const ProviderViewPatient = () => {
         return field.unit ? `${field.value} ${field.unit}` : field.value;
       }
       return field;
-    };
-
-    const formatArrayValue = (arr) => {
-      if (!arr || !Array.isArray(arr)) return 'N/A';
-      return arr.map(item => {
-        if (typeof item === 'object' && item && item.name) return item.name;
-        return formatFieldValue(item);
-      }).join(', ');
     };
 
     try {
@@ -394,7 +389,8 @@ const ProviderViewPatient = () => {
       labResults: [],
       radiology: [],
       hospital: [],
-      surgery: []
+      surgery: [],
+      biometrics: []
     };
 
     consultations.forEach(consultation => {
@@ -517,7 +513,7 @@ const ProviderViewPatient = () => {
       // Hospital and surgery records are now standalone — sourced via fetchStandaloneSectionRecords.
     });
 
-    setMedicalRecords(records);
+    setMedicalRecords(prev => ({ ...records, biometrics: prev.biometrics || [] }));
   };
 
   // Handle tab change
@@ -889,6 +885,21 @@ const ProviderViewPatient = () => {
     const records = medicalRecords[recordType] || [];
     
     if (records.length === 0) {
+      if (recordType === 'surgery') {
+        return (
+          <div className={styles.surgeryTab}>
+            <div className={styles.recordsHeader}>
+              <h3>Surgery Records (0)</h3>
+              <Link to={`/provider/surgeries/new?patientId=${id}`}>
+                <Button variant="tertiary" size="small">New Surgery</Button>
+              </Link>
+            </div>
+            <div className={styles.noRecords}>
+              <p>No surgery records yet for this patient.</p>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className={styles.noRecords}>
           <h3>No {recordType.charAt(0).toUpperCase() + recordType.slice(1)} Records</h3>
