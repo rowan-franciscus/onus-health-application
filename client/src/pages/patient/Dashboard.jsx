@@ -156,51 +156,53 @@ const PatientDashboard = () => {
             </div>
           </div>
           
-          {isLoading ? (
-            <div className={styles.loading}>Loading vitals data...</div>
-          ) : !recentVitals ? (
-            renderEmptyVitals()
-          ) : (
-            <>
-              <div className={styles.vitalsGrid}>
-                {recentVitals.heartRate && (
-                  <div className={styles.vitalItem}>
-                    <h3>Heart Rate</h3>
-                    <p>{recentVitals.heartRate}</p>
-                  </div>
-                )}
-                {recentVitals.bloodPressure && (
-                  <div className={styles.vitalItem}>
-                    <h3>Blood Pressure</h3>
-                    <p>{recentVitals.bloodPressure}</p>
-                  </div>
-                )}
-                {recentVitals.bodyTemperature && (
-                  <div className={styles.vitalItem}>
-                    <h3>Temperature</h3>
-                    <p>{recentVitals.bodyTemperature}</p>
-                  </div>
-                )}
-                {recentVitals.bloodGlucose && (
-                  <div className={styles.vitalItem}>
-                    <h3>Blood Glucose</h3>
-                    <p>{recentVitals.bloodGlucose}</p>
-                  </div>
-                )}
-                {recentVitals.respiratoryRate && (
-                  <div className={styles.vitalItem}>
-                    <h3>Respiratory Rate</h3>
-                    <p>{recentVitals.respiratoryRate}</p>
-                  </div>
-                )}
-              </div>
-              {recentVitals.lastUpdated && (
-                <div className={styles.lastUpdated}>
-                  Last updated: {formatDate(recentVitals.lastUpdated)}
+          <div className={styles.vitalsScrollContent}>
+            {isLoading ? (
+              <div className={styles.loading}>Loading vitals data...</div>
+            ) : !recentVitals ? (
+              renderEmptyVitals()
+            ) : (
+              <>
+                <div className={styles.vitalsGrid}>
+                  {recentVitals.heartRate && (
+                    <div className={styles.vitalItem}>
+                      <h3>Heart Rate</h3>
+                      <p>{recentVitals.heartRate}</p>
+                    </div>
+                  )}
+                  {recentVitals.bloodPressure && (
+                    <div className={styles.vitalItem}>
+                      <h3>Blood Pressure</h3>
+                      <p>{recentVitals.bloodPressure}</p>
+                    </div>
+                  )}
+                  {recentVitals.bodyTemperature && (
+                    <div className={styles.vitalItem}>
+                      <h3>Temperature</h3>
+                      <p>{recentVitals.bodyTemperature}</p>
+                    </div>
+                  )}
+                  {recentVitals.bloodGlucose && (
+                    <div className={styles.vitalItem}>
+                      <h3>Blood Glucose</h3>
+                      <p>{recentVitals.bloodGlucose}</p>
+                    </div>
+                  )}
+                  {recentVitals.respiratoryRate && (
+                    <div className={styles.vitalItem}>
+                      <h3>Respiratory Rate</h3>
+                      <p>{recentVitals.respiratoryRate}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </>
-          )}
+                {recentVitals.lastUpdated && (
+                  <div className={styles.lastUpdated}>
+                    Last updated: {formatDate(recentVitals.lastUpdated)}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </Card>
 
         {/* Recent Consultations */}
