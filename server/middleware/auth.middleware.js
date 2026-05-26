@@ -167,6 +167,85 @@ const isPatient = (req, res, next) => {
 };
 
 /**
+ * Middleware to check if user is an active practice admin.
+ * Also rejects users whose practiceAdminProfile.status is not 'active'.
+ */
+const isPracticeAdmin = async (req, res, next) => {
+  try {
+    if (!req.user || req.user.role !== 'practice_admin') {
+      return res.status(403).json({ success: false, message: 'Access denied: Practice Admin role required' });
+    }
+
+    const user = await User.findById(req.user.id).select('practiceAdminProfile');
+    if (!user || !user.practiceAdminProfile || user.practiceAdminProfile.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Practice Admin account is not active',
+        code: 'PRACTICE_ADMIN_INACTIVE'
+      });
+    }
+
+    if (!user.practiceAdminProfile.practiceId) {
+      return res.status(403).json({ success: false, message: 'Practice Admin has no practice assigned' });
+    }
+
+    req.practiceId = user.practiceAdminProfile.practiceId;
+    return next();
+  } catch (error) {
+    logger.error('Error in isPracticeAdmin middleware:', error);
+    return res.status(500).json({ success: false, message: 'Server error during practice-admin check' });
+  }
+};
+
+/**
+ * Middleware allowing either a verified provider or an active practice admin.
+ */
+const isProviderOrPracticeAdmin = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Authentication required' });
+  }
+  if (req.user.role === 'provider') {
+    return isProvider(req, res, next);
+  }
+  if (req.user.role === 'practice_admin') {
+    return isPracticeAdmin(req, res, next);
+  }
+  return res.status(403).json({ success: false, message: 'Access denied: Provider or Practice Admin role required' });
+};
+
+/**
+ * Helper: can this practice admin access this patient?
+ * Patient must be connected to any provider in the practice admin's practice.
+ */
+const canPracticeAdminAccessPatient = async (practiceAdminUserId, patientId) => {
+  try {
+    const Practice = require('../models/Practice');
+    const Connection = require('../models/Connection');
+
+    const adminUser = await User.findById(practiceAdminUserId).select('practiceAdminProfile');
+    if (!adminUser || !adminUser.practiceAdminProfile || !adminUser.practiceAdminProfile.practiceId) {
+      return false;
+    }
+    if (adminUser.practiceAdminProfile.status !== 'active') {
+      return false;
+    }
+
+    const practice = await Practice.findById(adminUser.practiceAdminProfile.practiceId).select('members owner');
+    if (!practice) return false;
+
+    const providerIds = [practice.owner, ...(practice.members || [])];
+    const exists = await Connection.exists({
+      patient: patientId,
+      provider: { $in: providerIds }
+    });
+    return !!exists;
+  } catch (error) {
+    logger.error('Error in canPracticeAdminAccessPatient:', error);
+    return false;
+  }
+};
+
+/**
  * Middleware to check if user is an admin or provider
  */
 const isAdminOrProvider = (req, res, next) => {
@@ -295,5 +374,9 @@ module.exports = {
   isPatient,
   isAdminOrProvider,
   isAdminOrVerifiedProvider,
-  isOwnProfileOrAdmin
-}; 
+  isOwnProfileOrAdmin,
+  isPracticeAdmin,
+  isProviderOrPracticeAdmin,
+  canPracticeAdminAccessPatient,
+  canProviderAccessPatient
+};

@@ -15,18 +15,19 @@ const bcrypt = require('bcryptjs');
 const config = require('../../config/environment');
 
 // Import models
-const { 
-  User, 
-  Consultation, 
-  Vitals, 
-  Medication, 
-  Immunization, 
-  LabResult, 
-  RadiologyReport, 
-  HospitalRecord, 
-  SurgeryRecord, 
-  Connection 
+const {
+  User,
+  Consultation,
+  Vitals,
+  Medication,
+  Immunization,
+  LabResult,
+  RadiologyReport,
+  HospitalRecord,
+  SurgeryRecord,
+  Connection
 } = require('../../models');
+const Practice = require('../../models/Practice');
 
 // Import test data
 const testAccounts = require('../../config/testAccounts');
@@ -367,9 +368,10 @@ const resetTestData = async () => {
   try {
     // Find test users
     const testEmails = [
-      testAccounts.admin.email, 
-      testAccounts.provider.email, 
-      testAccounts.patient.email
+      testAccounts.admin.email,
+      testAccounts.provider.email,
+      testAccounts.patient.email,
+      'practice_admin.test@email.com'
     ];
     
     const testUsers = await User.find({ email: { $in: testEmails } });
@@ -398,6 +400,9 @@ const resetTestData = async () => {
       ]
     });
     
+    // Delete practice records owned by test users
+    await Practice.deleteMany({ owner: { $in: testUserIds } });
+
     // Finally, delete the test users themselves
     await User.deleteMany({ email: { $in: testEmails } });
     
@@ -457,7 +462,58 @@ const seedDatabase = async (reset = false) => {
     
     // Create connection between provider and patient
     await createConnections(provider, [patient]);
-    
+
+    // Practice + Practice Admin
+    console.log('Setting up Practice and Practice Admin...');
+    let practice = await Practice.findOne({ owner: provider._id });
+    if (!practice) {
+      practice = await Practice.create({
+        name: `Dr. ${provider.lastName}'s Practice`,
+        owner: provider._id,
+        members: [provider._id],
+        admins: []
+      });
+      console.log(`Created Practice "${practice.name}"`);
+    }
+    if (!provider.providerProfile?.practiceId) {
+      provider.providerProfile.practiceId = practice._id;
+      await provider.save();
+    }
+
+    const practiceAdminEmail = 'practice_admin.test@email.com';
+    let practiceAdmin = await User.findOne({ email: practiceAdminEmail });
+    if (!practiceAdmin) {
+      const hashed = await bcrypt.hash('password@123', 12);
+      practiceAdmin = await User.create({
+        email: practiceAdminEmail,
+        password: hashed,
+        firstName: 'Practice',
+        lastName: 'Admin',
+        role: 'practice_admin',
+        isEmailVerified: true,
+        isProfileCompleted: true,
+        practiceAdminProfile: {
+          practiceId: practice._id,
+          invitedBy: provider._id,
+          invitedAt: new Date(),
+          status: 'active'
+        }
+      });
+      console.log(`Created Practice Admin ${practiceAdmin.email}`);
+    } else if (practiceAdmin.practiceAdminProfile?.status !== 'active') {
+      practiceAdmin.practiceAdminProfile = {
+        practiceId: practice._id,
+        invitedBy: provider._id,
+        invitedAt: new Date(),
+        status: 'active'
+      };
+      await practiceAdmin.save();
+    }
+    if (!practice.admins.some(id => id.toString() === practiceAdmin._id.toString())) {
+      practice.admins.push(practiceAdmin._id);
+      await practice.save();
+    }
+
     console.log('Database seeding completed successfully!');
     
   } catch (error) {

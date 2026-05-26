@@ -69,4 +69,15 @@ router.get('/profile', authenticateJWT, providerController.getProfile);
 router.put('/profile', authenticateJWT, providerController.updateProfile);
 router.put('/change-password', authenticateJWT, providerController.changePassword);
 
+// Practice & Team (verified providers only)
+router.get('/practice', authenticateJWT, isVerifiedProvider, providerController.getPractice);
+router.post('/practice', authenticateJWT, isVerifiedProvider, providerController.createPractice);
+router.post('/practice/admins/invite', authenticateJWT, isVerifiedProvider, providerController.invitePracticeAdmin);
+router.post('/practice/admins/:adminId/revoke', authenticateJWT, isVerifiedProvider, providerController.revokePracticeAdmin);
+
+// Provider's own billing
+router.get('/billing', authenticateJWT, isVerifiedProvider, providerController.getBilling);
+router.get('/billing/export/csv', authenticateJWT, isVerifiedProvider, providerController.exportProviderBillingCsv);
+router.patch('/billing/:consultationId/status', authenticateJWT, isVerifiedProvider, providerController.updateProviderBillingStatus);
+
 module.exports = router; 

@@ -542,4 +542,276 @@ exports.changePassword = async (req, res) => {
     logger.error('Error changing password:', error);
     res.status(500).json({ success: false, message: 'Failed to change password' });
   }
-}; 
+};
+
+// ============================================================================
+// Practice & Team management (Practice Admin role support)
+// ============================================================================
+
+const Practice = require('../models/Practice');
+const crypto = require('crypto');
+const config = require('../config/environment');
+const { sanitizeConsultationForPracticeAdmin } = require('../utils/sanitizeForPracticeAdmin');
+
+/**
+ * GET /provider/practice
+ * Returns this provider's practice (members + admins). 404 if not created yet.
+ */
+exports.getPractice = async (req, res) => {
+  try {
+    const provider = await User.findById(req.user.id).select('providerProfile');
+    const practiceId = provider && provider.providerProfile && provider.providerProfile.practiceId;
+    if (!practiceId) {
+      return res.status(404).json({ success: false, message: 'No practice yet' });
+    }
+    const practice = await Practice.findById(practiceId)
+      .populate('owner', 'firstName lastName email')
+      .populate('members', 'firstName lastName email providerProfile.specialty')
+      .populate('admins', 'firstName lastName email practiceAdminProfile');
+    if (!practice) {
+      return res.status(404).json({ success: false, message: 'Practice not found' });
+    }
+    res.json({ success: true, practice });
+  } catch (error) {
+    logger.error('provider.getPractice error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load practice' });
+  }
+};
+
+/**
+ * POST /provider/practice
+ * One-time create. Sets the inviting provider as owner + sole member.
+ */
+exports.createPractice = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, message: 'Practice name is required' });
+    }
+
+    const provider = await User.findById(req.user.id);
+    if (provider.providerProfile && provider.providerProfile.practiceId) {
+      return res.status(409).json({ success: false, message: 'Practice already exists for this provider' });
+    }
+
+    const practice = new Practice({
+      name: name.trim(),
+      owner: provider._id,
+      members: [provider._id],
+      admins: []
+    });
+    await practice.save();
+
+    provider.providerProfile = provider.providerProfile || {};
+    provider.providerProfile.practiceId = practice._id;
+    await provider.save();
+
+    res.status(201).json({ success: true, practice });
+  } catch (error) {
+    logger.error('provider.createPractice error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create practice' });
+  }
+};
+
+/**
+ * POST /provider/practice/admins/invite
+ * Body: { firstName, lastName, email }
+ * Creates a pending practice_admin user and queues an invitation email.
+ */
+exports.invitePracticeAdmin = async (req, res) => {
+  try {
+    const { firstName, lastName, email } = req.body;
+    if (!firstName || !lastName || !email) {
+      return res.status(400).json({ success: false, message: 'firstName, lastName and email are required' });
+    }
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return res.status(400).json({ success: false, message: 'Invalid email' });
+    }
+
+    const provider = await User.findById(req.user.id);
+    const practiceId = provider.providerProfile && provider.providerProfile.practiceId;
+    if (!practiceId) {
+      return res.status(400).json({ success: false, message: 'Create a practice first' });
+    }
+
+    const existing = await User.findOne({ email: trimmedEmail });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    const admin = new User({
+      email: trimmedEmail,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      role: 'practice_admin',
+      isEmailVerified: false,
+      isProfileCompleted: false,
+      // Use a strong random placeholder password — the user replaces it on accept.
+      password: crypto.randomBytes(24).toString('hex'),
+      practiceAdminProfile: {
+        practiceId,
+        invitedBy: provider._id,
+        invitedAt: new Date(),
+        status: 'pending',
+        inviteToken: token,
+        inviteTokenExpires: expires
+      }
+    });
+    await admin.save();
+
+    await Practice.findByIdAndUpdate(practiceId, { $addToSet: { admins: admin._id } });
+
+    try {
+      const emailService = require('../services/email.service');
+      const acceptUrl = `${config.frontendUrl}/accept-practice-admin/${token}`;
+      const practice = await Practice.findById(practiceId).select('name');
+      await emailService.sendTemplateEmail(
+        trimmedEmail,
+        'practiceAdminInvite',
+        {
+          adminFirstName: admin.firstName,
+          providerName: `Dr. ${provider.firstName} ${provider.lastName}`,
+          practiceName: practice ? practice.name : 'your practice',
+          acceptUrl,
+          title: "You've Been Invited as a Practice Admin"
+        },
+        {
+          subject: "You've Been Invited as a Practice Admin",
+          userId: admin._id,
+          queue: true
+        }
+      );
+    } catch (emailError) {
+      logger.error('Failed to queue practice-admin invite email:', emailError);
+    }
+
+    res.status(201).json({
+      success: true,
+      admin: {
+        _id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        status: admin.practiceAdminProfile.status,
+        invitedAt: admin.practiceAdminProfile.invitedAt
+      }
+    });
+  } catch (error) {
+    logger.error('provider.invitePracticeAdmin error:', error);
+    res.status(500).json({ success: false, message: 'Failed to invite practice admin' });
+  }
+};
+
+/**
+ * POST /provider/practice/admins/:adminId/revoke
+ */
+exports.revokePracticeAdmin = async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const provider = await User.findById(req.user.id).select('providerProfile');
+    const practiceId = provider && provider.providerProfile && provider.providerProfile.practiceId;
+    if (!practiceId) {
+      return res.status(400).json({ success: false, message: 'No practice' });
+    }
+
+    const admin = await User.findOne({
+      _id: adminId,
+      role: 'practice_admin',
+      'practiceAdminProfile.practiceId': practiceId
+    });
+    if (!admin) {
+      return res.status(404).json({ success: false, message: 'Practice admin not found' });
+    }
+    admin.practiceAdminProfile.status = 'revoked';
+    await admin.save();
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('provider.revokePracticeAdmin error:', error);
+    res.status(500).json({ success: false, message: 'Failed to revoke practice admin' });
+  }
+};
+
+/**
+ * GET /provider/billing
+ * Billing-support list scoped to the current provider's own consultations.
+ */
+exports.getBilling = async (req, res) => {
+  try {
+    const providerId = req.user.id;
+    const consultations = await Consultation.find({ provider: providerId })
+      .sort({ date: -1 })
+      .populate('patient', 'firstName lastName')
+      .populate('provider', 'firstName lastName')
+      .select('date general.diagnosis billingStatus status patient provider');
+    res.json({
+      success: true,
+      consultations: consultations.map(sanitizeConsultationForPracticeAdmin)
+    });
+  } catch (error) {
+    logger.error('provider.getBilling error:', error);
+    res.status(500).json({ success: false, message: 'Failed to load billing' });
+  }
+};
+
+/**
+ * GET /provider/billing/export/csv
+ */
+exports.exportProviderBillingCsv = async (req, res) => {
+  try {
+    const providerId = req.user.id;
+    const consultations = await Consultation.find({ provider: providerId })
+      .sort({ date: -1 })
+      .populate('patient', 'firstName lastName')
+      .populate('provider', 'firstName lastName')
+      .select('date general.diagnosis billingStatus patient provider');
+
+    const escape = v => {
+      if (v == null) return '';
+      const s = String(v).replace(/"/g, '""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+    const rows = consultations.map(c => {
+      const date = c.date ? new Date(c.date).toLocaleDateString('en-GB') : '';
+      const patient = c.patient ? `${c.patient.firstName || ''} ${c.patient.lastName || ''}`.trim() : '';
+      const provider = c.provider ? `Dr. ${c.provider.firstName || ''} ${c.provider.lastName || ''}`.trim() : '';
+      const diagnosis = c.general && c.general.diagnosis ? c.general.diagnosis : '';
+      const status = c.billingStatus || 'pending';
+      return [date, patient, provider, diagnosis, status].map(escape).join(',');
+    });
+    const csv = ['Date,Patient,Provider,Diagnosis,Status', ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="onus-billing-export.csv"');
+    res.send(csv);
+  } catch (error) {
+    logger.error('provider.exportProviderBillingCsv error:', error);
+    res.status(500).json({ success: false, message: 'Failed to export CSV' });
+  }
+};
+
+/**
+ * PATCH /provider/billing/:consultationId/status
+ */
+exports.updateProviderBillingStatus = async (req, res) => {
+  try {
+    const { consultationId } = req.params;
+    const { billingStatus } = req.body;
+    if (!['pending', 'processed', 'submitted'].includes(billingStatus)) {
+      return res.status(400).json({ success: false, message: 'Invalid billingStatus' });
+    }
+    const consultation = await Consultation.findOne({ _id: consultationId, provider: req.user.id });
+    if (!consultation) {
+      return res.status(404).json({ success: false, message: 'Consultation not found' });
+    }
+    consultation.billingStatus = billingStatus;
+    await consultation.save();
+    res.json({ success: true, consultation: sanitizeConsultationForPracticeAdmin(consultation) });
+  } catch (error) {
+    logger.error('provider.updateProviderBillingStatus error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update billing status' });
+  }
+};

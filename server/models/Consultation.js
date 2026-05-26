@@ -118,6 +118,13 @@ const ConsultationSchema = new Schema({
     type: Boolean,
     default: true
   },
+  // Billing status for operational/insurance support (Practice Admin role).
+  // Pure metadata — never affects clinical fields.
+  billingStatus: {
+    type: String,
+    enum: ['pending', 'processed', 'submitted'],
+    default: 'pending'
+  },
   attachments: [{
     filename: String,
     originalName: String,
