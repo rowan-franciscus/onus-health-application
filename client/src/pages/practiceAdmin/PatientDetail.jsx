@@ -74,7 +74,7 @@ const Overview = ({ patientId }) => {
         <span className={styles.bannerIcon}>🛡</span>
         <div>
           <p className={styles.bannerTitle}>Read-Only Operational Overview</p>
-          <p className={styles.bannerBody}>Summarised diagnoses, medications and ordered investigations for billing and insurance support. Clinical notes, vitals and findings are not visible.</p>
+          <p className={styles.bannerBody}>Consultation date, treating provider, diagnosis and billing status for insurance support. Clinical notes, vitals and findings are not visible.</p>
         </div>
       </div>
 

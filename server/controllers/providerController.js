@@ -567,7 +567,7 @@ exports.getPractice = async (req, res) => {
     const practice = await Practice.findById(practiceId)
       .populate('owner', 'firstName lastName email')
       .populate('members', 'firstName lastName email providerProfile.specialty')
-      .populate('admins', 'firstName lastName email practiceAdminProfile');
+      .populate('admins', 'firstName lastName email practiceAdminProfile.status practiceAdminProfile.invitedAt practiceAdminProfile.invitedBy practiceAdminProfile.practiceId');
     if (!practice) {
       return res.status(404).json({ success: false, message: 'Practice not found' });
     }
