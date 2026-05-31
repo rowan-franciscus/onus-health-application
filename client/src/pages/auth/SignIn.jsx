@@ -50,6 +50,8 @@ const SignIn = () => {
         navigate('/provider/dashboard');
       } else if (role === 'admin') {
         navigate('/admin/dashboard');
+      } else if (role === 'practice_admin') {
+        navigate('/practice-admin/patients');
       }
     }
   }, [isAuthenticated, user, navigate]);
@@ -117,6 +119,8 @@ const SignIn = () => {
             navigate('/provider/dashboard');
           } else if (role === 'admin') {
             navigate('/admin/dashboard');
+          } else if (role === 'practice_admin') {
+            navigate('/practice-admin/patients');
           }
         } else {
           navigate(from.pathname);

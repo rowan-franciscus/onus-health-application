@@ -97,7 +97,12 @@ const Header = ({
                 </div>
               )}
             </div>
-            {user.name && <span className={styles.userName}>{user.name}</span>}
+            <div className={styles.userNameWrap}>
+              {user.name && <span className={styles.userName}>{user.name}</span>}
+              {user.roleLabel && (
+                <span className={styles.roleBadge}>{user.roleLabel}</span>
+              )}
+            </div>
           </Link>
         )}
       </div>

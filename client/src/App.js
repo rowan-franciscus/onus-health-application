@@ -73,6 +73,17 @@ const ProviderBiometricsList = lazy(() => import('./pages/provider/biometrics/Bi
 const ProviderPatientBiometrics = lazy(() => import('./pages/provider/biometrics/PatientBiometrics'));
 const ProviderProfile = lazy(() => import('./pages/provider/Profile'));
 const ProviderSettings = lazy(() => import('./pages/provider/Settings'));
+const ProviderTeam = lazy(() => import('./pages/provider/Team'));
+const ProviderBilling = lazy(() => import('./pages/provider/Billing'));
+
+// Practice Admin pages
+const PracticeAdminPatients = lazy(() => import('./pages/practiceAdmin/Patients'));
+const PracticeAdminPatientDetail = lazy(() => import('./pages/practiceAdmin/PatientDetail'));
+const PracticeAdminAddPatient = lazy(() => import('./pages/practiceAdmin/AddPatient'));
+const PracticeAdminBilling = lazy(() => import('./pages/practiceAdmin/Billing'));
+const PracticeAdminProfile = lazy(() => import('./pages/practiceAdmin/Profile'));
+const PracticeAdminSettings = lazy(() => import('./pages/practiceAdmin/Settings'));
+const AcceptPracticeAdminInvite = lazy(() => import('./pages/auth/AcceptPracticeAdminInvite'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -181,6 +192,7 @@ function App() {
             <Route path="/verify-email/:token" element={<VerifyEmail />} />
             <Route path="/verify-your-email" element={<EmailVerificationSent />} />
             <Route path="/verification-error" element={<VerificationError />} />
+            <Route path="/accept-practice-admin/:token" element={<AcceptPracticeAdminInvite />} />
           </Route>
 
           {/* Onboarding routes */}
@@ -648,15 +660,35 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/provider/settings" 
+            <Route
+              path="/provider/settings"
               element={
-                <ProtectedRoute 
-                  element={<ProviderSettings />} 
-                  allowedRoles={['provider']} 
+                <ProtectedRoute
+                  element={<ProviderSettings />}
+                  allowedRoles={['provider']}
                   requireOnboarding={true}
                 />
-              } 
+              }
+            />
+            <Route
+              path="/provider/team"
+              element={
+                <ProtectedRoute
+                  element={<ProviderTeam />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
+            />
+            <Route
+              path="/provider/billing"
+              element={
+                <ProtectedRoute
+                  element={<ProviderBilling />}
+                  allowedRoles={['provider']}
+                  requireOnboarding={true}
+                />
+              }
             />
             <Route 
               path="/provider/help" 
@@ -667,6 +699,38 @@ function App() {
                   requireOnboarding={true}
                 />
               } 
+            />
+          </Route>
+
+          {/* Practice Admin routes */}
+          <Route element={<DashboardLayout role="practice_admin" />}>
+            <Route
+              path="/practice-admin/patients"
+              element={<ProtectedRoute element={<PracticeAdminPatients />} allowedRoles={['practice_admin']} />}
+            />
+            <Route
+              path="/practice-admin/patients/add"
+              element={<ProtectedRoute element={<PracticeAdminAddPatient />} allowedRoles={['practice_admin']} />}
+            />
+            <Route
+              path="/practice-admin/patients/:patientId"
+              element={<ProtectedRoute element={<PracticeAdminPatientDetail />} allowedRoles={['practice_admin']} />}
+            />
+            <Route
+              path="/practice-admin/billing"
+              element={<ProtectedRoute element={<PracticeAdminBilling />} allowedRoles={['practice_admin']} />}
+            />
+            <Route
+              path="/practice-admin/profile"
+              element={<ProtectedRoute element={<PracticeAdminProfile />} allowedRoles={['practice_admin']} />}
+            />
+            <Route
+              path="/practice-admin/settings"
+              element={<ProtectedRoute element={<PracticeAdminSettings />} allowedRoles={['practice_admin']} />}
+            />
+            <Route
+              path="/practice-admin/help"
+              element={<ProtectedRoute element={<Help />} allowedRoles={['practice_admin']} />}
             />
           </Route>
 

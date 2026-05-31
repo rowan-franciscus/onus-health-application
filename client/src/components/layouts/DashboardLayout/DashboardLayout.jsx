@@ -6,6 +6,7 @@ import Sidebar from '../Sidebar';
 import Header from '../Header';
 import styles from './DashboardLayout.module.css';
 import FileService from '../../../services/file.service';
+import OperationalBanner from '../../practiceAdmin/OperationalBanner';
 
 // Import logo
 import logoWhite from '../../../assets/logos/logo-white.png';
@@ -43,8 +44,16 @@ const getNavItems = (role, logoutFn) => {
       { to: '/provider/hospital-admissions', label: 'Hospital', icon: <img src={hospitalIcon} alt="Hospital" /> },
       { to: '/provider/surgeries', label: 'Surgeries', icon: <img src={surgeryIcon} alt="Surgeries" /> },
       { to: '/provider/biometrics', label: 'Biometrics', icon: <img src={biometricsIcon} alt="Biometrics" /> },
+      { to: '/provider/billing', label: 'Billing', icon: <img src={medicalRecordsIcon} alt="Billing" /> },
+      { to: '/provider/team', label: 'Team', icon: <img src={connectionsIcon} alt="Team" /> },
       { to: '/provider/profile', label: 'Profile', icon: <img src={profileIcon} alt="Profile" /> },
       { to: '/provider/settings', label: 'Settings', icon: <img src={settingsIcon} alt="Settings" /> },
+    ],
+    practice_admin: [
+      { to: '/practice-admin/patients', label: 'Patients', icon: <img src={patientsIcon} alt="Patients" /> },
+      { to: '/practice-admin/billing', label: 'Billing', icon: <img src={medicalRecordsIcon} alt="Billing" /> },
+      { to: '/practice-admin/profile', label: 'Profile', icon: <img src={profileIcon} alt="Profile" /> },
+      { to: '/practice-admin/settings', label: 'Settings', icon: <img src={settingsIcon} alt="Settings" /> },
     ],
     patient: [
       { to: '/patient/dashboard', label: 'Dashboard', icon: <img src={analyticsIcon} alt="Dashboard" /> },
@@ -58,9 +67,12 @@ const getNavItems = (role, logoutFn) => {
     ]
   };
 
+  // /admin/help, /provider/help, /patient/help, /practice-admin/help
+  const helpPath = role === 'practice_admin' ? '/practice-admin/help' : `/${role}/help`;
+
   const footerItems = [
     { label: 'Sign Out', icon: <img src={signOutIcon} alt="Sign Out" />, onClick: logoutFn },
-    { to: `/${role}/help`, label: 'Help', icon: <img src={helpIcon} alt="Help" /> },
+    { to: helpPath, label: 'Help', icon: <img src={helpIcon} alt="Help" /> },
   ];
 
   return {
@@ -88,7 +100,8 @@ const DashboardLayout = ({ role }) => {
     const profileUrlMap = {
       admin: '/admin/settings',
       provider: '/provider/profile',
-      patient: '/patient/profile'
+      patient: '/patient/profile',
+      practice_admin: '/practice-admin/profile'
     };
 
     // Try to get name from user profile data
@@ -138,11 +151,19 @@ const DashboardLayout = ({ role }) => {
     // Use an empty string if no name is available
     const displayName = fullName ? prefix + fullName : '';
     
+    const roleLabelMap = {
+      provider: 'Doctor',
+      practice_admin: 'Practice Admin',
+      admin: 'Admin',
+      patient: 'Patient'
+    };
+
     return {
       name: displayName,
       firstName: firstName,
       lastName: lastName,
       profileUrl: profileUrlMap[role] || '#',
+      roleLabel: roleLabelMap[role] || null,
       avatarUrl: user?.profileImage ? FileService.getProfilePictureUrl(user.profileImage, user?._id || user?.id, true) : null
     };
   };
@@ -164,6 +185,7 @@ const DashboardLayout = ({ role }) => {
           className={styles.header}
         />
         <main className={styles.content}>
+          {role === 'practice_admin' && <OperationalBanner />}
           <Outlet />
         </main>
       </div>
@@ -172,7 +194,7 @@ const DashboardLayout = ({ role }) => {
 };
 
 DashboardLayout.propTypes = {
-  role: PropTypes.oneOf(['patient', 'provider', 'admin']).isRequired,
+  role: PropTypes.oneOf(['patient', 'provider', 'admin', 'practice_admin']).isRequired,
 };
 
 export default DashboardLayout; 

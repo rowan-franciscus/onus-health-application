@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateJWT, isProvider, isAdminOrProvider } = require('../middleware/auth.middleware');
+const { authenticateJWT, isProvider, isAdminOrProvider, isProviderOrPracticeAdmin } = require('../middleware/auth.middleware');
 const { uploadPhysicalRecordFile, handleUploadErrors } = require('../middleware/upload.middleware');
 const physicalRecordController = require('../controllers/physicalRecord.controller');
 
 router.post(
   '/patients/:patientId/physical-records',
   authenticateJWT,
-  isProvider,
+  isProviderOrPracticeAdmin,
   uploadPhysicalRecordFile.single('file'),
   handleUploadErrors,
   physicalRecordController.createPhysicalRecord

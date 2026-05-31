@@ -22,7 +22,7 @@ const UserSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['patient', 'provider', 'admin'],
+    enum: ['patient', 'provider', 'admin', 'practice_admin'],
     required: true
   },
   firstName: {
@@ -182,9 +182,13 @@ const UserSchema = new mongoose.Schema({
     termsAccepted: {
       type: Boolean,
       default: false
+    },
+    practiceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Practice'
     }
   },
-  
+
   // Admin-specific fields (minimal since most admin functions relate to platform management)
   adminProfile: {
     department: String,
@@ -192,6 +196,32 @@ const UserSchema = new mongoose.Schema({
       type: String,
       enum: ['super', 'standard'],
       default: 'standard'
+    }
+  },
+
+  // Practice Admin-specific fields
+  practiceAdminProfile: {
+    practiceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Practice'
+    },
+    invitedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    invitedAt: {
+      type: Date
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'active', 'revoked'],
+      default: 'pending'
+    },
+    inviteToken: {
+      type: String
+    },
+    inviteTokenExpires: {
+      type: Date
     }
   }
 }, {
@@ -230,6 +260,18 @@ UserSchema.methods.generateAuthToken = function() {
   // Add provider verification status if this is a provider
   if (this.role === 'provider') {
     tokenData.isVerified = this.providerProfile && this.providerProfile.isVerified === true;
+    if (this.providerProfile && this.providerProfile.practiceId) {
+      tokenData.practiceId = this.providerProfile.practiceId.toString();
+    }
+  }
+
+  if (this.role === 'practice_admin') {
+    if (this.practiceAdminProfile) {
+      if (this.practiceAdminProfile.practiceId) {
+        tokenData.practiceId = this.practiceAdminProfile.practiceId.toString();
+      }
+      tokenData.practiceAdminStatus = this.practiceAdminProfile.status;
+    }
   }
   
   return jwt.sign(

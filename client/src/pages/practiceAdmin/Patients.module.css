@@ -1,0 +1,159 @@
+.container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: #1a1a1a;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.addBtn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.addBtn:hover {
+  background-color: #4c2da3;
+}
+
+.card {
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: white;
+}
+
+.searchWrap {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.search {
+  width: 100%;
+  padding: 0.9rem 1rem 0.9rem 2.5rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: #fafafa;
+  box-sizing: border-box;
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: 3fr 2fr 1fr 3fr minmax(80px, 0.5fr);
+  gap: 1rem;
+  padding: 1rem;
+  align-items: center;
+}
+
+.tableHeader {
+  font-weight: 600;
+  color: #444;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.nameLink {
+  color: #6039cc;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.nameLink:hover {
+  text-decoration: underline;
+}
+
+.ellipsisButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  color: #555;
+  letter-spacing: 1px;
+}
+
+.ellipsisButton:hover {
+  background-color: #f0ebfd;
+  color: #6039cc;
+}
+
+.dropdownMenu {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f5f5f5;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.dropdownItem:last-child {
+  border-bottom: none;
+}
+
+.dropdownItem:hover {
+  background-color: #f9f7fe;
+  color: #6039cc;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
+}

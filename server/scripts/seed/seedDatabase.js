@@ -1,51 +1,61 @@
 /**
  * Database Seed Script for Onus Health Application
- * 
+ *
  * This script creates test accounts and populates them with sample medical data.
  * Use this for development and testing purposes only.
- * 
- * Usage: 
+ *
+ * Usage:
  * - npm run seed         (seeds the database)
  * - npm run seed:reset   (resets test data)
  */
 
-require('dotenv').config();
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const config = require('../../config/environment');
+require("dotenv").config();
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const config = require("../../config/environment");
 
 // Import models
-const { 
-  User, 
-  Consultation, 
-  Vitals, 
-  Medication, 
-  Immunization, 
-  LabResult, 
-  RadiologyReport, 
-  HospitalRecord, 
-  SurgeryRecord, 
-  Connection 
-} = require('../../models');
+const {
+  User,
+  Consultation,
+  Vitals,
+  Medication,
+  Immunization,
+  LabResult,
+  RadiologyReport,
+  HospitalRecord,
+  SurgeryRecord,
+  Connection,
+} = require("../../models");
+const Practice = require("../../models/Practice");
 
 // Import test data
-const testAccounts = require('../../config/testAccounts');
-const sampleMedicalData = require('../../config/sampleMedicalData');
+const testAccounts = require("../../config/testAccounts");
+const sampleMedicalData = require("../../config/sampleMedicalData");
 
 // Connect to MongoDB (specifically to onus-health database)
-console.log(`Connecting to MongoDB: ${config.mongoUri.replace(/\/\/(.+?):(.+?)@/, '//***:***@')}`);
-mongoose.connect(config.mongoUri)
+console.log(
+  `Connecting to MongoDB: ${config.mongoUri.replace(/\/\/(.+?):(.+?)@/, "//***:***@")}`,
+);
+mongoose
+  .connect(config.mongoUri)
   .then(() => {
-    console.log(`MongoDB connected successfully to ${mongoose.connection.name} database`);
-    if (mongoose.connection.name !== 'onus-health') {
-      console.warn(`WARNING: Connected to "${mongoose.connection.name}" database instead of "onus-health"`);
-      console.warn('Please check your connection string in .env file');
-      console.warn('Exiting to prevent data being seeded to the wrong database');
+    console.log(
+      `MongoDB connected successfully to ${mongoose.connection.name} database`,
+    );
+    if (mongoose.connection.name !== "onus-health") {
+      console.warn(
+        `WARNING: Connected to "${mongoose.connection.name}" database instead of "onus-health"`,
+      );
+      console.warn("Please check your connection string in .env file");
+      console.warn(
+        "Exiting to prevent data being seeded to the wrong database",
+      );
       process.exit(1);
     }
   })
-  .catch(err => {
-    console.error('MongoDB connection error:', err.message);
+  .catch((err) => {
+    console.error("MongoDB connection error:", err.message);
     process.exit(1);
   });
 
@@ -58,15 +68,22 @@ const createUser = async (userData) => {
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ email: userData.email });
-    
+
     if (existingUser) {
-      console.log(`User ${userData.email} already exists, checking password...`);
-      
+      console.log(
+        `User ${userData.email} already exists, checking password...`,
+      );
+
       // Verify the password is hashed correctly
-      const passwordMatches = await bcrypt.compare(userData.password, existingUser.password);
-      
+      const passwordMatches = await bcrypt.compare(
+        userData.password,
+        existingUser.password,
+      );
+
       if (!passwordMatches) {
-        console.log(`Password for ${userData.email} is not correct, updating...`);
+        console.log(
+          `Password for ${userData.email} is not correct, updating...`,
+        );
         // Update the password
         const hashedPassword = await bcrypt.hash(userData.password, 12);
         existingUser.password = hashedPassword;
@@ -75,18 +92,18 @@ const createUser = async (userData) => {
       } else {
         console.log(`Password for ${userData.email} is already correct`);
       }
-      
+
       return existingUser;
     }
-    
+
     // Create new user directly (bypassing middleware to set isEmailVerified = true)
     const hashedPassword = await bcrypt.hash(userData.password, 12);
-    
+
     const newUser = await User.create({
       ...userData,
       password: hashedPassword,
       isEmailVerified: true, // Bypass email verification for test accounts
-      isProfileCompleted: true
+      isProfileCompleted: true,
     });
 
     console.log(`Created user: ${newUser.email} (${newUser.role})`);
@@ -112,10 +129,12 @@ const createConsultations = async (patient, provider, consultationsData) => {
       const newConsultation = await Consultation.create({
         ...consultationData,
         patient: patient._id,
-        provider: provider._id
+        provider: provider._id,
       });
 
-      console.log(`Created consultation for ${patient.email} on ${new Date(consultationData.date).toLocaleDateString()}`);
+      console.log(
+        `Created consultation for ${patient.email} on ${new Date(consultationData.date).toLocaleDateString()}`,
+      );
       createdConsultations.push(newConsultation);
     } catch (error) {
       console.error(`Error creating consultation:`, error);
@@ -134,22 +153,28 @@ const createConsultations = async (patient, provider, consultationsData) => {
  */
 const createMedicalRecords = async (patient, provider, consultations) => {
   // Create vitals
-  for (let i = 0; i < Math.min(consultations.length, sampleMedicalData.vitals.length); i++) {
+  for (
+    let i = 0;
+    i < Math.min(consultations.length, sampleMedicalData.vitals.length);
+    i++
+  ) {
     try {
       await Vitals.create({
         ...sampleMedicalData.vitals[i],
         patient: patient._id,
         provider: provider._id,
         consultation: consultations[i]._id,
-        date: consultations[i].date
-      });
-      
-      // Update consultation with reference to vitals
-      await Consultation.findByIdAndUpdate(consultations[i]._id, {
-        vitals: consultations[i]._id // Set the same ID to link them
+        date: consultations[i].date,
       });
 
-      console.log(`Created vitals record for consultation on ${new Date(consultations[i].date).toLocaleDateString()}`);
+      // Update consultation with reference to vitals
+      await Consultation.findByIdAndUpdate(consultations[i]._id, {
+        vitals: consultations[i]._id, // Set the same ID to link them
+      });
+
+      console.log(
+        `Created vitals record for consultation on ${new Date(consultations[i].date).toLocaleDateString()}`,
+      );
     } catch (error) {
       console.error(`Error creating vitals record:`, error);
     }
@@ -158,29 +183,33 @@ const createMedicalRecords = async (patient, provider, consultations) => {
   // Create medications (distribute across consultations)
   const medicationsPerConsultation = {
     0: [0, 1], // First consultation gets medications 0 and 1
-    1: [2],    // Second consultation gets medication 2
-    2: [3, 4]  // Third consultation gets medications 3 and 4
+    1: [2], // Second consultation gets medication 2
+    2: [3, 4], // Third consultation gets medications 3 and 4
   };
 
-  for (const [consultationIndex, medicationIndices] of Object.entries(medicationsPerConsultation)) {
+  for (const [consultationIndex, medicationIndices] of Object.entries(
+    medicationsPerConsultation,
+  )) {
     if (consultationIndex >= consultations.length) continue;
-    
+
     const medicationIds = [];
-    
+
     for (const medicationIndex of medicationIndices) {
       if (medicationIndex >= sampleMedicalData.medications.length) continue;
-      
+
       try {
         const newMedication = await Medication.create({
           ...sampleMedicalData.medications[medicationIndex],
           patient: consultations[consultationIndex].patient,
           provider: consultations[consultationIndex].provider,
           consultation: consultations[consultationIndex]._id,
-          date: consultations[consultationIndex].date
+          date: consultations[consultationIndex].date,
         });
 
         medicationIds.push(newMedication._id);
-        console.log(`Created medication record "${sampleMedicalData.medications[medicationIndex].name}" for consultation ${Number(consultationIndex) + 1}`);
+        console.log(
+          `Created medication record "${sampleMedicalData.medications[medicationIndex].name}" for consultation ${Number(consultationIndex) + 1}`,
+        );
       } catch (error) {
         console.error(`Error creating medication record:`, error);
       }
@@ -188,36 +217,50 @@ const createMedicalRecords = async (patient, provider, consultations) => {
 
     // Update consultation with references to medications
     if (medicationIds.length > 0) {
-      await Consultation.findByIdAndUpdate(consultations[consultationIndex]._id, {
-        medications: medicationIds
-      });
+      await Consultation.findByIdAndUpdate(
+        consultations[consultationIndex]._id,
+        {
+          medications: medicationIds,
+        },
+      );
     }
   }
 
   // Create immunizations
   const immunizationsMap = {
     0: 0, // First consultation gets immunization 0
-    2: 1  // Third consultation gets immunization 1
+    2: 1, // Third consultation gets immunization 1
   };
 
-  for (const [consultationIndex, immunizationIndex] of Object.entries(immunizationsMap)) {
-    if (consultationIndex >= consultations.length || immunizationIndex >= sampleMedicalData.immunizations.length) continue;
-    
+  for (const [consultationIndex, immunizationIndex] of Object.entries(
+    immunizationsMap,
+  )) {
+    if (
+      consultationIndex >= consultations.length ||
+      immunizationIndex >= sampleMedicalData.immunizations.length
+    )
+      continue;
+
     try {
       const newImmunization = await Immunization.create({
         ...sampleMedicalData.immunizations[immunizationIndex],
         patient: consultations[consultationIndex].patient,
         provider: consultations[consultationIndex].provider,
         consultation: consultations[consultationIndex]._id,
-        date: consultations[consultationIndex].date
+        date: consultations[consultationIndex].date,
       });
 
       // Update consultation with reference to immunization
-      await Consultation.findByIdAndUpdate(consultations[consultationIndex]._id, {
-        $push: { immunizations: newImmunization._id }
-      });
+      await Consultation.findByIdAndUpdate(
+        consultations[consultationIndex]._id,
+        {
+          $push: { immunizations: newImmunization._id },
+        },
+      );
 
-      console.log(`Created immunization record "${sampleMedicalData.immunizations[immunizationIndex].vaccineName}" for consultation ${Number(consultationIndex) + 1}`);
+      console.log(
+        `Created immunization record "${sampleMedicalData.immunizations[immunizationIndex].vaccineName}" for consultation ${Number(consultationIndex) + 1}`,
+      );
     } catch (error) {
       console.error(`Error creating immunization record:`, error);
     }
@@ -226,29 +269,33 @@ const createMedicalRecords = async (patient, provider, consultations) => {
   // Create lab results
   const labResultsPerConsultation = {
     0: [0, 1], // First consultation gets lab results 0 and 1
-    1: [2],    // Second consultation gets lab result 2
-    2: [3]     // Third consultation gets lab result 3
+    1: [2], // Second consultation gets lab result 2
+    2: [3], // Third consultation gets lab result 3
   };
 
-  for (const [consultationIndex, labResultIndices] of Object.entries(labResultsPerConsultation)) {
+  for (const [consultationIndex, labResultIndices] of Object.entries(
+    labResultsPerConsultation,
+  )) {
     if (consultationIndex >= consultations.length) continue;
-    
+
     const labResultIds = [];
-    
+
     for (const labResultIndex of labResultIndices) {
       if (labResultIndex >= sampleMedicalData.labResults.length) continue;
-      
+
       try {
         const newLabResult = await LabResult.create({
           ...sampleMedicalData.labResults[labResultIndex],
           patient: consultations[consultationIndex].patient,
           provider: consultations[consultationIndex].provider,
           consultation: consultations[consultationIndex]._id,
-          date: consultations[consultationIndex].date
+          date: consultations[consultationIndex].date,
         });
 
         labResultIds.push(newLabResult._id);
-        console.log(`Created lab result "${sampleMedicalData.labResults[labResultIndex].testName}" for consultation ${Number(consultationIndex) + 1}`);
+        console.log(
+          `Created lab result "${sampleMedicalData.labResults[labResultIndex].testName}" for consultation ${Number(consultationIndex) + 1}`,
+        );
       } catch (error) {
         console.error(`Error creating lab result record:`, error);
       }
@@ -256,58 +303,77 @@ const createMedicalRecords = async (patient, provider, consultations) => {
 
     // Update consultation with references to lab results
     if (labResultIds.length > 0) {
-      await Consultation.findByIdAndUpdate(consultations[consultationIndex]._id, {
-        labResults: labResultIds
-      });
+      await Consultation.findByIdAndUpdate(
+        consultations[consultationIndex]._id,
+        {
+          labResults: labResultIds,
+        },
+      );
     }
   }
 
   // Create radiology reports
   const radiologyReportsMap = {
     0: 0, // First consultation gets radiology report 0
-    2: 1  // Third consultation gets radiology report 1
+    2: 1, // Third consultation gets radiology report 1
   };
 
-  for (const [consultationIndex, reportIndex] of Object.entries(radiologyReportsMap)) {
-    if (consultationIndex >= consultations.length || reportIndex >= sampleMedicalData.radiologyReports.length) continue;
-    
+  for (const [consultationIndex, reportIndex] of Object.entries(
+    radiologyReportsMap,
+  )) {
+    if (
+      consultationIndex >= consultations.length ||
+      reportIndex >= sampleMedicalData.radiologyReports.length
+    )
+      continue;
+
     try {
       const newRadiologyReport = await RadiologyReport.create({
         ...sampleMedicalData.radiologyReports[reportIndex],
         patient: consultations[consultationIndex].patient,
         provider: consultations[consultationIndex].provider,
         consultation: consultations[consultationIndex]._id,
-        date: consultations[consultationIndex].date
+        date: consultations[consultationIndex].date,
       });
 
       // Update consultation with reference to radiology report
-      await Consultation.findByIdAndUpdate(consultations[consultationIndex]._id, {
-        $push: { radiologyReports: newRadiologyReport._id }
-      });
+      await Consultation.findByIdAndUpdate(
+        consultations[consultationIndex]._id,
+        {
+          $push: { radiologyReports: newRadiologyReport._id },
+        },
+      );
 
-      console.log(`Created radiology report "${sampleMedicalData.radiologyReports[reportIndex].typeOfScan}" for consultation ${Number(consultationIndex) + 1}`);
+      console.log(
+        `Created radiology report "${sampleMedicalData.radiologyReports[reportIndex].typeOfScan}" for consultation ${Number(consultationIndex) + 1}`,
+      );
     } catch (error) {
       console.error(`Error creating radiology report:`, error);
     }
   }
 
   // Create hospital records
-  if (sampleMedicalData.hospitalRecords.length > 0 && consultations.length > 0) {
+  if (
+    sampleMedicalData.hospitalRecords.length > 0 &&
+    consultations.length > 0
+  ) {
     try {
       const newHospitalRecord = await HospitalRecord.create({
         ...sampleMedicalData.hospitalRecords[0],
         patient: consultations[0].patient,
         provider: consultations[0].provider,
         consultation: consultations[0]._id,
-        date: sampleMedicalData.hospitalRecords[0].date
+        date: sampleMedicalData.hospitalRecords[0].date,
       });
 
       // Update consultation with reference to hospital record
       await Consultation.findByIdAndUpdate(consultations[0]._id, {
-        $push: { hospitalRecords: newHospitalRecord._id }
+        $push: { hospitalRecords: newHospitalRecord._id },
       });
 
-      console.log(`Created hospital record for "${sampleMedicalData.hospitalRecords[0].reasonForHospitalization}"`);
+      console.log(
+        `Created hospital record for "${sampleMedicalData.hospitalRecords[0].reasonForHospitalization}"`,
+      );
     } catch (error) {
       console.error(`Error creating hospital record:`, error);
     }
@@ -321,15 +387,17 @@ const createMedicalRecords = async (patient, provider, consultations) => {
         patient: consultations[0].patient,
         provider: consultations[0].provider,
         consultation: consultations[0]._id,
-        date: sampleMedicalData.surgeryRecords[0].date
+        date: sampleMedicalData.surgeryRecords[0].date,
       });
 
       // Update consultation with reference to surgery record
       await Consultation.findByIdAndUpdate(consultations[0]._id, {
-        $push: { surgeryRecords: newSurgeryRecord._id }
+        $push: { surgeryRecords: newSurgeryRecord._id },
       });
 
-      console.log(`Created surgery record for "${sampleMedicalData.surgeryRecords[0].typeOfSurgery}"`);
+      console.log(
+        `Created surgery record for "${sampleMedicalData.surgeryRecords[0].typeOfSurgery}"`,
+      );
     } catch (error) {
       console.error(`Error creating surgery record:`, error);
     }
@@ -343,16 +411,22 @@ const createMedicalRecords = async (patient, provider, consultations) => {
  * @returns {Promise<void>}
  */
 const createConnections = async (provider, patients) => {
-  for (let i = 0; i < Math.min(patients.length, sampleMedicalData.connections.length); i++) {
+  for (
+    let i = 0;
+    i < Math.min(patients.length, sampleMedicalData.connections.length);
+    i++
+  ) {
     try {
       await Connection.create({
         ...sampleMedicalData.connections[i],
         provider: provider._id,
         patient: patients[i]._id,
-        initiatedBy: provider._id
+        initiatedBy: provider._id,
       });
 
-      console.log(`Created connection between ${provider.email} and ${patients[i].email}`);
+      console.log(
+        `Created connection between ${provider.email} and ${patients[i].email}`,
+      );
     } catch (error) {
       console.error(`Error creating connection:`, error);
     }
@@ -367,22 +441,23 @@ const resetTestData = async () => {
   try {
     // Find test users
     const testEmails = [
-      testAccounts.admin.email, 
-      testAccounts.provider.email, 
-      testAccounts.patient.email
+      testAccounts.admin.email,
+      testAccounts.provider.email,
+      testAccounts.patient.email,
+      "practice_admin.test@email.com",
     ];
-    
+
     const testUsers = await User.find({ email: { $in: testEmails } });
-    const testUserIds = testUsers.map(user => user._id);
-    
+    const testUserIds = testUsers.map((user) => user._id);
+
     // Delete all related data
-    await Consultation.deleteMany({ 
+    await Consultation.deleteMany({
       $or: [
         { patient: { $in: testUserIds } },
-        { provider: { $in: testUserIds } }
-      ]
+        { provider: { $in: testUserIds } },
+      ],
     });
-    
+
     await Vitals.deleteMany({ patient: { $in: testUserIds } });
     await Medication.deleteMany({ patient: { $in: testUserIds } });
     await Immunization.deleteMany({ patient: { $in: testUserIds } });
@@ -390,20 +465,23 @@ const resetTestData = async () => {
     await RadiologyReport.deleteMany({ patient: { $in: testUserIds } });
     await HospitalRecord.deleteMany({ patient: { $in: testUserIds } });
     await SurgeryRecord.deleteMany({ patient: { $in: testUserIds } });
-    
+
     await Connection.deleteMany({
       $or: [
         { patient: { $in: testUserIds } },
-        { provider: { $in: testUserIds } }
-      ]
+        { provider: { $in: testUserIds } },
+      ],
     });
-    
+
+    // Delete practice records owned by test users
+    await Practice.deleteMany({ owner: { $in: testUserIds } });
+
     // Finally, delete the test users themselves
     await User.deleteMany({ email: { $in: testEmails } });
-    
-    console.log('Test data reset completed successfully.');
+
+    console.log("Test data reset completed successfully.");
   } catch (error) {
-    console.error('Error resetting test data:', error);
+    console.error("Error resetting test data:", error);
   }
 };
 
@@ -415,53 +493,106 @@ const resetTestData = async () => {
 const seedDatabase = async (reset = false) => {
   try {
     if (reset) {
-      console.log('Resetting test data...');
+      console.log("Resetting test data...");
       await resetTestData();
     }
 
-    console.log('Creating test users...');
-    
+    console.log("Creating test users...");
+
     // Create admin user
     const admin = await createUser({
       ...testAccounts.admin,
-      role: 'admin'
+      role: "admin",
     });
-    
+
     // Create provider user
     const provider = await createUser({
       ...testAccounts.provider,
-      role: 'provider'
+      role: "provider",
     });
-    
+
     // Create patient user
     const patient = await createUser({
       ...testAccounts.patient,
-      role: 'patient'
+      role: "patient",
     });
-    
-    console.log('Creating consultations...');
-    
+
+    console.log("Creating consultations...");
+
     // Create consultations for patient
-    const patientConsultations = await createConsultations(
-      patient, 
-      provider,
-      [sampleMedicalData.consultations[0], sampleMedicalData.consultations[1]]
-    );
-    
-    console.log('Creating medical records...');
-    
+    const patientConsultations = await createConsultations(patient, provider, [
+      sampleMedicalData.consultations[0],
+      sampleMedicalData.consultations[1],
+    ]);
+
+    console.log("Creating medical records...");
+
     // Create medical records for patient
     await createMedicalRecords(patient, provider, patientConsultations);
-    
-    console.log('Creating connections...');
-    
+
+    console.log("Creating connections...");
+
     // Create connection between provider and patient
     await createConnections(provider, [patient]);
-    
-    console.log('Database seeding completed successfully!');
-    
+
+    // Practice + Practice Admin
+    console.log("Setting up Practice and Practice Admin...");
+    let practice = await Practice.findOne({ owner: provider._id });
+    if (!practice) {
+      practice = await Practice.create({
+        name: `Dr. ${provider.lastName}'s Practice`,
+        owner: provider._id,
+        members: [provider._id],
+        admins: [],
+      });
+      console.log(`Created Practice "${practice.name}"`);
+    }
+    if (!provider.providerProfile?.practiceId) {
+      provider.providerProfile.practiceId = practice._id;
+      await provider.save();
+    }
+
+    const practiceAdminEmail = "practice_admin.test@email.com";
+    let practiceAdmin = await User.findOne({ email: practiceAdminEmail });
+    if (!practiceAdmin) {
+      const hashed = await bcrypt.hash("password@123", 12);
+      practiceAdmin = await User.create({
+        email: practiceAdminEmail,
+        password: hashed,
+        firstName: "Practice",
+        lastName: "Admin",
+        role: "practice_admin",
+        isEmailVerified: true,
+        isProfileCompleted: true,
+        practiceAdminProfile: {
+          practiceId: practice._id,
+          invitedBy: provider._id,
+          invitedAt: new Date(),
+          status: "active",
+        },
+      });
+      console.log(`Created Practice Admin ${practiceAdmin.email}`);
+    } else if (practiceAdmin.practiceAdminProfile?.status !== "active") {
+      practiceAdmin.practiceAdminProfile = {
+        practiceId: practice._id,
+        invitedBy: provider._id,
+        invitedAt: new Date(),
+        status: "active",
+      };
+      await practiceAdmin.save();
+    }
+    if (
+      !practice.admins.some(
+        (id) => id.toString() === practiceAdmin._id.toString(),
+      )
+    ) {
+      practice.admins.push(practiceAdmin._id);
+      await practice.save();
+    }
+
+    console.log("Database seeding completed successfully!");
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error("Error seeding database:", error);
   } finally {
     // Close database connection
     mongoose.connection.close();
@@ -469,15 +600,15 @@ const seedDatabase = async (reset = false) => {
 };
 
 // Check command line arguments for reset flag
-const shouldReset = process.argv.includes('--reset');
+const shouldReset = process.argv.includes("--reset");
 
 // Run the seed function
 seedDatabase(shouldReset)
   .then(() => {
-    console.log('Seed script execution complete.');
+    console.log("Seed script execution complete.");
     process.exit(0);
   })
-  .catch(error => {
-    console.error('Fatal error during seed process:', error);
+  .catch((error) => {
+    console.error("Fatal error during seed process:", error);
     process.exit(1);
-  }); 
+  });

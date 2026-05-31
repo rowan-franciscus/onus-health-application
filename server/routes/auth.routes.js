@@ -24,6 +24,10 @@ router.post('/register', registerValidation, authController.register);
 router.post('/login', authRateLimiter, loginValidation, authController.login);
 router.get('/me', authenticateJWT, authController.getCurrentUser);
 
+// Practice Admin invite acceptance (public)
+router.get('/practice-admin-invite/:token', authController.getPracticeAdminInvite);
+router.post('/practice-admin-invite/:token/accept', authController.acceptPracticeAdminInvite);
+
 // Social authentication
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 

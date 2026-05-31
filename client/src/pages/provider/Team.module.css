@@ -1,0 +1,237 @@
+.container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0;
+}
+
+.inviteBtn {
+  padding: 0.7rem 1.3rem;
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.inviteBtn:hover {
+  background-color: #4c2da3;
+}
+
+.infoBanner {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  background-color: #f5f0ff;
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.bannerIcon {
+  color: #6039cc;
+  font-size: 1.1rem;
+}
+
+.bannerTitle {
+  font-weight: 600;
+  margin: 0;
+}
+
+.bannerBody {
+  color: #555;
+  font-size: 0.9rem;
+  margin: 0.2rem 0 0;
+}
+
+.card {
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  background: white;
+  padding: 0.5rem 0;
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1.2fr 1fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  align-items: center;
+}
+
+.tableHeader {
+  font-weight: 600;
+  color: #444;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.statusActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #e3f7e7;
+  color: #2a8237;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.statusPending {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #fff4e1;
+  color: #b8650b;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.statusRevoked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #f5f5f5;
+  color: #888;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.revokeBtn {
+  background: none;
+  border: none;
+  color: #c0392b;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.revokeBtn:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 450px;
+  padding: 1.5rem;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  color: #888;
+}
+
+.modalField {
+  margin-bottom: 1rem;
+}
+
+.modalLabel {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+.modalInput {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.modalHelper {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.4rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  margin-top: 1.5rem;
+}
+
+.btnSecondary {
+  padding: 0.6rem 1.2rem;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btnPrimary {
+  padding: 0.6rem 1.2rem;
+  background-color: #6039cc;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}

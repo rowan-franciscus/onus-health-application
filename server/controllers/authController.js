@@ -199,6 +199,23 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Block revoked practice admins
+    if (user.role === "practice_admin") {
+      const status = user.practiceAdminProfile && user.practiceAdminProfile.status;
+      if (status === "revoked") {
+        return res.status(403).json({
+          message: "Your Practice Admin access has been revoked.",
+          code: "PRACTICE_ADMIN_REVOKED",
+        });
+      }
+      if (status !== "active") {
+        return res.status(403).json({
+          message: "Please accept your Practice Admin invitation before logging in.",
+          code: "PRACTICE_ADMIN_PENDING",
+        });
+      }
+    }
+
     // Check if provider is verified by admin
     if (user.role === "provider" && user.isProfileCompleted) {
       // Only check verification status after onboarding is completed
@@ -242,6 +259,17 @@ exports.login = async (req, res) => {
     if (user.role === "provider") {
       userData.isVerified =
         user.providerProfile && user.providerProfile.isVerified === true;
+      if (user.providerProfile && user.providerProfile.practiceId) {
+        userData.practiceId = user.providerProfile.practiceId;
+      }
+    }
+
+    if (user.role === "practice_admin" && user.practiceAdminProfile) {
+      userData.practiceId = user.practiceAdminProfile.practiceId;
+      userData.practiceAdminStatus = user.practiceAdminProfile.status;
+      // Practice admins don't have onboarding gates
+      userData.isProfileCompleted = true;
+      userData.onboardingCompleted = true;
     }
 
     res.json({
@@ -782,5 +810,108 @@ exports.resendVerificationEmail = async (req, res) => {
       success: false,
       message: "Server error during email verification",
     });
+  }
+};
+
+/**
+ * GET /auth/practice-admin-invite/:token
+ * Look up the invite. Returns name/email so the accept page can prefill.
+ */
+exports.getPracticeAdminInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findOne({
+      role: "practice_admin",
+      "practiceAdminProfile.inviteToken": token,
+    }).select("firstName lastName email practiceAdminProfile");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Invitation not found" });
+    }
+    if (
+      user.practiceAdminProfile.inviteTokenExpires &&
+      user.practiceAdminProfile.inviteTokenExpires < new Date()
+    ) {
+      return res.status(410).json({ success: false, message: "Invitation has expired" });
+    }
+    if (user.practiceAdminProfile.status !== "pending") {
+      return res.status(409).json({ success: false, message: "Invitation already used" });
+    }
+
+    res.json({
+      success: true,
+      invite: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    logger.error("getPracticeAdminInvite error:", error);
+    res.status(500).json({ success: false, message: "Failed to load invite" });
+  }
+};
+
+/**
+ * POST /auth/practice-admin-invite/:token/accept
+ * Body: { password }
+ * Activates the practice admin account and returns auth tokens.
+ */
+exports.acceptPracticeAdminInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    if (!password || password.length < 8) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Password must be at least 8 characters" });
+    }
+
+    const user = await User.findOne({
+      role: "practice_admin",
+      "practiceAdminProfile.inviteToken": token,
+    });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Invitation not found" });
+    }
+    if (
+      user.practiceAdminProfile.inviteTokenExpires &&
+      user.practiceAdminProfile.inviteTokenExpires < new Date()
+    ) {
+      return res.status(410).json({ success: false, message: "Invitation has expired" });
+    }
+    if (user.practiceAdminProfile.status !== "pending") {
+      return res.status(409).json({ success: false, message: "Invitation already used" });
+    }
+
+    user.password = password;
+    user.isEmailVerified = true;
+    user.isProfileCompleted = true;
+    user.practiceAdminProfile.status = "active";
+    user.practiceAdminProfile.inviteToken = undefined;
+    user.practiceAdminProfile.inviteTokenExpires = undefined;
+    await user.save();
+
+    const authToken = user.generateAuthToken();
+    const refreshToken = user.generateRefreshToken();
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isProfileCompleted: true,
+        onboardingCompleted: true,
+        practiceId: user.practiceAdminProfile.practiceId,
+        practiceAdminStatus: "active",
+      },
+      tokens: { authToken, refreshToken },
+    });
+  } catch (error) {
+    logger.error("acceptPracticeAdminInvite error:", error);
+    res.status(500).json({ success: false, message: "Failed to accept invitation" });
   }
 };

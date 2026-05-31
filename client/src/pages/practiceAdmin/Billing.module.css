@@ -1,0 +1,156 @@
+.container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.exportBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.exportBtn.primary {
+  background-color: #6039cc;
+  color: white;
+  border-color: #6039cc;
+}
+
+.exportBtn.primary:hover {
+  background-color: #4c2da3;
+}
+
+.exportBtn:not(.primary):hover {
+  background-color: #f5f5f5;
+}
+
+.card {
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: white;
+}
+
+.controlsRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.searchWrap {
+  flex: 1;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+}
+
+.search {
+  width: 100%;
+  padding: 0.9rem 1rem 0.9rem 2.5rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: #fafafa;
+  box-sizing: border-box;
+}
+
+.filterSelect {
+  padding: 0.9rem 1rem;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background-color: #fafafa;
+  min-width: 160px;
+  font-size: 0.95rem;
+}
+
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 2fr 3fr 1.2fr;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: center;
+}
+
+.tableHeader {
+  font-weight: 600;
+  color: #444;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+}
+
+.statusPending {
+  background-color: #fff4e1;
+  color: #b8650b;
+}
+
+.statusProcessed {
+  background-color: #e3effa;
+  color: #1d6dc1;
+}
+
+.statusSubmitted {
+  background-color: #e3f7e7;
+  color: #2a8237;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem 0;
+  color: #999;
+  font-style: italic;
+}

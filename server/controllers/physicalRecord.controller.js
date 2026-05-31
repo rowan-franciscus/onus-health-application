@@ -20,15 +20,32 @@ exports.createPhysicalRecord = async (req, res) => {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const connection = await Connection.findOne({ provider: providerId, patient: patientId });
-    if (!connection) {
-      fs.unlink(req.file.path, () => {});
-      return res.status(403).json({ message: 'No connection to this patient' });
+    let recordProviderId = providerId;
+
+    if (req.user.role === 'practice_admin') {
+      const { canPracticeAdminAccessPatient } = require('../middleware/auth.middleware');
+      const ok = await canPracticeAdminAccessPatient(req.user.id, patientId);
+      if (!ok) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(403).json({ message: 'Patient not in your practice' });
+      }
+      // Attribute the upload to the practice owner so existing queries continue to work.
+      const Practice = require('../models/Practice');
+      const User = require('../models/User');
+      const adminUser = await User.findById(req.user.id).select('practiceAdminProfile');
+      const practice = await Practice.findById(adminUser.practiceAdminProfile.practiceId).select('owner');
+      recordProviderId = practice.owner;
+    } else {
+      const connection = await Connection.findOne({ provider: providerId, patient: patientId });
+      if (!connection) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(403).json({ message: 'No connection to this patient' });
+      }
     }
 
     const record = await PhysicalRecord.create({
       patient: patientId,
-      provider: providerId,
+      provider: recordProviderId,
       documentType: 'scanned_record',
       description: req.body.description || '',
       file: {
@@ -67,6 +84,12 @@ exports.getPhysicalRecords = async (req, res) => {
       const connection = await Connection.findOne({ provider: userId, patient: patientId });
       if (!connection) {
         return res.status(403).json({ message: 'No connection to this patient' });
+      }
+    } else if (userRole === 'practice_admin') {
+      const { canPracticeAdminAccessPatient } = require('../middleware/auth.middleware');
+      const ok = await canPracticeAdminAccessPatient(userId, patientId);
+      if (!ok) {
+        return res.status(403).json({ message: 'Patient not in your practice' });
       }
     } else if (userRole !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });

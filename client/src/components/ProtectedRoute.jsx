@@ -82,6 +82,8 @@ const ProtectedRoute = ({
       return <Navigate to="/provider/dashboard" replace />;
     } else if (user?.role === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
+    } else if (user?.role === 'practice_admin') {
+      return <Navigate to="/practice-admin/patients" replace />;
     }
     
     // Default fallback

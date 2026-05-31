@@ -149,6 +149,23 @@
   color: #333;
 }
 
+.userNameWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.roleBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #5930e5;
+  background-color: #f0ebff;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
 /* Responsive adjustments */
 @media screen and (max-width: 768px) {
   .header {

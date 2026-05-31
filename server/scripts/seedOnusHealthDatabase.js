@@ -1,41 +1,54 @@
 /**
  * Seed Onus Health Database
- * 
+ *
  * This script specifically seeds the onus-health database with test users
  * and related data.
  */
 
-require('dotenv').config();
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const testAccounts = require('../config/testAccounts');
+require("dotenv").config();
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const testAccounts = require("../config/testAccounts");
 
 // Explicitly set the database name to ensure we're targeting the right database
-const connectionString = process.env.MONGODB_ATLAS_URI || 'mongodb://localhost:27017/onus-health';
+const connectionString =
+  process.env.MONGODB_ATLAS_URI || "mongodb://localhost:27017/onus-health";
 
 // Ensure the connection string has the onus-health database
 let modifiedConnectionString = connectionString;
-if (connectionString.includes('mongodb+srv://')) {
+if (connectionString.includes("mongodb+srv://")) {
   // For MongoDB Atlas
-  if (!connectionString.includes('/onus-health?') && connectionString.includes('/?')) {
-    modifiedConnectionString = connectionString.replace('/?', '/onus-health?');
-  } else if (!connectionString.includes('/onus-health')) {
+  if (
+    !connectionString.includes("/onus-health?") &&
+    connectionString.includes("/?")
+  ) {
+    modifiedConnectionString = connectionString.replace("/?", "/onus-health?");
+  } else if (!connectionString.includes("/onus-health")) {
     // If no database and no query params
-    modifiedConnectionString = connectionString + '/onus-health';
+    modifiedConnectionString = connectionString + "/onus-health";
   }
 } else {
   // For local MongoDB
-  if (!connectionString.includes('/onus-health')) {
-    modifiedConnectionString = 'mongodb://localhost:27017/onus-health';
+  if (!connectionString.includes("/onus-health")) {
+    modifiedConnectionString = "mongodb://localhost:27017/onus-health";
   }
 }
 
 // Import models directly to ensure we have all required models
-let User, Connection, Consultation, Vitals, Medication, Immunization, LabResult, RadiologyReport, HospitalRecord, SurgeryRecord;
+let User,
+  Connection,
+  Consultation,
+  Vitals,
+  Medication,
+  Immunization,
+  LabResult,
+  RadiologyReport,
+  HospitalRecord,
+  SurgeryRecord;
 
 try {
   // Try importing from models/index.js first
-  const models = require('../models');
+  const models = require("../models");
   User = models.User;
   Connection = models.Connection;
   Consultation = models.Consultation;
@@ -48,9 +61,9 @@ try {
   SurgeryRecord = models.SurgeryRecord;
 } catch (error) {
   // If index.js not available, try direct imports
-  User = require('../models/User');
-  Connection = require('../models/Connection');
-  Consultation = require('../models/Consultation');
+  User = require("../models/User");
+  Connection = require("../models/Connection");
+  Consultation = require("../models/Consultation");
   // Add other models as needed
 }
 
@@ -59,11 +72,13 @@ try {
  */
 async function connectToDatabase() {
   try {
-    console.log(`Connecting to MongoDB: ${modifiedConnectionString.replace(/\/\/(.+?):(.+?)@/, '//***:***@')}`);
+    console.log(
+      `Connecting to MongoDB: ${modifiedConnectionString.replace(/\/\/(.+?):(.+?)@/, "//***:***@")}`,
+    );
     await mongoose.connect(modifiedConnectionString);
-    console.log('Connected to MongoDB successfully');
+    console.log("Connected to MongoDB successfully");
   } catch (error) {
-    console.error('MongoDB connection error:', error.message);
+    console.error("MongoDB connection error:", error.message);
     process.exit(1);
   }
 }
@@ -77,20 +92,20 @@ async function createUser(userData) {
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ email: userData.email });
-    
+
     if (existingUser) {
       console.log(`User ${userData.email} already exists, skipping creation.`);
       return existingUser;
     }
-    
+
     // Create new user directly (bypassing middleware to set isEmailVerified = true)
     const hashedPassword = await bcrypt.hash(userData.password, 12);
-    
+
     const newUser = await User.create({
       ...userData,
       password: hashedPassword,
       isEmailVerified: true, // Bypass email verification for test accounts
-      isProfileCompleted: true
+      isProfileCompleted: true,
     });
 
     console.log(`Created user: ${newUser.email} (${newUser.role})`);
@@ -109,33 +124,37 @@ async function createConsultations(patient, provider) {
     // Sample consultation data
     const consultationsData = [
       {
-        title: 'Annual Physical Examination',
-        date: new Date('2023-06-15'),
-        summary: 'Regular check-up, patient generally healthy with controlled hypertension and diabetes.',
-        notes: 'Patient reports feeling well. Continue current medications and follow-up in 6 months.',
+        title: "Annual Physical Examination",
+        date: new Date("2023-06-15"),
+        summary:
+          "Regular check-up, patient generally healthy with controlled hypertension and diabetes.",
+        notes:
+          "Patient reports feeling well. Continue current medications and follow-up in 6 months.",
         general: {
-          specialistName: 'Dr. Jane Smith',
-          specialty: 'General Practice',
-          practice: 'Cityview Medical Center',
-          reasonForVisit: 'Annual check-up'
+          specialistName: "Dr. Jane Smith",
+          specialty: "General Practice",
+          practice: "Cityview Medical Center",
+          reasonForVisit: "Annual check-up",
         },
-        status: 'completed',
-        isSharedWithPatient: true
+        status: "completed",
+        isSharedWithPatient: true,
       },
       {
-        title: 'Diabetes Follow-up',
-        date: new Date('2023-09-03'),
-        summary: 'Follow-up for diabetes management. A1C levels improved since last visit.',
-        notes: 'Patient adhering to medication regimen. Discussed diet modifications and exercise plan.',
+        title: "Diabetes Follow-up",
+        date: new Date("2023-09-03"),
+        summary:
+          "Follow-up for diabetes management. A1C levels improved since last visit.",
+        notes:
+          "Patient adhering to medication regimen. Discussed diet modifications and exercise plan.",
         general: {
-          specialistName: 'Dr. Jane Smith',
-          specialty: 'General Practice',
-          practice: 'Cityview Medical Center',
-          reasonForVisit: 'Diabetes follow-up'
+          specialistName: "Dr. Jane Smith",
+          specialty: "General Practice",
+          practice: "Cityview Medical Center",
+          reasonForVisit: "Diabetes follow-up",
         },
-        status: 'completed',
-        isSharedWithPatient: true
-      }
+        status: "completed",
+        isSharedWithPatient: true,
+      },
     ];
 
     const createdConsultations = [];
@@ -145,10 +164,12 @@ async function createConsultations(patient, provider) {
         const newConsultation = await Consultation.create({
           ...consultationData,
           patient: patient._id,
-          provider: provider._id
+          provider: provider._id,
         });
 
-        console.log(`Created consultation for ${patient.email} on ${new Date(consultationData.date).toLocaleDateString()}`);
+        console.log(
+          `Created consultation for ${patient.email} on ${new Date(consultationData.date).toLocaleDateString()}`,
+        );
         createdConsultations.push(newConsultation);
       } catch (error) {
         console.error(`Error creating consultation:`, error);
@@ -158,7 +179,7 @@ async function createConsultations(patient, provider) {
 
     return createdConsultations;
   } catch (error) {
-    console.error('Error creating consultations:', error);
+    console.error("Error creating consultations:", error);
     return [];
   }
 }
@@ -177,58 +198,60 @@ async function createMedicalRecords(patient, provider, consultations) {
         date: consultation.date,
         heartRate: {
           value: Math.floor(Math.random() * 15) + 65, // Random between 65-80
-          unit: 'bpm'
+          unit: "bpm",
         },
         bloodPressure: {
           systolic: Math.floor(Math.random() * 30) + 120, // Random between 120-150
           diastolic: Math.floor(Math.random() * 20) + 70, // Random between 70-90
-          unit: 'mmHg'
+          unit: "mmHg",
         },
         weight: {
           value: Math.floor(Math.random() * 30) + 160, // Random between 160-190
-          unit: 'kg'
+          unit: "kg",
         },
         height: {
           value: 175, // 5'9" in cm
-          unit: 'cm'
+          unit: "cm",
         },
         bodyTemperature: {
           value: parseFloat((Math.random() * 0.8 + 36.5).toFixed(1)), // Random around 36.5-37.3
-          unit: '°C'
+          unit: "°C",
         },
         bloodGlucose: {
           value: Math.floor(Math.random() * 50) + 100, // Random between 100-150
-          unit: 'mmol/L',
-          measurementType: 'random'
-        }
+          unit: "mmol/L",
+          measurementType: "random",
+        },
       });
-      console.log(`Created vitals record for consultation on ${new Date(consultation.date).toLocaleDateString()}`);
+      console.log(
+        `Created vitals record for consultation on ${new Date(consultation.date).toLocaleDateString()}`,
+      );
     }
 
     // Create medications
     const medications = [
       {
-        name: 'Lisinopril',
+        name: "Lisinopril",
         dosage: {
-          value: '10',
-          unit: 'mg'
+          value: "10",
+          unit: "mg",
         },
-        frequency: 'Once daily',
-        reasonForPrescription: 'Hypertension',
-        startDate: new Date('2023-01-15'),
-        endDate: null // Ongoing
+        frequency: "Once daily",
+        reasonForPrescription: "Hypertension",
+        startDate: new Date("2023-01-15"),
+        endDate: null, // Ongoing
       },
       {
-        name: 'Metformin',
+        name: "Metformin",
         dosage: {
-          value: '500',
-          unit: 'mg'
+          value: "500",
+          unit: "mg",
         },
-        frequency: 'Twice daily',
-        reasonForPrescription: 'Type 2 Diabetes',
-        startDate: new Date('2023-01-15'),
-        endDate: null // Ongoing
-      }
+        frequency: "Twice daily",
+        reasonForPrescription: "Type 2 Diabetes",
+        startDate: new Date("2023-01-15"),
+        endDate: null, // Ongoing
+      },
     ];
 
     for (const medication of medications) {
@@ -237,7 +260,7 @@ async function createMedicalRecords(patient, provider, consultations) {
         patient: patient._id,
         provider: provider._id,
         consultation: consultations[0]._id,
-        date: consultations[0].date
+        date: consultations[0].date,
       });
       console.log(`Created medication record: ${medication.name}`);
     }
@@ -248,29 +271,31 @@ async function createMedicalRecords(patient, provider, consultations) {
       provider: provider._id,
       consultation: consultations[0]._id,
       date: consultations[0].date,
-      vaccineName: 'Influenza',
-      dateAdministered: new Date('2023-05-10'),
-      vaccineSerialNumber: 'FL23-45678',
-      nextDueDate: new Date('2024-05-10')
+      vaccineName: "Influenza",
+      dateAdministered: new Date("2023-05-10"),
+      vaccineSerialNumber: "FL23-45678",
+      nextDueDate: new Date("2024-05-10"),
     });
-    console.log('Created immunization record: Influenza');
+    console.log("Created immunization record: Influenza");
 
     // Create lab results
     const labResults = [
       {
-        testName: 'Comprehensive Metabolic Panel',
-        labName: 'City Medical Laboratory',
-        dateOfTest: new Date('2023-06-15'),
-        results: 'Within normal limits except for slightly elevated glucose (115 mg/dL)',
-        comments: 'Consistent with controlled diabetes'
+        testName: "Comprehensive Metabolic Panel",
+        labName: "City Medical Laboratory",
+        dateOfTest: new Date("2023-06-15"),
+        results:
+          "Within normal limits except for slightly elevated glucose (115 mg/dL)",
+        comments: "Consistent with controlled diabetes",
       },
       {
-        testName: 'Lipid Panel',
-        labName: 'City Medical Laboratory',
-        dateOfTest: new Date('2023-06-15'),
-        results: 'Total Cholesterol: 195, HDL: 45, LDL: 120, Triglycerides: 150',
-        comments: 'Cholesterol levels are borderline but acceptable'
-      }
+        testName: "Lipid Panel",
+        labName: "City Medical Laboratory",
+        dateOfTest: new Date("2023-06-15"),
+        results:
+          "Total Cholesterol: 195, HDL: 45, LDL: 120, Triglycerides: 150",
+        comments: "Cholesterol levels are borderline but acceptable",
+      },
     ];
 
     for (const labResult of labResults) {
@@ -279,7 +304,7 @@ async function createMedicalRecords(patient, provider, consultations) {
         patient: patient._id,
         provider: provider._id,
         consultation: consultations[0]._id,
-        date: consultations[0].date
+        date: consultations[0].date,
       });
       console.log(`Created lab result: ${labResult.testName}`);
     }
@@ -290,12 +315,12 @@ async function createMedicalRecords(patient, provider, consultations) {
       provider: provider._id,
       consultation: consultations[0]._id,
       date: consultations[0].date,
-      typeOfScan: 'X-Ray',
-      bodyPartExamined: 'Chest',
-      findings: 'No acute cardiopulmonary disease. Heart size normal.',
-      recommendations: 'No follow-up required'
+      typeOfScan: "X-Ray",
+      bodyPartExamined: "Chest",
+      findings: "No acute cardiopulmonary disease. Heart size normal.",
+      recommendations: "No follow-up required",
     });
-    console.log('Created radiology report: Chest X-Ray');
+    console.log("Created radiology report: Chest X-Ray");
 
     // Create a hospital record
     await HospitalRecord.create({
@@ -303,20 +328,25 @@ async function createMedicalRecords(patient, provider, consultations) {
       provider: provider._id,
       consultation: consultations[0]._id,
       date: consultations[0].date,
-      admissionDate: new Date('2019-03-10'),
-      dischargeDate: new Date('2019-03-15'),
-      hospitalName: 'City General Hospital',
-      reasonForHospitalization: 'Community-acquired pneumonia',
-      treatmentsReceived: ['IV antibiotics', 'Oxygen therapy', 'Chest physiotherapy'],
-      attendingDoctors: [
-        { name: 'Dr. James Wilson', specialty: 'Pulmonology' },
-        { name: 'Dr. Lisa Cuddy', specialty: 'Internal Medicine' }
+      admissionDate: new Date("2019-03-10"),
+      dischargeDate: new Date("2019-03-15"),
+      hospitalName: "City General Hospital",
+      reasonForHospitalization: "Community-acquired pneumonia",
+      treatmentsReceived: [
+        "IV antibiotics",
+        "Oxygen therapy",
+        "Chest physiotherapy",
       ],
-      dischargeSummary: 'Patient responded well to antibiotics. Discharged home on oral antibiotics.',
-      investigationsDone: ['Blood cultures', 'Chest X-ray', 'Sputum culture'],
-      admissionType: 'Emergency'
+      attendingDoctors: [
+        { name: "Dr. James Wilson", specialty: "Pulmonology" },
+        { name: "Dr. Lisa Cuddy", specialty: "Internal Medicine" },
+      ],
+      dischargeSummary:
+        "Patient responded well to antibiotics. Discharged home on oral antibiotics.",
+      investigationsDone: ["Blood cultures", "Chest X-ray", "Sputum culture"],
+      admissionType: "Emergency",
     });
-    console.log('Created hospital record for pneumonia');
+    console.log("Created hospital record for pneumonia");
 
     // Create a surgery record
     await SurgeryRecord.create({
@@ -324,31 +354,32 @@ async function createMedicalRecords(patient, provider, consultations) {
       provider: provider._id,
       consultation: consultations[0]._id,
       date: consultations[0].date,
-      typeOfSurgery: 'Laparoscopic Appendectomy',
-      reason: 'Acute appendicitis',
-      complications: 'None',
-      recoveryNotes: 'Uncomplicated recovery. Patient discharged after 24 hours.',
+      typeOfSurgery: "Laparoscopic Appendectomy",
+      reason: "Acute appendicitis",
+      complications: "None",
+      recoveryNotes:
+        "Uncomplicated recovery. Patient discharged after 24 hours.",
       surgeon: {
-        name: 'Dr. Robert Chase',
-        specialty: 'General Surgery'
+        name: "Dr. Robert Chase",
+        specialty: "General Surgery",
       },
-      anesthesiaType: 'General',
+      anesthesiaType: "General",
       anesthesiologist: {
-        name: 'Dr. Maria Johnson'
+        name: "Dr. Maria Johnson",
       },
       duration: {
         hours: 1,
-        minutes: 30
+        minutes: 30,
       },
-      hospitalName: 'City General Hospital',
-      preOpDiagnosis: 'Suspected acute appendicitis',
-      postOpDiagnosis: 'Confirmed acute appendicitis',
-      procedureDetails: 'Standard laparoscopic approach with three ports. Appendix removed without complications.'
+      hospitalName: "City General Hospital",
+      preOpDiagnosis: "Suspected acute appendicitis",
+      postOpDiagnosis: "Confirmed acute appendicitis",
+      procedureDetails:
+        "Standard laparoscopic approach with three ports. Appendix removed without complications.",
     });
-    console.log('Created surgery record for appendectomy');
-
+    console.log("Created surgery record for appendectomy");
   } catch (error) {
-    console.error('Error creating medical records:', error);
+    console.error("Error creating medical records:", error);
     console.error(error.message);
   }
 }
@@ -361,18 +392,20 @@ async function createConnection(provider, patient) {
     // Check if connection already exists
     const existingConnection = await Connection.findOne({
       provider: provider._id,
-      patient: patient._id
+      patient: patient._id,
     });
 
     if (existingConnection) {
-      console.log(`Connection between ${provider.email} and ${patient.email} already exists.`);
+      console.log(
+        `Connection between ${provider.email} and ${patient.email} already exists.`,
+      );
       return existingConnection;
     }
 
     const connection = await Connection.create({
       provider: provider._id,
       patient: patient._id,
-      status: 'approved',
+      status: "approved",
       initiatedBy: provider._id, // Required field: who initiated the connection
       initiatedAt: new Date(),
       statusUpdatedAt: new Date(),
@@ -384,14 +417,16 @@ async function createConnection(provider, patient) {
         viewLabResults: true,
         viewRadiologyReports: true,
         viewHospitalRecords: true,
-        viewSurgeryRecords: true
-      }
+        viewSurgeryRecords: true,
+      },
     });
 
-    console.log(`Created connection between ${provider.email} and ${patient.email}`);
+    console.log(
+      `Created connection between ${provider.email} and ${patient.email}`,
+    );
     return connection;
   } catch (error) {
-    console.error('Error creating connection:', error);
+    console.error("Error creating connection:", error);
     console.error(error.message);
   }
 }
@@ -401,45 +436,45 @@ async function createConnection(provider, patient) {
  */
 async function seedDatabase() {
   try {
-    console.log('Creating test users...');
-    
+    console.log("Creating test users...");
+
     // Create admin user
     const admin = await createUser({
       ...testAccounts.admin,
-      role: 'admin'
+      role: "admin",
     });
-    
+
     // Create provider user
     const provider = await createUser({
       ...testAccounts.provider,
-      role: 'provider'
+      role: "provider",
     });
-    
+
     // Create patient user
     const patient = await createUser({
       ...testAccounts.patient,
-      role: 'patient'
+      role: "patient",
     });
-    
+
     // Create consultations
-    console.log('\nCreating consultations...');
+    console.log("\nCreating consultations...");
     const consultations = await createConsultations(patient, provider);
-    
+
     // Create medical records
-    console.log('\nCreating medical records...');
+    console.log("\nCreating medical records...");
     await createMedicalRecords(patient, provider, consultations);
-    
+
     // Create connection between provider and patient
-    console.log('\nCreating provider-patient connection...');
+    console.log("\nCreating provider-patient connection...");
     await createConnection(provider, patient);
-    
-    console.log('\nDatabase seeding completed successfully!');
+
+    console.log("\nDatabase seeding completed successfully!");
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error("Error seeding database:", error);
   } finally {
     // Close database connection
     mongoose.connection.close();
-    console.log('Database connection closed.');
+    console.log("Database connection closed.");
   }
 }
 
@@ -449,7 +484,7 @@ async function seedDatabase() {
     await connectToDatabase();
     await seedDatabase();
   } catch (error) {
-    console.error('Seed script error:', error);
+    console.error("Seed script error:", error);
     process.exit(1);
   }
-})(); 
+})();
