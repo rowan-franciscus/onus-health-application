@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import { PASSWORD_NUMBER_REGEX, PASSWORD_SPECIAL_REGEX } from './passwordPolicy';
 
 /**
  * Common validation schemas for forms
@@ -13,10 +14,8 @@ const validation = {
         .required('Email is required'),
       password: Yup.string()
         .min(8, 'Password must be at least 8 characters')
-        .matches(
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-        )
+        .matches(PASSWORD_NUMBER_REGEX, 'Password must contain at least one number')
+        .matches(PASSWORD_SPECIAL_REGEX, 'Password must contain at least one special character')
         .required('Password is required'),
       confirmPassword: Yup.string()
         .oneOf([Yup.ref('password'), null], 'Passwords must match')
@@ -49,10 +48,8 @@ const validation = {
     passwordReset: {
       password: Yup.string()
         .min(8, 'Password must be at least 8 characters')
-        .matches(
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-          'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-        )
+        .matches(PASSWORD_NUMBER_REGEX, 'Password must contain at least one number')
+        .matches(PASSWORD_SPECIAL_REGEX, 'Password must contain at least one special character')
         .required('Password is required'),
       confirmPassword: Yup.string()
         .oneOf([Yup.ref('password'), null], 'Passwords must match')

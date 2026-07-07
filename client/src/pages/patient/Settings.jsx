@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import styles from './Settings.module.css';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -316,13 +317,6 @@ const PatientSettings = () => {
     setPasswordData({ ...passwordData, [name]: value });
   };
 
-  // Validate password
-  const validatePassword = (password) => {
-    // Password must be at least 8 characters, include one uppercase, one number and one special char
-    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
-    return regex.test(password);
-  };
-
   // Change password
   const handleChangePassword = async () => {
     // Validate passwords
@@ -330,9 +324,10 @@ const PatientSettings = () => {
       toast.error('New passwords do not match');
       return;
     }
-    
-    if (!validatePassword(passwordData.newPassword)) {
-      toast.error('Password does not meet requirements');
+
+    const passwordError = validatePassword(passwordData.newPassword);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
     
@@ -685,7 +680,6 @@ const PatientSettings = () => {
             <p>Password must:</p>
             <ul>
               <li>Be at least 8 characters long</li>
-              <li>Include at least one uppercase letter</li>
               <li>Include at least one number</li>
               <li>Include at least one special character</li>
             </ul>

@@ -8,6 +8,7 @@ const Consultation = require('../models/Consultation');
 const Connection = require('../models/Connection');
 const logger = require('../utils/logger');
 const mongoose = require('mongoose');
+const { validatePassword } = require('../utils/passwordPolicy');
 
 /**
  * Get provider dashboard data
@@ -515,7 +516,14 @@ exports.changePassword = async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, message: 'Current password and new password are required' });
     }
-    
+
+    // Enforce the shared password complexity policy (same rule as every other
+    // password entry point). This endpoint previously had no complexity check.
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ success: false, message: passwordError });
+    }
+
     // Find provider
     const provider = await User.findById(providerId);
     

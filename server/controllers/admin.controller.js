@@ -5,6 +5,7 @@ const { ApiError } = require('../middleware/error.middleware');
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
+const { validatePassword } = require('../utils/passwordPolicy');
 
 /**
  * Get all users with optional filtering
@@ -841,10 +842,11 @@ const changePassword = async (req, res) => {
       });
     }
     
-    if (newPassword.length < 8) {
-      return res.status(400).json({ 
-        message: 'New password must be at least 8 characters long' 
-      });
+    // Enforce the shared password complexity policy (same rule as every other
+    // password entry point).
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
     }
     
     // Find user

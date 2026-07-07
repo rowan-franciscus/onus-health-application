@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
+const { validatePassword } = require('../utils/passwordPolicy');
 
 /**
  * Get current user profile
@@ -56,12 +57,18 @@ exports.getCurrentUser = async (req, res) => {
 exports.updateCurrentUser = async (req, res) => {
   try {
     const userId = req.user.id;
-    const updates = req.body;
-    
-    // Don't allow role updates through this endpoint
-    delete updates.role;
-    delete updates.verified;
-    
+
+    // SECURITY: whitelist editable fields to prevent mass assignment of privileged
+    // fields (role, isVerified, isEmailVerified, isProfileCompleted, *Profile
+    // subdocuments, etc.). Never spread req.body directly into a $set.
+    const allowedTopLevelFields = ['firstName', 'lastName', 'title', 'phone', 'profileImage'];
+    const updates = {};
+    allowedTopLevelFields.forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        updates[key] = req.body[key];
+      }
+    });
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updates },
@@ -134,21 +141,36 @@ exports.updateUserProfile = async (req, res) => {
       };
       delete updateData.patientProfile;
     } else if (currentUser.role === 'provider' && updateData.providerProfile) {
-      // Preserve verification status for providers
-      if (currentUser.providerProfile?.isVerified) {
-        updateData.providerProfile.isVerified = true;
-      }
-      // Deep merge provider profile data
+      // SECURITY: never allow a provider to self-assign privileged fields via a
+      // profile update. Verification (isVerified), practice membership (practiceId)
+      // and onboarding status are controlled exclusively by admin/practice flows.
+      // Stripping these here closes a privilege-escalation path where an unverified
+      // provider posts { providerProfile: { isVerified: true } } to gain access to
+      // patient clinical data without admin approval.
+      const incomingProviderProfile = { ...updateData.providerProfile };
+      delete incomingProviderProfile.isVerified;
+      delete incomingProviderProfile.practiceId;
+      delete incomingProviderProfile.termsAccepted;
+
+      // Deep merge provider profile data (verification status is always preserved
+      // from the existing record, never taken from the request).
+      const existingIsVerified = currentUser.providerProfile?.isVerified === true;
       currentUser.providerProfile = {
         ...currentUser.providerProfile,
-        ...updateData.providerProfile
+        ...incomingProviderProfile,
+        isVerified: existingIsVerified
       };
       delete updateData.providerProfile;
     }
-    
-    // Update basic fields
-    Object.keys(updateData).forEach(key => {
-      currentUser[key] = updateData[key];
+
+    // SECURITY: whitelist the top-level fields a user may edit about themselves.
+    // Anything else (role, isVerified, isProfileCompleted, isOnusUser, adminProfile,
+    // practiceAdminProfile, registeredBy, etc.) is ignored to prevent mass assignment.
+    const allowedTopLevelFields = ['firstName', 'lastName', 'title', 'phone', 'profileImage'];
+    allowedTopLevelFields.forEach(key => {
+      if (Object.prototype.hasOwnProperty.call(updateData, key)) {
+        currentUser[key] = updateData[key];
+      }
     });
     
     // Save the updated user
@@ -331,10 +353,11 @@ exports.changePassword = async (req, res) => {
       });
     }
     
-    if (newPassword.length < 8) {
-      return res.status(400).json({ 
-        message: 'New password must be at least 8 characters long' 
-      });
+    // Enforce the shared password complexity policy (same rule as registration,
+    // password reset, and invite acceptance).
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
     }
     
     // Find user

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import { toast } from 'react-toastify';
 
 import Card from '../../components/common/Card';
@@ -24,7 +25,10 @@ const PracticeAdminSettings = () => {
     const e = {};
     if (!pw.currentPassword) e.currentPassword = 'Current password is required';
     if (!pw.newPassword) e.newPassword = 'New password is required';
-    else if (pw.newPassword.length < 8) e.newPassword = 'Password must be at least 8 characters';
+    else {
+      const passwordError = validatePassword(pw.newPassword);
+      if (passwordError) e.newPassword = passwordError;
+    }
     if (!pw.confirmPassword) e.confirmPassword = 'Please confirm your new password';
     else if (pw.newPassword !== pw.confirmPassword) e.confirmPassword = 'Passwords do not match';
     setErrors(e);

@@ -9,6 +9,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/User');
 const config = require('./environment');
+const logger = require('../utils/logger');
 
 // Configure JWT Strategy
 const jwtOptions = {
@@ -19,33 +20,28 @@ const jwtOptions = {
 passport.use(
   new JwtStrategy(jwtOptions, async (payload, done) => {
     try {
-      // Log payload information for debugging
-      console.log('JWT payload received:', {
-        id: payload.id,
-        email: payload.email,
-        role: payload.role,
-        isEmailVerified: payload.isEmailVerified
-      });
-      
+      // SECURITY: only accept tokens explicitly minted as API access tokens.
+      // This rejects email-verification and password-reset tokens (which are signed
+      // with the same secret) from being replayed as bearer credentials.
+      if (payload.type !== 'access') {
+        return done(null, false);
+      }
+
       // Find the user by ID from JWT payload
       const user = await User.findById(payload.id).select('-password');
-      
+
       if (!user) {
-        console.error(`JWT Auth: User not found for ID ${payload.id}`);
         return done(null, false);
       }
-      
+
       // Check if user is verified
       if (!user.isEmailVerified) {
-        console.error(`JWT Auth: User ${user.email} is not email verified`);
         return done(null, false);
       }
-      
-      // Log successful authentication
-      console.log(`JWT Auth: Successfully authenticated ${user.email} (${user.role})`);
+
       return done(null, user);
     } catch (error) {
-      console.error('JWT Auth: Error during authentication:', error);
+      logger.error('JWT Auth: Error during authentication:', error);
       return done(error, false);
     }
   })

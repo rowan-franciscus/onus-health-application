@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { authStart, authFail } from '../../store/slices/authSlice';
@@ -66,8 +67,11 @@ const SignUp = () => {
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    } else {
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) {
+        newErrors.password = passwordError;
+      }
     }
     
     if (!formData.confirmPassword) {

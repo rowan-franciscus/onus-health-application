@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -96,9 +97,12 @@ const Settings = () => {
     if (!passwordData.newPassword) {
       errors.newPassword = 'New password is required';
       isValid = false;
-    } else if (passwordData.newPassword.length < 8) {
-      errors.newPassword = 'Password must be at least 8 characters';
-      isValid = false;
+    } else {
+      const passwordError = validatePassword(passwordData.newPassword);
+      if (passwordError) {
+        errors.newPassword = passwordError;
+        isValid = false;
+      }
     }
     
     if (!passwordData.confirmPassword) {
