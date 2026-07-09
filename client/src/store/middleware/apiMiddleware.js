@@ -188,8 +188,13 @@ api.interceptors.response.use(
 
     // Handle other API errors
     if (error.response) {
-      // Server responded with a status code outside of 2xx range
-      const errorMessage = error.response.data?.message || 'An error occurred';
+      // Server responded with a status code outside of 2xx range.
+      // Prefer an explicit message; otherwise surface the first express-validator
+      // error (validation failures return { errors: [{ msg }] }, not { message }).
+      const validationMsg = Array.isArray(error.response.data?.errors)
+        ? error.response.data.errors[0]?.msg
+        : undefined;
+      const errorMessage = error.response.data?.message || validationMsg || 'An error occurred';
       error.userMessage = errorMessage;
     } else if (error.request) {
       // Request was made but no response received

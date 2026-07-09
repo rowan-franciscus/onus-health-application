@@ -4,14 +4,28 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const passport = require('passport');
 const { authenticateJWT, authRateLimiter, passwordResetLimiter } = require('../middleware/auth.middleware');
+const { validatePassword } = require('../utils/passwordPolicy');
+
+// Reusable strong-password rule. Delegates to the shared password policy so the
+// complexity rule stays identical across every entry point (see utils/passwordPolicy).
+const strongPassword = (field = 'password') =>
+  body(field).custom((value) => {
+    const error = validatePassword(value);
+    if (error) {
+      throw new Error(error);
+    }
+    return true;
+  });
 
 // Validation middleware
 const registerValidation = [
   body('email').isEmail().withMessage('Enter a valid email'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  strongPassword('password'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
-  body('role').isIn(['patient', 'provider', 'admin']).withMessage('Invalid role')
+  // Self-registration may only create patient or provider accounts.
+  // Admin and practice_admin accounts are provisioned through privileged, authenticated flows only.
+  body('role').optional().isIn(['patient', 'provider']).withMessage('Invalid role')
 ];
 
 const loginValidation = [
@@ -111,7 +125,7 @@ router.post('/password-reset',
   passwordResetLimiter,
   [
     body('token').notEmpty().withMessage('Token is required'),
-    body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    strongPassword('newPassword')
   ],
   authController.resetPassword
 );

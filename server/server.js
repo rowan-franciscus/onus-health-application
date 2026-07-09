@@ -7,6 +7,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
 const path = require('path');
 const dotenv = require('dotenv');
 
@@ -55,6 +56,19 @@ app.disable('etag');
 // Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// SECURITY: strip MongoDB operator characters ($ and .) from user input to prevent
+// NoSQL/operator injection (e.g. { "email": { "$ne": null } }) in queries built from
+// req.body, req.query, or req.params.
+app.use(mongoSanitize({
+  onSanitize: ({ req, key }) => {
+    // `key` is a user-controlled object key. Strip control characters (e.g.
+    // newlines) and cap its length before logging to prevent log forging and
+    // log flooding. req.ip is normalized to an IP string by Express and is safe.
+    const safeKey = String(key).replace(/[\x00-\x1F\x7F]/g, "").slice(0, 100);
+    logger.warn(`Sanitized potential NoSQL injection in "${safeKey}" from IP ${req.ip}`);
+  }
+}));
 
 // CORS configuration - simplified and robust
 let corsOptions;

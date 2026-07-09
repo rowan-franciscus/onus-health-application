@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import { useSelector, useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
 import { updateUser, authSuccess } from '../../store/slices/authSlice';
@@ -101,8 +102,9 @@ const Settings = () => {
       return;
     }
     
-    if (passwordForm.newPassword.length < 8) {
-      toast.error('New password must be at least 8 characters long');
+    const passwordError = validatePassword(passwordForm.newPassword);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
     

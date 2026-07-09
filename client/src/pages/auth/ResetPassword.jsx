@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
 import styles from './Auth.module.css';
@@ -62,8 +63,11 @@ const ResetPassword = () => {
     
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    } else {
+      const passwordError = validatePassword(formData.password);
+      if (passwordError) {
+        newErrors.password = passwordError;
+      }
     }
     
     if (!formData.confirmPassword) {

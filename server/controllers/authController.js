@@ -8,26 +8,34 @@ const jwt = require("jsonwebtoken");
 const config = require("../config/environment");
 const { validationResult } = require("express-validator");
 const logger = require("../utils/logger");
+const { validatePassword } = require("../utils/passwordPolicy");
 
 /**
  * Register a new user
  */
 exports.register = async (req, res) => {
   try {
-    // Log the incoming request for debugging
+    // Log the incoming request for debugging (never log the raw password)
     logger.debug(
-      `Registration attempt with payload: ${JSON.stringify(req.body)}`,
+      `Registration attempt for email: ${req.body && req.body.email}`,
     );
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       logger.warn(
-        `Registration validation failed: ${JSON.stringify(errors.array())}`,
+        // Log which fields failed, but never the submitted values (may contain the password)
+        `Registration validation failed: ${JSON.stringify(errors.array().map(({ path, msg }) => ({ path, msg })))}`,
       );
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, firstName, lastName, role } = req.body;
+    const { email, password, firstName, lastName } = req.body;
+
+    // SECURITY: never trust a client-supplied privileged role. Self-registration is
+    // limited to patient/provider; admin and practice_admin are created only via
+    // authenticated, role-guarded flows. This prevents privilege escalation where an
+    // attacker registers directly as an administrator.
+    const requestedRole = req.body.role === 'provider' ? 'provider' : 'patient';
 
     // Check if user already exists
     let user = await User.findOne({ email });
@@ -82,7 +90,7 @@ exports.register = async (req, res) => {
         password,
         firstName,
         lastName,
-        role: role || "patient",
+        role: requestedRole,
       });
 
       await user.save();
@@ -90,7 +98,7 @@ exports.register = async (req, res) => {
     }
 
     // Generate verification token
-    const verificationToken = jwt.sign({ id: user._id }, config.jwtSecret, {
+    const verificationToken = jwt.sign({ id: user._id, type: "verify" }, config.jwtSecret, {
       expiresIn: "24h",
     });
     logger.debug(`Generated verification token for ${email}`);
@@ -139,7 +147,7 @@ exports.register = async (req, res) => {
     const refreshToken = user.generateRefreshToken();
 
     logger.info(
-      `User registered successfully: ${email} (${role || "patient"})`,
+      `User registered successfully: ${email} (${user.role})`,
     );
     res.status(201).json({
       success: true,
@@ -405,6 +413,19 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
+    // SECURITY: only accept tokens minted for email verification. Access/reset
+    // tokens share the signing secret, and this handler has no stored-token check,
+    // so without this a same-secret token of any purpose could verify an email.
+    if (decoded.type !== "verify") {
+      if (req.method === "GET") {
+        return res.redirect(`${config.frontendUrl}/verification-error`);
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification token",
+      });
+    }
+
     // Find and update user
     const user = await User.findById(decoded.id);
 
@@ -622,7 +643,7 @@ exports.forgotPassword = async (req, res) => {
     }
 
     // Generate password reset token
-    const resetToken = jwt.sign({ id: user._id }, config.jwtSecret, {
+    const resetToken = jwt.sign({ id: user._id, type: "reset" }, config.jwtSecret, {
       expiresIn: "1h",
     });
 
@@ -657,6 +678,14 @@ exports.forgotPassword = async (req, res) => {
  */
 exports.resetPassword = async (req, res) => {
   try {
+    // Enforce route-level validation (token presence + strong-password policy).
+    // express-validator middlewares only record errors; without this check a weak
+    // password would bypass the policy entirely on this endpoint.
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { token, newPassword } = req.body;
 
     // Verify reset token
@@ -664,6 +693,16 @@ exports.resetPassword = async (req, res) => {
     try {
       decoded = jwt.verify(token, config.jwtSecret);
     } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
+    // SECURITY: reject any token not explicitly minted for password reset.
+    // Access/verify tokens are signed with the same secret; require the "reset"
+    // purpose so they can't be replayed here (defense-in-depth alongside the
+    // stored-token lookup below).
+    if (decoded.type !== "reset") {
       return res
         .status(400)
         .json({ message: "Invalid or expired reset token" });
@@ -768,7 +807,7 @@ exports.resendVerificationEmail = async (req, res) => {
     }
 
     // Generate a new verification token
-    const verificationToken = jwt.sign({ id: user._id }, config.jwtSecret, {
+    const verificationToken = jwt.sign({ id: user._id, type: "verify" }, config.jwtSecret, {
       expiresIn: "24h",
     });
 
@@ -861,10 +900,12 @@ exports.acceptPracticeAdminInvite = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
-    if (!password || password.length < 8) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Password must be at least 8 characters" });
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({
+        success: false,
+        message: passwordError,
+      });
     }
 
     const user = await User.findOne({

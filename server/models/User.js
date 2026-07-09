@@ -246,8 +246,9 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Generate JWT token
 UserSchema.methods.generateAuthToken = function() {
-  const tokenData = { 
-    id: this._id, 
+  const tokenData = {
+    id: this._id,
+    type: 'access', // Distinguishes API access tokens from verify/reset/refresh tokens
     role: this.role,
     email: this.email,
     isProfileCompleted: this.isProfileCompleted,
@@ -286,10 +287,11 @@ UserSchema.methods.generateAuthToken = function() {
 // Generate refresh token
 UserSchema.methods.generateRefreshToken = function() {
   return jwt.sign(
-    { 
-      id: this._id
-    }, 
-    config.jwtRefreshSecret, 
+    {
+      id: this._id,
+      type: 'refresh'
+    },
+    config.jwtRefreshSecret,
     { 
       expiresIn: config.jwtRefreshExpiresIn 
     }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { validatePassword } from '../../utils/passwordPolicy';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
@@ -33,8 +34,9 @@ const AcceptPracticeAdminInvite = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
     if (password !== confirm) {
