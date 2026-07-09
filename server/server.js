@@ -62,7 +62,11 @@ app.use(express.urlencoded({ extended: true }));
 // req.body, req.query, or req.params.
 app.use(mongoSanitize({
   onSanitize: ({ req, key }) => {
-    logger.warn(`Sanitized potential NoSQL injection in ${key} from IP ${req.ip}`);
+    // `key` is a user-controlled object key. Strip control characters (e.g.
+    // newlines) and cap its length before logging to prevent log forging and
+    // log flooding. req.ip is normalized to an IP string by Express and is safe.
+    const safeKey = String(key).replace(/[\x00-\x1F\x7F]/g, "").slice(0, 100);
+    logger.warn(`Sanitized potential NoSQL injection in "${safeKey}" from IP ${req.ip}`);
   }
 }));
 

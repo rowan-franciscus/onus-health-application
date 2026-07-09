@@ -413,6 +413,19 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
+    // SECURITY: only accept tokens minted for email verification. Access/reset
+    // tokens share the signing secret, and this handler has no stored-token check,
+    // so without this a same-secret token of any purpose could verify an email.
+    if (decoded.type !== "verify") {
+      if (req.method === "GET") {
+        return res.redirect(`${config.frontendUrl}/verification-error`);
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification token",
+      });
+    }
+
     // Find and update user
     const user = await User.findById(decoded.id);
 
@@ -680,6 +693,16 @@ exports.resetPassword = async (req, res) => {
     try {
       decoded = jwt.verify(token, config.jwtSecret);
     } catch (error) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
+    // SECURITY: reject any token not explicitly minted for password reset.
+    // Access/verify tokens are signed with the same secret; require the "reset"
+    // purpose so they can't be replayed here (defense-in-depth alongside the
+    // stored-token lookup below).
+    if (decoded.type !== "reset") {
       return res
         .status(400)
         .json({ message: "Invalid or expired reset token" });
