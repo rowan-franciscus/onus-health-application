@@ -104,8 +104,10 @@ const setupConnectionListeners = () => {
     connectionState.isConnected = false;
     logger.warn('MongoDB connection disconnected');
     
-    // Try to reconnect if not in the process of connecting or shutting down
-    if (!connectionState.isConnecting && !global.isShuttingDown) {
+    // Try to reconnect if not in the process of connecting or shutting down.
+    // Tests manage their own in-memory connection; auto-reconnecting there
+    // would attach the test process to the real database and keep it alive.
+    if (!connectionState.isConnecting && !global.isShuttingDown && config.env !== 'test') {
       attemptReconnect();
     }
   });
@@ -150,8 +152,14 @@ const setupGracefulShutdown = () => {
   const shutdown = async (signal) => {
     global.isShuttingDown = true;
     logger.info(`${signal} received: closing MongoDB connection`);
-    
+
     try {
+      // Persist any queued audit events before the connection closes
+      try {
+        await require('../services/audit.service').flush();
+      } catch (auditError) {
+        logger.error('Audit flush during shutdown failed:', auditError);
+      }
       await mongoose.connection.close();
       logger.info('MongoDB connection closed successfully');
       process.exit(0);

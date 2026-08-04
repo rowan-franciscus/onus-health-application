@@ -96,6 +96,7 @@ const AdminPatients = lazy(() => import('./pages/admin/Patients'));
 const AdminViewPatient = lazy(() => import('./pages/admin/ViewPatient'));
 const AdminEditPatient = lazy(() => import('./pages/admin/EditPatient'));
 const AdminPatientProfile = lazy(() => import('./pages/admin/PatientProfile'));
+const AdminAuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
 
 // Shared pages
 const NotFound = lazy(() => import('./pages/shared/NotFound'));
@@ -817,14 +818,23 @@ function App() {
                 />
               } 
             />
-            <Route 
-              path="/admin/settings" 
+            <Route
+              path="/admin/audit-logs"
               element={
-                <ProtectedRoute 
-                  element={<AdminSettings />} 
-                  allowedRoles={['admin']} 
+                <ProtectedRoute
+                  element={<AdminAuditLogs />}
+                  allowedRoles={['admin']}
                 />
-              } 
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <ProtectedRoute
+                  element={<AdminSettings />}
+                  allowedRoles={['admin']}
+                />
+              }
             />
             <Route 
               path="/admin/help" 

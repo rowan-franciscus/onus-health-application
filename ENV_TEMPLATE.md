@@ -35,6 +35,9 @@ FRONTEND_URL=http://localhost:3000
 
 # Session timeout in minutes
 SESSION_TIMEOUT=30
+
+# Audit trail retention in days (default 2190 = 6 years; see server/docs/AUDIT_TRAIL.md)
+AUDIT_LOG_RETENTION_DAYS=2190
 ```
 
 ## Client Environment Variables (.env in client directory)
@@ -61,6 +64,7 @@ REACT_APP_SESSION_TIMEOUT=1800000
 - `ADMIN_EMAIL=admin@onus.health`
 - `FRONTEND_URL=https://your-frontend-url.onrender.com`
 - `SESSION_TIMEOUT=30`
+- `AUDIT_LOG_RETENTION_DAYS=2190`
 
 ### Frontend Service
 - `REACT_APP_API_URL=https://your-backend-url.onrender.com/api`

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const auditPlugin = require('./plugins/audit.plugin');
 
 const ConnectionSchema = new Schema({
   // The patient user
@@ -106,4 +107,7 @@ ConnectionSchema.methods.revokeAccess = function() {
   return this.save();
 };
 
-module.exports = mongoose.model('Connection', ConnectionSchema); 
+// Audit the consent lifecycle (create/request/approve/deny/revoke/delete)
+ConnectionSchema.plugin(auditPlugin, { resourceType: 'Connection' });
+
+module.exports = mongoose.model('Connection', ConnectionSchema);

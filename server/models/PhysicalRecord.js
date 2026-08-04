@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('./plugins/audit.plugin');
 const Schema = mongoose.Schema;
 
 const PhysicalRecordSchema = new Schema({
@@ -37,5 +38,7 @@ const PhysicalRecordSchema = new Schema({
 }, { timestamps: true });
 
 PhysicalRecordSchema.index({ patient: 1, uploadDate: -1 });
+
+PhysicalRecordSchema.plugin(auditPlugin, { resourceType: 'PhysicalRecord' });
 
 module.exports = mongoose.model('PhysicalRecord', PhysicalRecordSchema);

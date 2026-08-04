@@ -171,7 +171,10 @@ exports.getConsultationById = async (req, res) => {
     if (!consultation) {
       return res.status(404).json({ message: 'Consultation not found' });
     }
-    
+
+    // Enrich the audit read event with the record's subject
+    req.audit?.set({ patientId: consultation.patient._id, resourceId: consultation._id });
+
     // Debug logging
     console.log('Auth check - User ID:', userId);
     console.log('Auth check - User Role:', userRole);
@@ -199,8 +202,12 @@ exports.getConsultationById = async (req, res) => {
           accessLevel: connection?.accessLevel,
           fullAccessStatus: connection?.fullAccessStatus
         });
-        
-        if (!connection || 
+
+        if (connection) {
+          req.audit?.set({ connectionId: connection._id, accessLevel: connection.accessLevel });
+        }
+
+        if (!connection ||
             !(connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved')) {
           return res.status(403).json({ message: 'Unauthorized to access this consultation' });
         }

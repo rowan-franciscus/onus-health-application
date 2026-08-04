@@ -9,6 +9,18 @@ const config = require("../config/environment");
 const { validationResult } = require("express-validator");
 const logger = require("../utils/logger");
 const { validatePassword } = require("../utils/passwordPolicy");
+const auditService = require("../services/audit.service");
+
+// Audit helper for authentication outcomes. Never pass credentials in here.
+const auditAuth = (req, subtype, outcome, extra = {}) => {
+  auditService.logFromRequest(req, {
+    type: "auth",
+    subtype,
+    action: "E",
+    outcome,
+    ...extra,
+  });
+};
 
 /**
  * Register a new user
@@ -187,6 +199,7 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       logger.warn(`Login attempt failed: user not found with email ${email}`);
+      auditAuth(req, "login-failure", "8", { outcomeDesc: "user-not-found" });
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -194,12 +207,20 @@ exports.login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       logger.warn(`Login attempt failed: invalid password for user ${email}`);
+      auditAuth(req, "login-failure", "8", {
+        outcomeDesc: "invalid-password",
+        agent: { userId: user._id, role: user.role },
+      });
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     // Check if email is verified
     if (!user.isEmailVerified && !user.googleId && !user.facebookId) {
       logger.info(`Login attempt failed: unverified email for user ${email}`);
+      auditAuth(req, "login-failure", "8", {
+        outcomeDesc: "email-not-verified",
+        agent: { userId: user._id, role: user.role },
+      });
       return res.status(403).json({
         message:
           "Email not verified. Please verify your email before logging in.",
@@ -211,12 +232,20 @@ exports.login = async (req, res) => {
     if (user.role === "practice_admin") {
       const status = user.practiceAdminProfile && user.practiceAdminProfile.status;
       if (status === "revoked") {
+        auditAuth(req, "login-failure", "8", {
+          outcomeDesc: "practice-admin-revoked",
+          agent: { userId: user._id, role: user.role },
+        });
         return res.status(403).json({
           message: "Your Practice Admin access has been revoked.",
           code: "PRACTICE_ADMIN_REVOKED",
         });
       }
       if (status !== "active") {
+        auditAuth(req, "login-failure", "8", {
+          outcomeDesc: "practice-admin-pending",
+          agent: { userId: user._id, role: user.role },
+        });
         return res.status(403).json({
           message: "Please accept your Practice Admin invitation before logging in.",
           code: "PRACTICE_ADMIN_PENDING",
@@ -233,6 +262,10 @@ exports.login = async (req, res) => {
         logger.info(
           `Login attempt failed: provider account not verified by admin for user ${email}`,
         );
+        auditAuth(req, "login-failure", "8", {
+          outcomeDesc: "provider-not-verified",
+          agent: { userId: user._id, role: user.role },
+        });
         return res.status(403).json({
           message:
             "Your provider account is pending verification. Please wait for admin approval.",
@@ -250,6 +283,9 @@ exports.login = async (req, res) => {
     const refreshToken = user.generateRefreshToken();
 
     logger.info(`User ${email} logged in successfully`);
+    auditAuth(req, "login-success", "0", {
+      agent: { userId: user._id, role: user.role },
+    });
 
     // Prepare user data for response
     const userData = {
@@ -582,6 +618,7 @@ exports.adminLogin = async (req, res) => {
       logger.warn(
         `Admin login attempt failed: admin not found with email ${email}`,
       );
+      auditAuth(req, "login-failure", "8", { outcomeDesc: "user-not-found" });
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -591,6 +628,10 @@ exports.adminLogin = async (req, res) => {
       logger.warn(
         `Admin login attempt failed: invalid password for admin ${email}`,
       );
+      auditAuth(req, "login-failure", "8", {
+        outcomeDesc: "invalid-password",
+        agent: { userId: user._id, role: user.role },
+      });
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -603,6 +644,9 @@ exports.adminLogin = async (req, res) => {
     const refreshToken = user.generateRefreshToken();
 
     logger.info(`Admin ${email} logged in successfully`);
+    auditAuth(req, "login-success", "0", {
+      agent: { userId: user._id, role: user.role },
+    });
     res.json({
       user: {
         id: user._id,
@@ -651,6 +695,10 @@ exports.forgotPassword = async (req, res) => {
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
+
+    auditAuth(req, "password-reset-requested", "0", {
+      agent: { userId: user._id, role: user.role },
+    });
 
     // Import email service
     const emailService = require("../services/email.service");
@@ -716,6 +764,9 @@ exports.resetPassword = async (req, res) => {
     });
 
     if (!user) {
+      auditAuth(req, "password-reset", "8", {
+        outcomeDesc: "invalid-or-expired-token",
+      });
       return res
         .status(400)
         .json({ message: "Invalid or expired reset token" });
@@ -726,6 +777,10 @@ exports.resetPassword = async (req, res) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
+
+    auditAuth(req, "password-reset", "0", {
+      agent: { userId: user._id, role: user.role },
+    });
 
     // Import email service
     const emailService = require("../services/email.service");
@@ -955,4 +1010,14 @@ exports.acceptPracticeAdminInvite = async (req, res) => {
     logger.error("acceptPracticeAdminInvite error:", error);
     res.status(500).json({ success: false, message: "Failed to accept invitation" });
   }
+};
+
+/**
+ * Logout
+ * JWTs are discarded client-side; this endpoint exists solely to record the
+ * logout in the audit trail.
+ */
+exports.logout = async (req, res) => {
+  auditAuth(req, "logout", "0");
+  res.json({ success: true, message: "Logged out" });
 };

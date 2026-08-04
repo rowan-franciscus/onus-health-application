@@ -34,6 +34,7 @@ const getNavItems = (role, logoutFn) => {
       { to: '/admin/dashboard', label: 'Dashboard', icon: <img src={analyticsIcon} alt="Dashboard" /> },
       { to: '/admin/health-providers', label: 'Health Care Providers', icon: <img src={healthCareProvidersIcon} alt="Health Providers" /> },
       { to: '/admin/patients', label: 'Patients', icon: <img src={patientsIcon} alt="Patients" /> },
+      { to: '/admin/audit-logs', label: 'Audit Trail', icon: <img src={medicalRecordsIcon} alt="Audit Trail" /> },
       { to: '/admin/settings', label: 'Settings', icon: <img src={settingsIcon} alt="Settings" /> },
     ],
     provider: [

@@ -9,6 +9,8 @@ const logger = require('../utils/logger');
 const rateLimit = require('express-rate-limit');
 const config = require('../config/environment');
 const jwt = require('jsonwebtoken');
+const auditService = require('../services/audit.service');
+const requestContext = require('../utils/requestContext');
 
 /**
  * Middleware to authenticate using JWT
@@ -26,7 +28,22 @@ const authRateLimiter = rateLimit({
     message: 'Too many login attempts, please try again after 15 minutes'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn(`Auth rate limit exceeded for IP: ${req.ip}`);
+    // Closest equivalent to an account-lockout event in this system
+    auditService.logFromRequest(req, {
+      type: 'auth',
+      subtype: 'rate-limit-lockout',
+      action: 'E',
+      outcome: '8',
+      outcomeDesc: 'too-many-login-attempts'
+    });
+    res.status(429).json({
+      success: false,
+      message: 'Too many login attempts, please try again after 15 minutes'
+    });
+  }
 });
 
 /**
@@ -44,6 +61,13 @@ const passwordResetLimiter = rateLimit({
   // Log when rate limit is hit
   handler: (req, res) => {
     logger.warn(`Password reset rate limit exceeded for IP: ${req.ip}`);
+    auditService.logFromRequest(req, {
+      type: 'auth',
+      subtype: 'rate-limit-lockout',
+      action: 'E',
+      outcome: '8',
+      outcomeDesc: 'too-many-password-reset-attempts'
+    });
     res.status(429).json({
       success: false,
       message: 'Too many password reset attempts, please try again after an hour'
@@ -75,6 +99,26 @@ const sessionTimeout = async (req, res, next) => {
     
     // If token is older than session timeout and not expired yet
     if (minutesSinceIssue >= config.sessionTimeout && currentTime < payload.exp) {
+      // req.user is not set yet (passport runs per-route); attribute the
+      // session expiry from the verified token payload instead.
+      const store = requestContext.getStore();
+      if (store) {
+        store.audit.handled = true;
+      }
+      auditService.log({
+        type: 'auth',
+        subtype: 'session-timeout',
+        action: 'E',
+        outcome: '8',
+        outcomeDesc: 'session-timeout',
+        agent: {
+          userId: payload.id || null,
+          role: payload.role,
+          ip: req.ip,
+          userAgent: req.get('user-agent')
+        },
+        context: { method: req.method, path: req.originalUrl }
+      });
       return res.status(401).json({
         success: false,
         message: 'Session timeout',

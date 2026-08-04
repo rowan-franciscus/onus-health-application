@@ -69,7 +69,10 @@ class BaseMedicalRecordController {
       if (!consultation) {
         return res.status(404).json({ message: 'Consultation not found' });
       }
-      
+
+      // Enrich the audit read event with the record's subject
+      req.audit?.set({ patientId: consultation.patient });
+
       // Verify user has access to this consultation
       const userRole = req.user.role;
       
@@ -86,14 +89,18 @@ class BaseMedicalRecordController {
             provider: userId,
             patient: consultation.patient
           });
-          
-          if (!connection || 
+
+          if (connection) {
+            req.audit?.set({ connectionId: connection._id, accessLevel: connection.accessLevel });
+          }
+
+          if (!connection ||
               !(connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved')) {
             return res.status(403).json({ message: 'Unauthorized to access this consultation' });
           }
         }
       }
-      
+
       // Find records
       const records = await this.Model.find({ consultation: consultationId })
         .sort({ createdAt: -1 });
@@ -165,8 +172,8 @@ class BaseMedicalRecordController {
       // Store consultation ID before deleting
       const consultationId = record.consultation;
       
-      // Delete record
-      await record.remove();
+      // Delete record (Document#remove was removed in Mongoose 7+)
+      await record.deleteOne();
       
       // Update consultation's lastUpdated timestamp
       await Consultation.findByIdAndUpdate(

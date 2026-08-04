@@ -11,6 +11,7 @@ const HospitalRecord = require('./HospitalRecord');
 const SurgeryRecord = require('./SurgeryRecord');
 const Connection = require('./Connection');
 const EmailQueue = require('./EmailQueue');
+const AuditEvent = require('./AuditEvent');
 
 module.exports = {
   User,
@@ -24,5 +25,6 @@ module.exports = {
   HospitalRecord,
   SurgeryRecord,
   Connection,
-  EmailQueue
+  EmailQueue,
+  AuditEvent
 }; 

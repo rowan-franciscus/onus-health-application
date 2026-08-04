@@ -64,6 +64,10 @@ const defaultConfig = {
   logLevel: 'info',
   mailProvider: 'sendgrid', // 'sendgrid' or 'nodemailer'
   logoUrl: 'https://onushealth.com/logo.png', // Default logo URL
+  // Audit trail retention in days (default 6 years, aligned with common
+  // HIPAA-era record retention practice). Records are never auto-deleted;
+  // see server/docs/AUDIT_TRAIL.md for the manual purge procedure.
+  auditLogRetentionDays: parseInt(process.env.AUDIT_LOG_RETENTION_DAYS || 2190),
   emailQueueSettings: {
     processInterval: 60000, // Process email queue every 60 seconds
     retryIntervals: [5, 15, 60], // Retry intervals in minutes

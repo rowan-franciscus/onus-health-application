@@ -205,12 +205,14 @@ class AuthService {
    * Log out the current user
    */
   static logout() {
+    // Record the logout in the server-side audit trail (fire-and-forget:
+    // must run before the token is cleared, and must never block logout)
+    ApiService.post('/auth/logout').catch(() => {});
+
     // Remove tokens and user data from localStorage
     localStorage.removeItem(config.tokenKey);
     localStorage.removeItem(config.refreshTokenKey);
     localStorage.removeItem('lastLoginTime');
-    
-    // If you're using any server-side logout, add the API call here
   }
 
   /**

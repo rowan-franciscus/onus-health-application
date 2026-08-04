@@ -36,6 +36,7 @@ const loginValidation = [
 // Regular user authentication
 router.post('/register', registerValidation, authController.register);
 router.post('/login', authRateLimiter, loginValidation, authController.login);
+router.post('/logout', authenticateJWT, authController.logout);
 router.get('/me', authenticateJWT, authController.getCurrentUser);
 
 // Practice Admin invite acceptance (public)

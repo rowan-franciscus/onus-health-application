@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('./plugins/audit.plugin');
 const { formatDate } = require('../utils/dateUtils');
 const Schema = mongoose.Schema;
 
@@ -170,5 +171,7 @@ ConsultationSchema.methods.reopenCase = function() {
   this.caseStatus = 'open';
   this.caseClosedAt = null;
 };
+
+ConsultationSchema.plugin(auditPlugin, { resourceType: 'Consultation' });
 
 module.exports = mongoose.model('Consultation', ConsultationSchema); 

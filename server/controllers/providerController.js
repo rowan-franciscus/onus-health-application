@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Consultation = require('../models/Consultation');
 const Connection = require('../models/Connection');
 const logger = require('../utils/logger');
+const auditService = require('../services/audit.service');
 const mongoose = require('mongoose');
 const { validatePassword } = require('../utils/passwordPolicy');
 
@@ -674,6 +675,15 @@ exports.invitePracticeAdmin = async (req, res) => {
 
     await Practice.findByIdAndUpdate(practiceId, { $addToSet: { admins: admin._id } });
 
+    auditService.logFromRequest(req, {
+      type: 'admin',
+      subtype: 'practice-admin-invited',
+      action: 'E',
+      outcome: '0',
+      entity: { resourceType: 'User', resourceId: admin._id },
+      context: { practiceId }
+    });
+
     try {
       const emailService = require('../services/email.service');
       const acceptUrl = `${config.frontendUrl}/accept-practice-admin/${token}`;
@@ -737,6 +747,16 @@ exports.revokePracticeAdmin = async (req, res) => {
     }
     admin.practiceAdminProfile.status = 'revoked';
     await admin.save();
+
+    auditService.logFromRequest(req, {
+      type: 'admin',
+      subtype: 'practice-admin-revoked',
+      action: 'E',
+      outcome: '0',
+      entity: { resourceType: 'User', resourceId: admin._id },
+      context: { practiceId }
+    });
+
     res.json({ success: true });
   } catch (error) {
     logger.error('provider.revokePracticeAdmin error:', error);

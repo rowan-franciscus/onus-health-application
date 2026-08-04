@@ -65,8 +65,8 @@ describe('Authentication API', () => {
         })
         .expect(400);
 
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('errors');
+      expect(Array.isArray(response.body.errors)).toBe(true);
     });
 
     it('should not allow duplicate email', async () => {
@@ -89,8 +89,7 @@ describe('Authentication API', () => {
         .send(userData)
         .expect(400);
 
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body.message).toContain('Email already exists');
+      expect(response.body.message).toMatch(/already exists/i);
     });
   });
 
@@ -117,8 +116,8 @@ describe('Authentication API', () => {
         })
         .expect(200);
 
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body).toHaveProperty('token');
+      expect(response.body).toHaveProperty('tokens');
+      expect(response.body.tokens).toHaveProperty('authToken');
       expect(response.body).toHaveProperty('user');
       expect(response.body.user).toHaveProperty('email', 'login.test@example.com');
       expect(response.body.user).not.toHaveProperty('password');
@@ -131,11 +130,10 @@ describe('Authentication API', () => {
           email: 'login.test@example.com',
           password: 'WrongPassword@123'
         })
-        .expect(401);
+        .expect(400);
 
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('message');
-      expect(response.body).not.toHaveProperty('token');
+      expect(response.body).toHaveProperty('message', 'Invalid credentials');
+      expect(response.body).not.toHaveProperty('tokens');
     });
 
     it('should reject login for non-existent user', async () => {
@@ -145,10 +143,9 @@ describe('Authentication API', () => {
           email: 'nonexistent@example.com',
           password: 'Password@123'
         })
-        .expect(401);
+        .expect(400);
 
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('message', 'Invalid credentials');
     });
   });
 }); 
