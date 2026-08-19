@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Table from '../../components/common/Table/Table';
 import Button from '../../components/common/Button/Button';
 import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator';
@@ -42,14 +42,27 @@ const AuditLogs = () => {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Newest seq at the moment paging started. Held in a ref (not state) so it
+  // never re-triggers the fetch: viewing the log appends an audit-query event,
+  // and without this snapshot page 2 would repeat a row from page 1.
+  const maxSeqRef = useRef(null);
 
   const fetchAuditLogs = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await auditService.getAuditLogs({ ...appliedFilters, page, limit: 50 });
+      const response = await auditService.getAuditLogs({
+        ...appliedFilters,
+        page,
+        limit: 50,
+        ...(maxSeqRef.current !== null ? { maxSeq: maxSeqRef.current } : {})
+      });
       setEvents(response.events || []);
       setPagination(response.pagination || { page: 1, totalPages: 1, total: 0 });
+      // (>= 0 only: an empty trail reports -1, which must not be pinned)
+      if (response.pagination && response.pagination.maxSeq >= 0) {
+        maxSeqRef.current = response.pagination.maxSeq;
+      }
     } catch (err) {
       setError('Failed to load audit logs. Please try again.');
       console.error('Error fetching audit logs:', err);
@@ -66,12 +79,16 @@ const AuditLogs = () => {
     setFilters((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
+  // Applying or resetting filters starts a new result set: re-snapshot so
+  // events recorded since the page was opened become visible again.
   const applyFilters = () => {
+    maxSeqRef.current = null;
     setPage(1);
     setAppliedFilters(filters);
   };
 
   const resetFilters = () => {
+    maxSeqRef.current = null;
     setFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
     setPage(1);
@@ -142,6 +159,7 @@ const AuditLogs = () => {
           value={filters.patientId}
           onChange={handleFilterChange('patientId')}
           className={styles.filterInput}
+          aria-label="Patient ID"
         />
         <input
           type="text"
@@ -149,6 +167,7 @@ const AuditLogs = () => {
           value={filters.actorId}
           onChange={handleFilterChange('actorId')}
           className={styles.filterInput}
+          aria-label="Actor ID"
         />
         <input
           type="date"
@@ -164,13 +183,23 @@ const AuditLogs = () => {
           className={styles.filterInput}
           aria-label="End date"
         />
-        <select value={filters.type} onChange={handleFilterChange('type')} className={styles.filterInput}>
+        <select
+          value={filters.type}
+          onChange={handleFilterChange('type')}
+          className={styles.filterInput}
+          aria-label="Event type"
+        >
           <option value="">All types</option>
           {TYPE_OPTIONS.map((type) => (
             <option key={type} value={type}>{type}</option>
           ))}
         </select>
-        <select value={filters.action} onChange={handleFilterChange('action')} className={styles.filterInput}>
+        <select
+          value={filters.action}
+          onChange={handleFilterChange('action')}
+          className={styles.filterInput}
+          aria-label="Action"
+        >
           <option value="">All actions</option>
           {ACTION_OPTIONS.map((action) => (
             <option key={action} value={action}>{ACTION_LABELS[action]}</option>

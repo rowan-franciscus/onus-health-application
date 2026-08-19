@@ -111,9 +111,67 @@ const verifyChain = async (docs) => {
   return { valid: true, checked };
 };
 
+/**
+ * Compare the chain's boundaries against a checkpoint recorded outside the
+ * database. verifyChain() walks links between neighbours, so it cannot see
+ * truncation: removing the newest events, or an oldest prefix, leaves no
+ * adjacent gap. The checkpoint supplies the two ends the chain cannot
+ * attest to itself.
+ *
+ * @param {{anchor: {seq, hash}, tip: {seq, hash}}} checkpoint
+ * @param {{first, last, atCheckpointTip}} observed - oldest and newest
+ *        surviving events, plus the event now sitting at the checkpointed tip
+ *        seq (null if that seq no longer exists)
+ * @returns {string[]} problems found; empty when the boundaries are consistent
+ */
+const compareCheckpoint = (checkpoint, observed) => {
+  const problems = [];
+  const { first, last, atCheckpointTip } = observed;
+
+  if (!first || !last) {
+    problems.push(
+      `the collection is empty, but the checkpoint records events up to seq ${checkpoint.tip.seq} ` +
+      '(the entire trail was removed)'
+    );
+    return problems;
+  }
+
+  // Oldest end: the anchor may only move forward, and only via a documented
+  // purge that re-writes the checkpoint.
+  if (first.seq > checkpoint.anchor.seq) {
+    problems.push(
+      `events before seq ${first.seq} are gone; the checkpoint anchors the chain at seq ` +
+      `${checkpoint.anchor.seq} (an oldest prefix was removed without a recorded purge)`
+    );
+  } else if (first.seq === checkpoint.anchor.seq && first.hash !== checkpoint.anchor.hash) {
+    problems.push(`the anchor event at seq ${first.seq} no longer matches the checkpointed hash`);
+  } else if (first.seq < checkpoint.anchor.seq) {
+    problems.push(
+      `the chain now starts at seq ${first.seq}, before the checkpointed anchor seq ` +
+      `${checkpoint.anchor.seq} (records were inserted below the anchor)`
+    );
+  }
+
+  // Newest end: the tip may only move forward, and the checkpointed event
+  // must still be present and unchanged.
+  if (last.seq < checkpoint.tip.seq) {
+    problems.push(
+      `the newest event is seq ${last.seq}, but the checkpoint recorded seq ${checkpoint.tip.seq} ` +
+      `(${checkpoint.tip.seq - last.seq} newest event(s) were removed)`
+    );
+  } else if (!atCheckpointTip) {
+    problems.push(`the checkpointed event at seq ${checkpoint.tip.seq} is missing from the chain`);
+  } else if (atCheckpointTip.hash !== checkpoint.tip.hash) {
+    problems.push(`the event at the checkpointed seq ${checkpoint.tip.seq} no longer matches its hash`);
+  }
+
+  return problems;
+};
+
 module.exports = {
   GENESIS_HASH,
   canonicalize,
   computeHash,
-  verifyChain
+  verifyChain,
+  compareCheckpoint
 };

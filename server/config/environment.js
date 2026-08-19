@@ -66,8 +66,14 @@ const defaultConfig = {
   logoUrl: 'https://onushealth.com/logo.png', // Default logo URL
   // Audit trail retention in days (default 6 years, aligned with common
   // HIPAA-era record retention practice). Records are never auto-deleted;
-  // see server/docs/AUDIT_TRAIL.md for the manual purge procedure.
+  // `node scripts/audit-retention-report.js` reads this value to produce the
+  // purge cutoff for the manual DBA procedure in server/docs/AUDIT_TRAIL.md.
   auditLogRetentionDays: parseInt(process.env.AUDIT_LOG_RETENTION_DAYS || 2190),
+  // Dead letter for audit events the database rejected after every retry.
+  // Replayed into the chain with scripts/replay-audit-dead-letter.js.
+  auditDeadLetterPath:
+    process.env.AUDIT_DEAD_LETTER_PATH ||
+    require('path').resolve(process.cwd(), 'logs', 'audit-dead-letter.log'),
   emailQueueSettings: {
     processInterval: 60000, // Process email queue every 60 seconds
     retryIntervals: [5, 15, 60], // Retry intervals in minutes

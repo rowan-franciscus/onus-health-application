@@ -29,4 +29,17 @@ const middleware = (req, res, next) => {
 
 const getStore = () => als.getStore();
 
-module.exports = { middleware, getStore };
+/**
+ * Request path with the query string stripped.
+ * Audit events must never persist query parameters: the file route accepts
+ * `?token=<JWT>` as a fallback for window.open() (which cannot set headers),
+ * and `req.originalUrl` would otherwise write that token into the trail.
+ */
+const pathOf = (req) => {
+  const url = req && req.originalUrl;
+  if (!url) return undefined;
+  const queryStart = url.indexOf('?');
+  return queryStart === -1 ? url : url.slice(0, queryStart);
+};
+
+module.exports = { middleware, getStore, pathOf };

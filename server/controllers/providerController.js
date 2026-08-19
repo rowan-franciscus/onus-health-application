@@ -376,7 +376,14 @@ exports.getConsultationById = async (req, res) => {
     if (!consultation) {
       return res.status(404).json({ success: false, message: 'Consultation not found' });
     }
-    
+
+    // Enrich the audit read event: the route param is :consultationId, which
+    // the auditRead middleware cannot resolve on its own
+    req.audit?.set({
+      resourceId: consultation._id,
+      patientId: consultation.patient && consultation.patient._id
+    });
+
     res.json({
       success: true,
       consultation

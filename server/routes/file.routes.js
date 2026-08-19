@@ -268,7 +268,9 @@ router.delete('/:type/:filename', authenticateJWT, async (req, res) => {
 /**
  * Get list of files for a specific consultation
  */
-router.get('/consultation/:consultationId/attachments', authenticateJWT, auditRead('File', { type: 'export', subtype: 'file-download' }), async (req, res) => {
+// Metadata listing only — no file content leaves the server here, so this is
+// a plain read, not an export/download event.
+router.get('/consultation/:consultationId/attachments', authenticateJWT, auditRead('File', { subtype: 'file-list' }), async (req, res) => {
   try {
     const { consultationId } = req.params;
     

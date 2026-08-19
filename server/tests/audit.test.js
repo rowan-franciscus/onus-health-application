@@ -5,15 +5,17 @@
  * failed-access dedupe, and write-failure resilience.
  */
 
+const fs = require('fs');
 const request = require('supertest');
 const mongoose = require('mongoose');
 const app = require('../server');
+const config = require('../config/environment');
 const User = require('../models/User');
 const Connection = require('../models/Connection');
 const AuditEvent = require('../models/AuditEvent');
 const { Vitals, Medication } = require('../models');
 const auditService = require('../services/audit.service');
-const { verifyChain } = require('../utils/auditChain');
+const { verifyChain, compareCheckpoint } = require('../utils/auditChain');
 const logger = require('../utils/logger');
 const { setupTestDB, teardownTestDB, clearDatabase } = require('./setup');
 
@@ -41,15 +43,23 @@ beforeAll(async () => {
   await setupTestDB();
 });
 
+const removeDeadLetterFile = () => {
+  if (fs.existsSync(config.auditDeadLetterPath)) {
+    fs.unlinkSync(config.auditDeadLetterPath);
+  }
+};
+
 beforeEach(async () => {
   await auditService.flush();
   await clearDatabase();
+  removeDeadLetterFile();
   // Reload the chain tip after the collection was wiped
   await auditService.init();
 });
 
 afterAll(async () => {
   await auditService.flush();
+  removeDeadLetterFile();
   await teardownTestDB();
 });
 
@@ -147,6 +157,42 @@ describe('Audit trail', () => {
       expect(update.context.modifiedFields).toContain('heartRate.value');
       // Only field names are recorded — never the clinical value
       expect(JSON.stringify(update.context)).not.toContain('80');
+    });
+
+    it('logs exactly one delete event for a query-level Model.deleteOne()', async () => {
+      const patient = await createUser();
+      const other = await createUser();
+      const vitals = await Vitals.create({ patient: patient._id, heartRate: { value: 72 } });
+      await Vitals.create({ patient: other._id, heartRate: { value: 65 } });
+      await flushAudit();
+
+      await Vitals.deleteOne({ _id: vitals._id });
+      await flushAudit();
+
+      const deletes = await AuditEvent.find({ subtype: 'record-delete' }).lean();
+      expect(deletes).toHaveLength(1);
+      expect(String(deletes[0].entity.resourceId)).toBe(String(vitals._id));
+      expect(String(deletes[0].entity.patientId)).toBe(String(patient._id));
+      // The untouched record of the other patient was not implicated
+      expect(await Vitals.countDocuments()).toBe(1);
+    });
+
+    it('records modified field names for query-level updates', async () => {
+      const patient = await createUser();
+      const vitals = await Vitals.create({ patient: patient._id, heartRate: { value: 72 } });
+      await flushAudit();
+
+      await Vitals.updateOne({ _id: vitals._id }, { $set: { 'heartRate.value': 88 } });
+      await flushAudit();
+
+      const update = await AuditEvent.findOne({
+        subtype: 'record-update',
+        'entity.resourceId': vitals._id
+      }).lean();
+      expect(update).toBeTruthy();
+      expect(update.context.modifiedFields).toContain('heartRate.value');
+      // Field names only — never the clinical value
+      expect(JSON.stringify(update.context)).not.toContain('88');
     });
 
     it('logs one delete event per document on deleteMany (bulk recreate path)', async () => {
@@ -312,6 +358,55 @@ describe('Audit trail', () => {
       expect(queryEvent.context.after.filters.type).toBe('auth');
     });
 
+    it('includes events recorded on the end date itself (date-only bound)', async () => {
+      const admin = await createUser({ role: 'admin' });
+      const patient = await createUser();
+      await Vitals.create({ patient: patient._id, heartRate: { value: 70 } });
+      await flushAudit();
+
+      const today = new Date().toISOString().slice(0, 10);
+      const response = await request(app)
+        .get('/api/admin/audit-logs')
+        .query({ startDate: today, endDate: today })
+        .set('Authorization', `Bearer ${admin.generateAuthToken()}`)
+        .expect(200);
+
+      // Midnight-at-start-of-day would have excluded everything recorded today
+      expect(response.body.events.length).toBeGreaterThan(0);
+    });
+
+    it('pages stably even though each query appends an audit-query event', async () => {
+      const admin = await createUser({ role: 'admin' });
+      const patient = await createUser();
+      for (let i = 0; i < 6; i++) {
+        await Vitals.create({ patient: patient._id, heartRate: { value: 60 + i } });
+      }
+      await flushAudit();
+
+      const token = `Bearer ${admin.generateAuthToken()}`;
+      const first = await request(app)
+        .get('/api/admin/audit-logs')
+        .query({ page: 1, limit: 3 })
+        .set('Authorization', token)
+        .expect(200);
+      await flushAudit();
+
+      const { maxSeq } = first.body.pagination;
+      expect(typeof maxSeq).toBe('number');
+
+      const second = await request(app)
+        .get('/api/admin/audit-logs')
+        .query({ page: 2, limit: 3, maxSeq })
+        .set('Authorization', token)
+        .expect(200);
+
+      const firstSeqs = first.body.events.map((e) => e.seq);
+      const secondSeqs = second.body.events.map((e) => e.seq);
+      expect(secondSeqs.some((seq) => firstSeqs.includes(seq))).toBe(false);
+      // Contiguous descending window across the two pages
+      expect(Math.max(...secondSeqs)).toBe(Math.min(...firstSeqs) - 1);
+    });
+
     it('filters by patientId', async () => {
       const admin = await createUser({ role: 'admin' });
       const patient = await createUser();
@@ -372,6 +467,46 @@ describe('Audit trail', () => {
       expect(result.error.reason).toMatch(/altered/);
     });
 
+    it('detects truncation at either end only via the external checkpoint', async () => {
+      const patient = await createUser();
+      for (let i = 0; i < 4; i++) {
+        await Vitals.create({ patient: patient._id, heartRate: { value: 70 + i } });
+      }
+      await flushAudit();
+
+      const docs = await loadChain();
+      const checkpoint = {
+        anchor: { seq: docs[0].seq, hash: docs[0].hash },
+        tip: { seq: docs[docs.length - 1].seq, hash: docs[docs.length - 1].hash }
+      };
+      const observe = (chain) => ({
+        first: chain[0] || null,
+        last: chain[chain.length - 1] || null,
+        atCheckpointTip: chain.find((d) => d.seq === checkpoint.tip.seq) || null
+      });
+
+      expect(compareCheckpoint(checkpoint, observe(docs))).toEqual([]);
+
+      // Truncating the newest event leaves no gap: the chain still verifies...
+      await mongoose.connection
+        .collection('auditevents')
+        .deleteOne({ _id: docs[docs.length - 1]._id });
+      const afterTipCut = await loadChain();
+      expect((await verifyChain(afterTipCut)).valid).toBe(true);
+      // ...but the checkpoint catches it
+      expect(compareCheckpoint(checkpoint, observe(afterTipCut)).join(' ')).toMatch(
+        /newest event\(s\) were removed/
+      );
+
+      // Same for an oldest prefix
+      await mongoose.connection.collection('auditevents').deleteOne({ _id: docs[0]._id });
+      const afterPrefixCut = await loadChain();
+      expect((await verifyChain(afterPrefixCut)).valid).toBe(true);
+      expect(compareCheckpoint(checkpoint, observe(afterPrefixCut)).join(' ')).toMatch(
+        /an oldest prefix was removed/
+      );
+    });
+
     it('detects a deleted record as a sequence gap', async () => {
       const patient = await createUser();
       await Vitals.create({ patient: patient._id, heartRate: { value: 72 } });
@@ -407,7 +542,7 @@ describe('Audit trail', () => {
   });
 
   describe('resilience', () => {
-    it('never fails the request when the audit write fails, and falls back to the error log', async () => {
+    it('never fails the request when the audit write fails, and dead-letters the event', async () => {
       const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
       const createSpy = jest
         .spyOn(AuditEvent, 'create')
@@ -427,8 +562,28 @@ describe('Audit trail', () => {
       );
       expect(fallbackCall).toBeTruthy();
       expect(fallbackCall[1].event.subtype).toBe('login-success');
+      expect(fallbackCall[1].deadLettered).toBe(true);
+
+      // The event survives the outage on disk, in replayable form
+      const deadLettered = fs
+        .readFileSync(config.auditDeadLetterPath, 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+      expect(deadLettered.some((event) => event.subtype === 'login-success')).toBe(true);
 
       createSpy.mockRestore();
+
+      // ...and replaying it restores the event to the chain
+      deadLettered.forEach((event) => auditService.replay(event));
+      await auditService.flush();
+      const replayed = await AuditEvent.findOne({ subtype: 'login-success' }).lean();
+      expect(replayed).toBeTruthy();
+      expect(String(replayed.agent.userId)).toBe(String(user._id));
+
+      const chain = await AuditEvent.find().sort({ seq: 1 }).lean();
+      expect((await verifyChain(chain)).valid).toBe(true);
+
       errorSpy.mockRestore();
     }, 20000);
   });

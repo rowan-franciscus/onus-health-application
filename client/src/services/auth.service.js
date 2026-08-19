@@ -205,9 +205,17 @@ class AuthService {
    * Log out the current user
    */
   static logout() {
-    // Record the logout in the server-side audit trail (fire-and-forget:
-    // must run before the token is cleared, and must never block logout)
-    ApiService.post('/auth/logout').catch(() => {});
+    // Record the logout in the server-side audit trail (fire-and-forget: it
+    // must never block logout). The request interceptor reads the token from
+    // localStorage asynchronously — after the removals below have already run
+    // — so attach it explicitly here, otherwise the call arrives
+    // unauthenticated and is audited as an access denial instead of a logout.
+    const token = this.getToken();
+    if (token) {
+      ApiService.post('/auth/logout', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
 
     // Remove tokens and user data from localStorage
     localStorage.removeItem(config.tokenKey);

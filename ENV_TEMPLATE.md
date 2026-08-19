@@ -37,7 +37,12 @@ FRONTEND_URL=http://localhost:3000
 SESSION_TIMEOUT=30
 
 # Audit trail retention in days (default 2190 = 6 years; see server/docs/AUDIT_TRAIL.md)
+# Read by scripts/audit-retention-report.js to produce the manual purge cutoff
 AUDIT_LOG_RETENTION_DAYS=2190
+
+# Where audit events are parked if the database rejects them, for later replay
+# with scripts/replay-audit-dead-letter.js (default logs/audit-dead-letter.log)
+AUDIT_DEAD_LETTER_PATH=logs/audit-dead-letter.log
 ```
 
 ## Client Environment Variables (.env in client directory)
@@ -65,6 +70,7 @@ REACT_APP_SESSION_TIMEOUT=1800000
 - `FRONTEND_URL=https://your-frontend-url.onrender.com`
 - `SESSION_TIMEOUT=30`
 - `AUDIT_LOG_RETENTION_DAYS=2190`
+- `AUDIT_DEAD_LETTER_PATH=logs/audit-dead-letter.log`
 
 ### Frontend Service
 - `REACT_APP_API_URL=https://your-backend-url.onrender.com/api`

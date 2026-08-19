@@ -55,8 +55,28 @@ const buildRequestContextFields = () => {
     connectionId: audit.connectionId,
     accessLevel: audit.accessLevel,
     method: req && req.method,
-    path: req && req.originalUrl
+    // Path only — query strings can carry the file route's ?token= fallback
+    path: requestContext.pathOf(req)
   };
+};
+
+/**
+ * Field NAMES touched by an update document (never their values), so
+ * query-level updates carry the same `modifiedFields` as document saves.
+ */
+const updatedFieldNames = (update) => {
+  if (!update || typeof update !== 'object') return [];
+  const names = new Set();
+  Object.entries(update).forEach(([key, value]) => {
+    if (key.startsWith('$')) {
+      if (value && typeof value === 'object') {
+        Object.keys(value).forEach((field) => names.add(field));
+      }
+    } else {
+      names.add(key);
+    }
+  });
+  return Array.from(names);
 };
 
 // Detect the consent-lifecycle transition represented by a Connection save
@@ -190,21 +210,10 @@ module.exports = function auditPlugin(schema, options = {}) {
     }
   });
 
-  // Document-level deletion (record.deleteOne())
-  schema.post('deleteOne', { document: true, query: false }, function (doc) {
-    try {
-      const target = doc && doc._id ? doc : this;
-      emit(target, {
-        subtype: isConnection ? 'consent-revoked' : 'record-delete',
-        action: 'D',
-        extraContext: isConnection
-          ? { before: { accessLevel: target.accessLevel, fullAccessStatus: target.fullAccessStatus } }
-          : {}
-      });
-    } catch (error) {
-      logger.error('Audit plugin post-deleteOne failed:', error);
-    }
-  });
+  // Note: document-level deletion (record.deleteOne()) is NOT hooked here.
+  // Mongoose runs it through a query with an { _id } filter, so it is already
+  // covered by the query-level deleteOne hook below; hooking both would emit
+  // two delete events for one deletion.
 
   // findByIdAndDelete / findOneAndDelete — the deleted doc is the post arg
   schema.post('findOneAndDelete', function (doc) {
@@ -225,7 +234,10 @@ module.exports = function auditPlugin(schema, options = {}) {
   // Query-level mutations: docs are not hydrated, so pre-fetch the affected
   // ids/patients (inside the operation's session when transactional).
   const QUERY_UPDATE_OPS = ['updateOne', 'updateMany', 'findOneAndUpdate'];
-  const QUERY_DELETE_OPS = ['deleteMany'];
+  // Model.deleteOne()/deleteMany() and doc.deleteOne() all execute as
+  // queries, so these two hooks cover every delete path except
+  // findOneAndDelete (hooked above).
+  const QUERY_DELETE_OPS = ['deleteOne', 'deleteMany'];
 
   const prefetchTargets = async function () {
     try {
@@ -245,13 +257,19 @@ module.exports = function auditPlugin(schema, options = {}) {
         this._auditSkip = true;
         return;
       }
+      this._auditModifiedFields = updatedFieldNames(this.getUpdate());
       await prefetchTargets.call(this);
     });
     schema.post(op, { document: false, query: true }, function () {
       try {
         if (this._auditSkip) return;
+        const modifiedFields = this._auditModifiedFields || [];
         (this._auditTargets || []).forEach((target) => {
-          emit(target, { subtype: 'record-update', action: 'U' });
+          emit(target, {
+            subtype: 'record-update',
+            action: 'U',
+            extraContext: { modifiedFields }
+          });
         });
       } catch (error) {
         logger.error(`Audit plugin post-${op} failed:`, error);
@@ -260,13 +278,34 @@ module.exports = function auditPlugin(schema, options = {}) {
   });
 
   QUERY_DELETE_OPS.forEach((op) => {
-    schema.pre(op, { document: false, query: true }, prefetchTargets);
+    schema.pre(op, { document: false, query: true }, async function () {
+      // Defensive: an empty filter would make the prefetch below match the
+      // whole collection. Never expected (doc.deleteOne() reaches here with
+      // its { _id } filter already applied), so make it loud rather than
+      // silently mis-attributing deletions.
+      const filter = this.getFilter();
+      if (!filter || Object.keys(filter).length === 0) {
+        this._auditSkip = true;
+        logger.warn(`Audit plugin: ${op} on ${baseResourceType} with an empty filter — not audited`);
+        return;
+      }
+      await prefetchTargets.call(this);
+    });
     schema.post(op, { document: false, query: true }, function () {
       try {
+        if (this._auditSkip) return;
         (this._auditTargets || []).forEach((target) => {
           emit(target, {
             subtype: isConnection ? 'consent-revoked' : 'record-delete',
-            action: 'D'
+            action: 'D',
+            extraContext: isConnection
+              ? {
+                before: {
+                  accessLevel: target.accessLevel,
+                  fullAccessStatus: target.fullAccessStatus
+                }
+              }
+              : {}
           });
         });
       } catch (error) {

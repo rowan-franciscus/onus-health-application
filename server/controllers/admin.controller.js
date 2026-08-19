@@ -942,9 +942,16 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+// Date-only values (the UI sends <input type="date">) denote whole UTC days:
+// an end date of 2026-08-13 must include everything recorded on that day.
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * Query the audit trail (admin only; the query itself is audited).
  * Filters: patientId, actorId, startDate, endDate, type, subtype, action.
+ * Pagination is snapshotted on `maxSeq` (returned with the first page and
+ * echoed back by the client), because every successful query appends an
+ * audit-query event that would otherwise shift the offsets of later pages.
  */
 const getAuditLogs = async (req, res, next) => {
   try {
@@ -957,6 +964,7 @@ const getAuditLogs = async (req, res, next) => {
       type,
       subtype,
       action,
+      maxSeq,
       page = 1,
       limit = 50
     } = req.query;
@@ -970,11 +978,30 @@ const getAuditLogs = async (req, res, next) => {
     if (startDate || endDate) {
       query.recorded = {};
       if (startDate) query.recorded.$gte = new Date(startDate);
-      if (endDate) query.recorded.$lte = new Date(endDate);
+      if (endDate) {
+        if (DATE_ONLY.test(endDate)) {
+          // Exclusive bound at the start of the following UTC day
+          const dayAfter = new Date(`${endDate}T00:00:00.000Z`);
+          dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
+          query.recorded.$lt = dayAfter;
+        } else {
+          // Exact timestamps from API callers are honoured as given
+          query.recorded.$lte = new Date(endDate);
+        }
+      }
     }
 
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const limitNum = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+
+    // Freeze the result set at the newest event that existed when paging
+    // started, so this request's own audit-query row cannot shift later pages.
+    let snapshotSeq = parseInt(maxSeq, 10);
+    if (!Number.isInteger(snapshotSeq)) {
+      const newest = await AuditEvent.findOne().sort({ seq: -1 }).select('seq').lean();
+      snapshotSeq = newest ? newest.seq : -1;
+    }
+    query.seq = { $lte: snapshotSeq };
 
     const [events, total] = await Promise.all([
       AuditEvent.find(query)
@@ -1013,7 +1040,8 @@ const getAuditLogs = async (req, res, next) => {
         page: pageNum,
         limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limitNum)
+        totalPages: Math.ceil(total / limitNum),
+        maxSeq: snapshotSeq
       }
     });
   } catch (error) {

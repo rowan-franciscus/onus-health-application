@@ -7,15 +7,20 @@
  * - Events drain through a single serialized in-process FIFO so the hash
  *   chain (prevHash -> hash) stays strictly ordered.
  * - Inserts retry with backoff; a duplicate seq (another writer) reloads the
- *   chain tip and recomputes. Persistent failures fall back to Winston
- *   (durable file logs in production) so the event is not silently lost.
+ *   chain tip and recomputes. Persistent failures are appended to a durable
+ *   dead-letter file (replayed with scripts/replay-audit-dead-letter.js) so an
+ *   outage cannot leave a permanent hole in the trail; the Winston error log
+ *   is only the last resort if even that write fails.
  * - No clinical content, passwords, tokens, or session secrets may ever be
  *   passed into an event.
  */
 
+const fs = require('fs');
+const path = require('path');
 const AuditEvent = require('../models/AuditEvent');
 const requestContext = require('../utils/requestContext');
 const { GENESIS_HASH, computeHash } = require('../utils/auditChain');
+const config = require('../config/environment');
 const logger = require('../utils/logger');
 
 const RETRY_DELAYS_MS = [100, 500, 2000];
@@ -67,6 +72,24 @@ const persistEvent = async (event) => {
   throw new Error('Audit write failed after retries');
 };
 
+/**
+ * Durable dead letter for events the database refused to accept.
+ * One JSON object per line, appended synchronously (this path only runs after
+ * every retry failed, so blocking briefly is preferable to losing the event).
+ * Returns true if the event is safely on disk.
+ */
+const writeDeadLetter = (event) => {
+  try {
+    const file = config.auditDeadLetterPath;
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.appendFileSync(file, `${JSON.stringify(event)}\n`, 'utf8');
+    return true;
+  } catch (error) {
+    logger.error('AUDIT_DEAD_LETTER_WRITE_FAILED', { error: error.message });
+    return false;
+  }
+};
+
 const drain = async () => {
   if (draining) return;
   draining = true;
@@ -80,8 +103,15 @@ const drain = async () => {
         await persistEvent(event);
       } catch (error) {
         // Durable fallback: the event never contains clinical content or
-        // secrets, so it is safe to write in full to the error log.
-        logger.error('AUDIT_WRITE_FAILED', { event, error: error.message });
+        // secrets, so it is safe to persist in full. The dead-letter file is
+        // replayable into the chain once the datastore recovers; the error log
+        // is a last resort only (rotating files are never replayed).
+        const deadLettered = writeDeadLetter(event);
+        logger.error('AUDIT_WRITE_FAILED', {
+          event,
+          error: error.message,
+          deadLettered
+        });
       }
       queue.shift();
     }
@@ -137,13 +167,30 @@ const logFromRequest = (req, event) => {
       },
       context: {
         method: req.method,
-        path: req.originalUrl,
+        // Path only — query strings can carry the file route's ?token= fallback
+        path: requestContext.pathOf(req),
         ...(event.context || {})
       }
     });
   } catch (error) {
     logger.error('AUDIT_ENQUEUE_FAILED', { error: error.message });
   }
+};
+
+/**
+ * Re-enqueue a dead-lettered event, preserving its original `recorded`
+ * timestamp (the chain position is assigned fresh, since the events that
+ * succeeded during the outage already hold the intervening seq numbers).
+ * Used only by scripts/replay-audit-dead-letter.js.
+ */
+const replay = (event) => {
+  const { seq, prevHash, hash, _id, ...rest } = event;
+  queue.push({
+    outcome: '0',
+    ...rest,
+    recorded: rest.recorded ? new Date(rest.recorded) : new Date()
+  });
+  drain().catch((error) => logger.error('Audit drain error:', error));
 };
 
 /**
@@ -161,5 +208,6 @@ module.exports = {
   init,
   log,
   logFromRequest,
+  replay,
   flush
 };

@@ -99,8 +99,15 @@ const sessionTimeout = async (req, res, next) => {
     
     // If token is older than session timeout and not expired yet
     if (minutesSinceIssue >= config.sessionTimeout && currentTime < payload.exp) {
-      // req.user is not set yet (passport runs per-route); attribute the
-      // session expiry from the verified token payload instead.
+      // Attribute the session expiry from the verified token payload: this
+      // middleware is mounted globally, ahead of the per-route passport
+      // authentication that populates req.user.
+      // NOTE: the guard above only proceeds when req.user is already set, so
+      // in the current mounting order this branch is inert and the timeout is
+      // enforced on the refresh path instead (authController.refreshToken,
+      // which emits the same session-timeout event). Making it active here
+      // would turn the activity-based session into an absolute 30-minute one
+      // and log out users mid-session — a separate decision from auditing.
       const store = requestContext.getStore();
       if (store) {
         store.audit.handled = true;
@@ -117,7 +124,8 @@ const sessionTimeout = async (req, res, next) => {
           ip: req.ip,
           userAgent: req.get('user-agent')
         },
-        context: { method: req.method, path: req.originalUrl }
+        // Path only — never the query string (the file route accepts ?token=)
+        context: { method: req.method, path: requestContext.pathOf(req) }
       });
       return res.status(401).json({
         success: false,

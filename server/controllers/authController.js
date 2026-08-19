@@ -367,6 +367,13 @@ exports.refreshToken = async (req, res) => {
 
           // If the previous token's session has timed out, don't allow refresh
           if (minutesSinceIssue >= config.sessionTimeout) {
+            // This is where session expiry is actually enforced, so this is
+            // where the audit event belongs. req.user is not set on this
+            // route: attribute the actor from the verified token payload.
+            auditAuth(req, "session-timeout", "8", {
+              outcomeDesc: "session-timeout",
+              agent: { userId: payload.id || null, role: payload.role },
+            });
             return res.status(401).json({
               success: false,
               message: "Session timeout",
