@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateJWT, isProvider, isAdminOrProvider, isProviderOrPracticeAdmin } = require('../middleware/auth.middleware');
 const { uploadPhysicalRecordFile, handleUploadErrors } = require('../middleware/upload.middleware');
 const physicalRecordController = require('../controllers/physicalRecord.controller');
+const { auditRead } = require('../middleware/audit.middleware');
 
 router.post(
   '/patients/:patientId/physical-records',
@@ -16,6 +17,7 @@ router.post(
 router.get(
   '/patients/:patientId/physical-records',
   authenticateJWT,
+  auditRead('PhysicalRecord'),
   physicalRecordController.getPhysicalRecords
 );
 

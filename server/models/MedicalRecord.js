@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const auditPlugin = require('./plugins/audit.plugin');
 
 // Base schema options to be used across all medical record types
 const medicalRecordOptions = {
@@ -37,6 +38,9 @@ const MedicalRecordSchema = new Schema({
     default: false
   }
 }, medicalRecordOptions);
+
+// Audit every create/update/delete across all record-type discriminators
+MedicalRecordSchema.plugin(auditPlugin, { resourceType: 'MedicalRecord' });
 
 // Create the base model
 const MedicalRecord = mongoose.model('MedicalRecord', MedicalRecordSchema);

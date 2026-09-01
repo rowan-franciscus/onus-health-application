@@ -11,6 +11,7 @@ const {
   isPatient
 } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
+const { auditRead } = require('../middleware/audit.middleware');
 const { uploadConsultationFile } = require('../middleware/upload.middleware');
 
 // Import consultation controller
@@ -25,17 +26,17 @@ router.get('/test', (req, res) => {
 // ---------------------------------------------------------------
 
 // Get recent consultations for a patient
-router.get('/patient/recent', authenticateJWT, isPatient, (req, res) => {
+router.get('/patient/recent', authenticateJWT, isPatient, auditRead('Consultation'), (req, res) => {
   consultationController.getPatientConsultations(req, res);
 });
 
 // Get consultation statistics for a patient
-router.get('/patient/statistics', authenticateJWT, isPatient, (req, res) => {
+router.get('/patient/statistics', authenticateJWT, isPatient, auditRead('Consultation'), (req, res) => {
   consultationController.getPatientConsultationStatistics(req, res);
 });
 
 // Get all consultations for a patient
-router.get('/patient', authenticateJWT, isPatient, (req, res) => {
+router.get('/patient', authenticateJWT, isPatient, auditRead('Consultation'), (req, res) => {
   consultationController.getPatientConsultations(req, res);
 });
 
@@ -43,7 +44,7 @@ router.get('/patient', authenticateJWT, isPatient, (req, res) => {
 // ---------------------------------------------------------------
 
 // Get all consultations (with filtering)
-router.get('/', authenticateJWT, 
+router.get('/', authenticateJWT, auditRead('Consultation'),
   query('patient').optional().isMongoId().withMessage('Invalid patient ID'),
   query('provider').optional().isMongoId().withMessage('Invalid provider ID'),
   query('status').optional().isIn(['draft', 'completed', 'archived']).withMessage('Invalid status'),
@@ -76,6 +77,7 @@ router.get('/:id',
   },
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest, 
+  auditRead('Consultation'),
   (req, res) => {
     console.log('=== Calling consultationController.getConsultationById ===');
     consultationController.getConsultationById(req, res);

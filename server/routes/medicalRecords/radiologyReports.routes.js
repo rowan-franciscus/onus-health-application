@@ -5,6 +5,7 @@ const { body, param, query } = require('express-validator');
 // Import middleware
 const { authenticateJWT, isProvider } = require('../../middleware/auth.middleware');
 const { validateRequest } = require('../../middleware/validation.middleware');
+const { auditRead } = require('../../middleware/audit.middleware');
 
 // Import radiology reports controller
 const radiologyReportsController = require('../../controllers/medicalRecords/radiologyReports.controller');
@@ -29,6 +30,7 @@ router.post(
 router.get(
   '/',
   authenticateJWT,
+  auditRead('RadiologyReport'),
   radiologyReportsController.getRadiologyReportsForConsultation
 );
 
@@ -36,6 +38,7 @@ router.get(
 router.get(
   '/all',
   authenticateJWT,
+  auditRead('RadiologyReport'),
   [
     query('patientId').optional().isMongoId().withMessage('Invalid patient ID format'),
     query('startDate').optional().isISO8601().withMessage('Start date must be a valid ISO date'),

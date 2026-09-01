@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Consultation = require('../models/Consultation');
 const Connection = require('../models/Connection');
 const logger = require('../utils/logger');
+const auditService = require('../services/audit.service');
 const mongoose = require('mongoose');
 const { validatePassword } = require('../utils/passwordPolicy');
 
@@ -375,7 +376,14 @@ exports.getConsultationById = async (req, res) => {
     if (!consultation) {
       return res.status(404).json({ success: false, message: 'Consultation not found' });
     }
-    
+
+    // Enrich the audit read event: the route param is :consultationId, which
+    // the auditRead middleware cannot resolve on its own
+    req.audit?.set({
+      resourceId: consultation._id,
+      patientId: consultation.patient && consultation.patient._id
+    });
+
     res.json({
       success: true,
       consultation
@@ -674,6 +682,15 @@ exports.invitePracticeAdmin = async (req, res) => {
 
     await Practice.findByIdAndUpdate(practiceId, { $addToSet: { admins: admin._id } });
 
+    auditService.logFromRequest(req, {
+      type: 'admin',
+      subtype: 'practice-admin-invited',
+      action: 'E',
+      outcome: '0',
+      entity: { resourceType: 'User', resourceId: admin._id },
+      context: { practiceId }
+    });
+
     try {
       const emailService = require('../services/email.service');
       const acceptUrl = `${config.frontendUrl}/accept-practice-admin/${token}`;
@@ -737,6 +754,16 @@ exports.revokePracticeAdmin = async (req, res) => {
     }
     admin.practiceAdminProfile.status = 'revoked';
     await admin.save();
+
+    auditService.logFromRequest(req, {
+      type: 'admin',
+      subtype: 'practice-admin-revoked',
+      action: 'E',
+      outcome: '0',
+      entity: { resourceType: 'User', resourceId: admin._id },
+      context: { practiceId }
+    });
+
     res.json({ success: true });
   } catch (error) {
     logger.error('provider.revokePracticeAdmin error:', error);

@@ -36,6 +36,9 @@ const { notFound, errorHandler, setupErrorHandling } = require('./middleware/err
 const { handleUploadErrors } = require('./middleware/upload.middleware');
 const { sessionTimeout } = require('./middleware/auth.middleware');
 const emailService = require('./services/email.service');
+const requestContext = require('./utils/requestContext');
+const { failedAccessAudit } = require('./middleware/audit.middleware');
+const auditService = require('./services/audit.service');
 
 // Setup global error handling for uncaught exceptions
 setupErrorHandling();
@@ -56,6 +59,9 @@ app.disable('etag');
 // Basic middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Per-request context for audit attribution (actor, IP, enrichment bag)
+app.use(requestContext.middleware);
 
 // SECURITY: strip MongoDB operator characters ($ and .) from user input to prevent
 // NoSQL/operator injection (e.g. { "email": { "$ne": null } }) in queries built from
@@ -170,6 +176,9 @@ app.use(passport.initialize());
 // Session timeout middleware
 app.use(sessionTimeout);
 
+// Audit every 401/403 on /api/* as a failed-authorization event
+app.use(failedAccessAudit);
+
 // Static files with CORS headers
 app.use('/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -214,6 +223,13 @@ const startServer = async () => {
     // Start connection monitoring
     connectionMonitor.startMonitoring();
 
+    // Load the audit hash-chain tip (also lazily initialized on first event)
+    try {
+      await auditService.init();
+    } catch (error) {
+      logger.error('Audit service initialization failed (will retry lazily):', error);
+    }
+
     // Automatically check and fix test authentication in development mode
     if (config.env === 'development') {
       const User = require('./models/User');
@@ -252,8 +268,12 @@ const startServer = async () => {
   }
 };
 
-// Start the server
-startServer();
+// Start the server only when run directly (node server.js / nodemon).
+// Tests require this module for the Express app and manage their own
+// in-memory database connection.
+if (require.main === module) {
+  startServer();
+}
 
 // For testing
-module.exports = app; 
+module.exports = app;

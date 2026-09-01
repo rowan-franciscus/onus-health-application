@@ -5,6 +5,7 @@ const { body, param, query } = require('express-validator');
 // Import middleware
 const { authenticateJWT, isProvider } = require('../../middleware/auth.middleware');
 const { validateRequest } = require('../../middleware/validation.middleware');
+const { auditRead } = require('../../middleware/audit.middleware');
 
 // Import lab results controller
 const labResultsController = require('../../controllers/medicalRecords/labResults.controller');
@@ -29,6 +30,7 @@ router.post(
 router.get(
   '/',
   authenticateJWT,
+  auditRead('LabResult'),
   labResultsController.getLabResultsForConsultation
 );
 
@@ -36,6 +38,7 @@ router.get(
 router.get(
   '/all',
   authenticateJWT,
+  auditRead('LabResult'),
   [
     query('patientId').optional().isMongoId().withMessage('Invalid patient ID format'),
     query('startDate').optional().isISO8601().withMessage('Start date must be a valid ISO date'),

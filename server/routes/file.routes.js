@@ -1,4 +1,5 @@
 const express = require('express');
+const { auditRead } = require('../middleware/audit.middleware');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
@@ -162,7 +163,7 @@ router.get('/:type/:filename/info', authenticateJWT, async (req, res) => {
  * 
  * Consider implementing temporary signed URLs for better security in the future.
  */
-router.get('/:type/:filename', async (req, res, next) => {
+router.get('/:type/:filename', auditRead('File', { type: 'export', subtype: 'file-download' }), async (req, res, next) => {
   try {
     // Check for token in query parameter if no Authorization header
     if (!req.headers.authorization && req.query.token) {
@@ -267,7 +268,9 @@ router.delete('/:type/:filename', authenticateJWT, async (req, res) => {
 /**
  * Get list of files for a specific consultation
  */
-router.get('/consultation/:consultationId/attachments', authenticateJWT, async (req, res) => {
+// Metadata listing only — no file content leaves the server here, so this is
+// a plain read, not an export/download event.
+router.get('/consultation/:consultationId/attachments', authenticateJWT, auditRead('File', { subtype: 'file-list' }), async (req, res) => {
   try {
     const { consultationId } = req.params;
     

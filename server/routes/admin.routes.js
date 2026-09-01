@@ -105,6 +105,24 @@ router.get('/provider-verification-requests', adminController.getProviderVerific
 router.post('/provider-verification/:providerId', adminController.processProviderVerification);
 router.post('/complete-provider-verification/:providerId', adminController.completeProviderVerification);
 
+// Audit trail (admin only; every query is itself audited)
+router.get(
+  '/audit-logs',
+  [
+    query('patientId').optional().isMongoId().withMessage('Invalid patient ID'),
+    query('actorId').optional().isMongoId().withMessage('Invalid actor ID'),
+    query('startDate').optional().isISO8601().withMessage('Start date must be a valid date'),
+    query('endDate').optional().isISO8601().withMessage('End date must be a valid date'),
+    query('type').optional().isIn(['auth', 'data', 'consent', 'admin', 'export', 'security', 'audit']).withMessage('Invalid type'),
+    query('subtype').optional().isString(),
+    query('action').optional().isIn(['C', 'R', 'U', 'D', 'E']).withMessage('Invalid action'),
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+  ],
+  validateRequest,
+  adminController.getAuditLogs
+);
+
 // Admin change password
 router.put('/change-password', adminController.changePassword);
 

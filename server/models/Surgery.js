@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('./plugins/audit.plugin');
 const { Schema } = mongoose;
 
 const SurgeryNoteSchema = new Schema(
@@ -62,5 +63,7 @@ const SurgerySchema = new Schema(
 SurgerySchema.virtual('noteCount').get(function () {
   return Array.isArray(this.notes) ? this.notes.length : 0;
 });
+
+SurgerySchema.plugin(auditPlugin, { resourceType: 'Surgery' });
 
 module.exports = mongoose.model('Surgery', SurgerySchema);

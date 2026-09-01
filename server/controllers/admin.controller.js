@@ -6,6 +6,23 @@ const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 const { validatePassword } = require('../utils/passwordPolicy');
+const auditService = require('../services/audit.service');
+
+// Audit helper for administrative actions on user accounts
+const auditAdmin = (req, subtype, targetUser, extraContext = {}) => {
+  auditService.logFromRequest(req, {
+    type: 'admin',
+    subtype,
+    action: 'E',
+    outcome: '0',
+    entity: {
+      resourceType: 'User',
+      resourceId: targetUser._id,
+      patientId: targetUser.role === 'patient' ? targetUser._id : undefined
+    },
+    context: extraContext
+  });
+};
 
 /**
  * Get all users with optional filtering
@@ -164,7 +181,13 @@ const updateUser = async (req, res, next) => {
     if (!updatedUser) {
       return next(new ApiError(httpStatus.NOT_FOUND, 'User not found'));
     }
-    
+
+    const isRoleChange = updates.role && updates.role !== user.role;
+    auditAdmin(req, isRoleChange ? 'role-change' : 'user-update', updatedUser, {
+      modifiedFields: Object.keys(updates),
+      ...(isRoleChange ? { before: { role: user.role }, after: { role: updatedUser.role } } : {})
+    });
+
     // Filter the response for patient data
     if (updatedUser.role === 'patient') {
       const filteredUser = {
@@ -211,12 +234,14 @@ const deleteUser = async (req, res, next) => {
       return next(new ApiError(httpStatus.NOT_FOUND, 'User not found'));
     }
     
-    // Cleanup related data
+    // Cleanup related data (each cascaded delete is audited by the model hooks)
     await Consultation.deleteMany({ patient: id });
     await Connection.deleteMany({ 
       $or: [{ patient: id }, { provider: id }] 
     });
-    
+
+    auditAdmin(req, 'user-deleted', user, { before: { role: user.role } });
+
     res.status(httpStatus.NO_CONTENT).send();
   } catch (error) {
     next(error);
@@ -311,7 +336,11 @@ const updateProviderVerification = async (req, res, next) => {
     provider.verifiedAt = status === 'approved' ? new Date() : null;
     
     await provider.save();
-    
+
+    auditAdmin(req, status === 'approved' ? 'provider-approved' : 'provider-rejected', provider, {
+      after: { verificationStatus: status }
+    });
+
     res.json(provider);
   } catch (error) {
     next(error);
@@ -646,7 +675,9 @@ const processProviderVerification = async (req, res) => {
       provider.providerProfile.isVerified = true;
       provider.providerProfile.verifiedAt = new Date();
       await provider.save();
-      
+
+      auditAdmin(req, 'provider-approved', provider);
+
       logger.info(`Provider ${provider.email} (${providerId}) has been approved`);
       
       // Send approval email
@@ -676,7 +707,9 @@ const processProviderVerification = async (req, res) => {
       provider.providerProfile.rejectionDate = new Date();
       
       await provider.save();
-      
+
+      auditAdmin(req, 'provider-rejected', provider);
+
       logger.info(`Provider ${provider.email} (${providerId}) has been rejected. Reason: ${provider.providerProfile.rejectionReason}`);
       
       // Send rejection email
@@ -760,7 +793,9 @@ const completeProviderVerification = async (req, res) => {
       provider.providerProfile.rejectionReason = null;
       
       await provider.save();
-      
+
+      auditAdmin(req, 'provider-approved', provider);
+
       logger.info(`Provider ${provider.email} (${providerId}) has been approved successfully`);
       
       // Send approval email
@@ -793,7 +828,9 @@ const completeProviderVerification = async (req, res) => {
       provider.providerProfile.rejectionDate = new Date();
       
       await provider.save();
-      
+
+      auditAdmin(req, 'provider-rejected', provider);
+
       logger.info(`Provider ${provider.email} (${providerId}) has been rejected. Reason: ${rejectionReason || 'No reason provided'}`);
       
       // Send rejection email
@@ -905,6 +942,113 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+// Date-only values (the UI sends <input type="date">) denote whole UTC days:
+// an end date of 2026-08-13 must include everything recorded on that day.
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Query the audit trail (admin only; the query itself is audited).
+ * Filters: patientId, actorId, startDate, endDate, type, subtype, action.
+ * Pagination is snapshotted on `maxSeq` (returned with the first page and
+ * echoed back by the client), because every successful query appends an
+ * audit-query event that would otherwise shift the offsets of later pages.
+ */
+const getAuditLogs = async (req, res, next) => {
+  try {
+    const AuditEvent = require('../models/AuditEvent');
+    const {
+      patientId,
+      actorId,
+      startDate,
+      endDate,
+      type,
+      subtype,
+      action,
+      maxSeq,
+      page = 1,
+      limit = 50
+    } = req.query;
+
+    const query = {};
+    if (patientId) query['entity.patientId'] = patientId;
+    if (actorId) query['agent.userId'] = actorId;
+    if (type) query.type = type;
+    if (subtype) query.subtype = subtype;
+    if (action) query.action = action;
+    if (startDate || endDate) {
+      query.recorded = {};
+      if (startDate) query.recorded.$gte = new Date(startDate);
+      if (endDate) {
+        if (DATE_ONLY.test(endDate)) {
+          // Exclusive bound at the start of the following UTC day
+          const dayAfter = new Date(`${endDate}T00:00:00.000Z`);
+          dayAfter.setUTCDate(dayAfter.getUTCDate() + 1);
+          query.recorded.$lt = dayAfter;
+        } else {
+          // Exact timestamps from API callers are honoured as given
+          query.recorded.$lte = new Date(endDate);
+        }
+      }
+    }
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+
+    // Freeze the result set at the newest event that existed when paging
+    // started, so this request's own audit-query row cannot shift later pages.
+    let snapshotSeq = parseInt(maxSeq, 10);
+    if (!Number.isInteger(snapshotSeq)) {
+      const newest = await AuditEvent.findOne().sort({ seq: -1 }).select('seq').lean();
+      snapshotSeq = newest ? newest.seq : -1;
+    }
+    query.seq = { $lte: snapshotSeq };
+
+    const [events, total] = await Promise.all([
+      AuditEvent.find(query)
+        .sort({ seq: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum)
+        .populate('agent.userId', 'firstName lastName email role')
+        .populate('entity.patientId', 'firstName lastName email')
+        .lean(),
+      AuditEvent.countDocuments(query)
+    ]);
+
+    // Access to the audit log is itself an auditable event
+    auditService.logFromRequest(req, {
+      type: 'audit',
+      subtype: 'audit-query',
+      action: 'E',
+      outcome: '0',
+      entity: {
+        resourceType: 'AuditEvent',
+        patientId: patientId || undefined
+      },
+      context: {
+        after: {
+          filters: { patientId, actorId, startDate, endDate, type, subtype, action },
+          page: pageNum,
+          limit: limitNum
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      events,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        maxSeq: snapshotSeq
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -918,5 +1062,6 @@ module.exports = {
   processProviderVerification,
   completeProviderVerification,
   changePassword,
-  updateProfile
+  updateProfile,
+  getAuditLogs
 }; 

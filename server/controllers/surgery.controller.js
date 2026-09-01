@@ -246,6 +246,11 @@ exports.getSurgeryById = async (req, res) => {
       .populate('provider', PROVIDER_POPULATE)
       .populate('notes.recordedBy', PROVIDER_POPULATE);
 
+    if (surgery) {
+      // Enrich the audit read event with the record's subject
+      req.audit?.set({ patientId: surgery.patient?._id, resourceId: surgery._id });
+    }
+
     if (!surgery) {
       return res.status(404).json({ success: false, message: 'Surgery record not found' });
     }

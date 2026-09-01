@@ -237,6 +237,11 @@ exports.getAdmissionById = async (req, res) => {
       .populate('provider', PROVIDER_POPULATE)
       .populate('observations.recordedBy', PROVIDER_POPULATE);
 
+    if (admission) {
+      // Enrich the audit read event with the record's subject
+      req.audit?.set({ patientId: admission.patient?._id, resourceId: admission._id });
+    }
+
     if (!admission) {
       return res.status(404).json({ success: false, message: 'Admission not found' });
     }

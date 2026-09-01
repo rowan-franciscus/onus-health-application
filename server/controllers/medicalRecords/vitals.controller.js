@@ -73,7 +73,12 @@ class VitalsController extends BaseMedicalRecordController {
       const vitalsRecord = await Vitals.findById(id)
         .populate('patient', 'firstName lastName email')
         .populate('provider', 'firstName lastName email');
-      
+
+      if (vitalsRecord) {
+        // Enrich the audit read event with the record's subject
+        req.audit?.set({ patientId: vitalsRecord.patient?._id, resourceId: vitalsRecord._id });
+      }
+
       if (!vitalsRecord) {
         return res.status(404).json({ 
           success: false,

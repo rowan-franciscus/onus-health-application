@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('./plugins/audit.plugin');
 const { Schema } = mongoose;
 
 const BiometricSchema = new Schema(
@@ -13,5 +14,7 @@ const BiometricSchema = new Schema(
   },
   { timestamps: true }
 );
+
+BiometricSchema.plugin(auditPlugin, { resourceType: 'Biometric' });
 
 module.exports = mongoose.model('Biometric', BiometricSchema);

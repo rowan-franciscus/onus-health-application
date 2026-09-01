@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const auditPlugin = require('./plugins/audit.plugin');
 const { Schema } = mongoose;
 
 const ObservationSchema = new Schema(
@@ -55,5 +56,7 @@ const HospitalAdmissionSchema = new Schema(
 HospitalAdmissionSchema.virtual('observationCount').get(function () {
   return Array.isArray(this.observations) ? this.observations.length : 0;
 });
+
+HospitalAdmissionSchema.plugin(auditPlugin, { resourceType: 'HospitalAdmission' });
 
 module.exports = mongoose.model('HospitalAdmission', HospitalAdmissionSchema);

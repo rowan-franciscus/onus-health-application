@@ -5,6 +5,7 @@ const { body, param, query } = require('express-validator');
 // Import middleware
 const { authenticateJWT, isProvider } = require('../../middleware/auth.middleware');
 const { validateRequest } = require('../../middleware/validation.middleware');
+const { auditRead } = require('../../middleware/audit.middleware');
 
 // Import vitals controller
 const vitalsController = require('../../controllers/medicalRecords/vitals.controller');
@@ -28,12 +29,12 @@ router.post('/', authenticateJWT, isProvider, [
 });
 
 // Get vitals for a consultation
-router.get('/', authenticateJWT, (req, res) => {
+router.get('/', authenticateJWT, auditRead('Vitals'), (req, res) => {
   vitalsController.getVitalsForConsultation(req, res);
 });
 
 // Get all vitals records with filtering and pagination
-router.get('/all', authenticateJWT, [
+router.get('/all', authenticateJWT, auditRead('Vitals'), [
   query('patientId').optional().isMongoId().withMessage('Invalid patient ID format'),
   query('startDate').optional().isISO8601().withMessage('Start date must be a valid ISO date'),
   query('endDate').optional().isISO8601().withMessage('End date must be a valid ISO date'),

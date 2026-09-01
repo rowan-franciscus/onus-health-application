@@ -5,6 +5,7 @@ const { query, param } = require('express-validator');
 // Import middleware
 const { authenticateJWT, isProvider, isPatient, isAdminOrProvider } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
+const { auditRead, recordTypeFromParam } = require('../middleware/audit.middleware');
 
 // Import medical record controller
 const medicalRecordController = require('../controllers/medicalRecord.controller');
@@ -26,7 +27,7 @@ router.get('/test', (req, res) => {
 });
 
 // Patient vitals route
-router.get('/patient/vitals/recent', authenticateJWT, isPatient, medicalRecordController.getPatientRecentVitals);
+router.get('/patient/vitals/recent', authenticateJWT, isPatient, auditRead('Vitals'), medicalRecordController.getPatientRecentVitals);
 
 // Patient create vitals route
 router.post('/patient/vitals', authenticateJWT, isPatient,
@@ -40,10 +41,10 @@ router.post('/provider/hospital-records', authenticateJWT, isProvider, standalon
 router.post('/provider/surgery-records', authenticateJWT, isProvider, standaloneRecordController.createSurgeryRecord);
 
 // Get single vitals record by ID
-router.get('/vitals/:id', authenticateJWT, require('../controllers/medicalRecords/vitals.controller').getVitalsById);
+router.get('/vitals/:id', authenticateJWT, auditRead('Vitals'), require('../controllers/medicalRecords/vitals.controller').getVitalsById);
 
 // Provider routes
-router.get('/provider/vitals', authenticateJWT, isProvider, 
+router.get('/provider/vitals', authenticateJWT, isProvider, auditRead('Vitals'),
   [
     query('patientId').optional().isMongoId().withMessage('Invalid patient ID'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
@@ -53,7 +54,7 @@ router.get('/provider/vitals', authenticateJWT, isProvider,
 );
 
 // Get medical records by type for provider
-router.get('/provider/:type', authenticateJWT, isProvider,
+router.get('/provider/:type', authenticateJWT, isProvider, auditRead(recordTypeFromParam),
   [
     param('type').isIn(['vitals', 'medications', 'immunizations', 'lab-results', 'radiology-reports', 'hospital-records', 'surgery-records']).withMessage('Invalid record type'),
     query('patientId').optional().isMongoId().withMessage('Invalid patient ID'),
@@ -64,7 +65,7 @@ router.get('/provider/:type', authenticateJWT, isProvider,
 );
 
 // Get specific radiology reports with special handling
-router.get('/radiology-reports', authenticateJWT, isAdminOrProvider, 
+router.get('/radiology-reports', authenticateJWT, isAdminOrProvider, auditRead('RadiologyReport'),
   [
     query('patientId').optional().isMongoId().withMessage('Invalid patient ID'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
@@ -77,6 +78,7 @@ router.get('/radiology-reports', authenticateJWT, isAdminOrProvider,
 router.get(
   '/:type',
   authenticateJWT,
+  auditRead(recordTypeFromParam),
   [
     param('type')
       .isIn(VALID_TYPES)
@@ -119,12 +121,13 @@ router.get(
 );
 
 // Special route for radiology (client uses 'radiology' but we use 'radiology-reports')
-router.get('/radiology', authenticateJWT, medicalRecordController.getRadiologyReports);
+router.get('/radiology', authenticateJWT, auditRead('RadiologyReport'), medicalRecordController.getRadiologyReports);
 
 // Get statistics/aggregates for medical records
 router.get(
   '/:type/statistics',
   authenticateJWT,
+  auditRead(recordTypeFromParam),
   [
     param('type')
       .isIn(VALID_TYPES)
