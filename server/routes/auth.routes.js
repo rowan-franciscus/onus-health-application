@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const passport = require('passport');
-const { authenticateJWT, authRateLimiter, passwordResetLimiter } = require('../middleware/auth.middleware');
+const { authenticateJWT, authRateLimiter, passwordResetLimiter, consentLinkLimiter } = require('../middleware/auth.middleware');
 const { validatePassword } = require('../utils/passwordPolicy');
 
 // Reusable strong-password rule. Delegates to the shared password policy so the
@@ -42,6 +42,10 @@ router.get('/me', authenticateJWT, authController.getCurrentUser);
 // Practice Admin invite acceptance (public)
 router.get('/practice-admin-invite/:token', authController.getPracticeAdminInvite);
 router.post('/practice-admin-invite/:token/accept', authController.acceptPracticeAdminInvite);
+
+// Claim a provider-created patient record (link from the consent email)
+router.get('/claim/:token', consentLinkLimiter, authController.getClaim);
+router.post('/claim/:token', consentLinkLimiter, authController.claimProfile);
 
 // Social authentication
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));

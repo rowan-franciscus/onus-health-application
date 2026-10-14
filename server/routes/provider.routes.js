@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const providerController = require('../controllers/providerController');
-const { authenticateJWT, isVerifiedProvider } = require('../middleware/auth.middleware');
+const { authenticateJWT, isVerifiedProvider, requireActiveConsent, patientFromBody, patientFromDocument } = require('../middleware/auth.middleware');
 const { auditRead } = require('../middleware/audit.middleware');
 
 // Get verification status
@@ -58,12 +58,15 @@ router.get('/dashboard', authenticateJWT, isVerifiedProvider, auditRead('Dashboa
 router.get('/patients', authenticateJWT, isVerifiedProvider, auditRead('Patient'), providerController.getPatients);
 router.post('/patients', authenticateJWT, isVerifiedProvider, providerController.addPatient);
 router.get('/patients/:patientId', authenticateJWT, isVerifiedProvider, auditRead('Patient'), providerController.getPatientById);
+router.post('/patients/:patientId/consent/resend', authenticateJWT, isVerifiedProvider, providerController.resendConsent);
+router.post('/patients/:patientId/consent/deferral', authenticateJWT, isVerifiedProvider, providerController.recordConsentDeferral);
 
 // Consultations
 router.get('/consultations', authenticateJWT, isVerifiedProvider, auditRead('Consultation'), providerController.getConsultations);
-router.post('/consultations', authenticateJWT, isVerifiedProvider, providerController.createConsultation);
-router.get('/consultations/:consultationId', authenticateJWT, isVerifiedProvider, auditRead('Consultation'), providerController.getConsultationById);
-router.put('/consultations/:consultationId', authenticateJWT, isVerifiedProvider, providerController.updateConsultation);
+const consentForConsultation = requireActiveConsent(patientFromDocument('Consultation', 'consultationId'));
+router.post('/consultations', authenticateJWT, isVerifiedProvider, requireActiveConsent(patientFromBody('patientId')), providerController.createConsultation);
+router.get('/consultations/:consultationId', authenticateJWT, isVerifiedProvider, auditRead('Consultation'), consentForConsultation, providerController.getConsultationById);
+router.put('/consultations/:consultationId', authenticateJWT, isVerifiedProvider, consentForConsultation, providerController.updateConsultation);
 
 // Profile and settings (available to providers even before verification)
 router.get('/profile', authenticateJWT, providerController.getProfile);

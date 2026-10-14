@@ -21,8 +21,12 @@ const SignUp = () => {
     email: prefillEmail,
     password: '',
     confirmPassword: '',
+    dateOfBirth: '',
   });
   const [errors, setErrors] = useState({});
+  // Set when a provider-created record may exist for this email: the DOB is
+  // needed to link the new account to it (email alone never links)
+  const [needsDob, setNeedsDob] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('patient');
@@ -38,6 +42,9 @@ const SignUp = () => {
       ...formData,
       [name]: value,
     });
+    if (name === 'email') {
+      setNeedsDob(false);
+    }
     
     // Clear error when user starts typing
     if (errors[name]) {
@@ -74,6 +81,10 @@ const SignUp = () => {
       }
     }
     
+    if (needsDob && !formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    }
+    
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.confirmPassword !== formData.password) {
@@ -100,6 +111,7 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         role: selectedRole,
+        ...(needsDob ? { dateOfBirth: formData.dateOfBirth } : {}),
       };
       
       console.log('Sending registration data:', { ...userData, password: '****' });
@@ -120,6 +132,9 @@ const SignUp = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      if (error.code === 'RECORD_EXISTS_VERIFY_DOB') {
+        setNeedsDob(true);
+      }
       dispatch(authFail(error.message || 'Sign up failed'));
     }
   };
@@ -231,6 +246,22 @@ const SignUp = () => {
           />
           {errors.email && <div className={styles.errorText}>{errors.email}</div>}
         </div>
+
+        {needsDob && (
+          <div className={styles.formGroup}>
+            <label htmlFor="dateOfBirth" className={styles.label}>Date of birth*</label>
+            <input
+              type="date"
+              id="dateOfBirth"
+              name="dateOfBirth"
+              value={formData.dateOfBirth}
+              onChange={handleChange}
+              max={new Date().toISOString().slice(0, 10)}
+              className={`${styles.input} ${errors.dateOfBirth ? styles.inputError : ''}`}
+            />
+            {errors.dateOfBirth && <div className={styles.errorText}>{errors.dateOfBirth}</div>}
+          </div>
+        )}
         
         <div className={styles.formGroup}>
           <label htmlFor="password" className={styles.label}>Password*</label>

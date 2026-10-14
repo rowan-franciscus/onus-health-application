@@ -5,6 +5,8 @@ import Card from '../../components/common/Card';
 import SearchBox from '../../components/common/SearchBox';
 import PatientService from '../../services/patient.service';
 import ConnectionService from '../../services/connection.service';
+import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge';
+import { CONSENT_STATUS, isAwaitingConsent, isConsentActive } from '../../services/consent.service';
 
 import styles from './Patients.module.css';
 
@@ -13,7 +15,8 @@ const DEFAULT_CATEGORIES = [
   { id: 'recent', label: 'Recently Viewed' },
   { id: 'full-access', label: 'Full Access' },
   { id: 'limited-access', label: 'Limited Access' },
-  { id: 'pending', label: 'Pending Approval' }
+  { id: 'pending', label: 'Pending Approval' },
+  { id: 'awaiting-consent', label: 'Awaiting Consent' }
 ];
 
 const getAccessLevelDisplay = (patient) => {
@@ -95,6 +98,8 @@ const ProviderPatientList = ({
           email: patient.email,
           accessLevel: connection ? connection.accessLevel : 'limited',
           fullAccessStatus: connection ? connection.fullAccessStatus : 'none',
+          consentStatus: patient.consentStatus,
+          claimed: patient.claimed,
           connectionId: connection ? connection._id : null,
           connection
         };
@@ -121,6 +126,8 @@ const ProviderPatientList = ({
         return list.filter(p => p.accessLevel === 'limited');
       case 'pending':
         return list.filter(p => p.fullAccessStatus === 'pending');
+      case 'awaiting-consent':
+        return list.filter(p => isAwaitingConsent(p.consentStatus));
       case 'recent':
         return list.slice(0, 3);
       case 'all':
@@ -145,7 +152,8 @@ const ProviderPatientList = ({
         String(patient.age || ''),
         patient.gender || '',
         patient.accessLevel || '',
-        getAccessLevelDisplay(patient)
+        getAccessLevelDisplay(patient),
+        CONSENT_STATUS[patient.consentStatus]?.label || ''
       ].join(' ').toLowerCase();
       return searchable.includes(searchString);
     });
@@ -176,7 +184,7 @@ const ProviderPatientList = ({
         <div className={styles.filterSection}>
           <div className={styles.searchContainer}>
             <SearchBox
-              placeholder="Search patients by name, age, access level, email..."
+              placeholder="Search patients by name, age, status, email..."
               value={searchTerm}
               onChange={handleSearch}
             />
@@ -207,7 +215,7 @@ const ProviderPatientList = ({
               <div className={styles.colName}>Name</div>
               <div className={styles.colId}>ID</div>
               <div className={styles.colAge}>Age</div>
-              <div className={styles.colAccess}>Access Level</div>
+              <div className={styles.colAccess}>Status</div>
               <div className={styles.colEmail}>Email</div>
               <div className={styles.colActions}>Actions</div>
             </div>
@@ -222,9 +230,14 @@ const ProviderPatientList = ({
                   <div className={styles.colId}>{patient.id}</div>
                   <div className={styles.colAge}>{patient.age}</div>
                   <div className={styles.colAccess}>
-                    <span className={getAccessLevelBadgeClass(patient)}>
-                      {getAccessLevelDisplay(patient)}
-                    </span>
+                    {/* Until the patient consents, their consent state is what matters, not access level */}
+                    {isConsentActive(patient.consentStatus) ? (
+                      <span className={getAccessLevelBadgeClass(patient)}>
+                        {getAccessLevelDisplay(patient)}
+                      </span>
+                    ) : (
+                      <ConsentStatusBadge status={patient.consentStatus} />
+                    )}
                   </div>
                   <div className={styles.colEmail}>{patient.email}</div>
                   <div className={styles.colActions}>

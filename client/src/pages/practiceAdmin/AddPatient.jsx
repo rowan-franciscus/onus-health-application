@@ -62,7 +62,7 @@ const PracticeAdminAddPatient = () => {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await PracticeAdminService.registerPatient({
+      const response = await PracticeAdminService.registerPatient({
         providerId: form.providerId,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
@@ -73,7 +73,15 @@ const PracticeAdminAddPatient = () => {
         medicalAidProvider: form.medicalAidProvider.trim() || undefined,
         plan: form.plan.trim() || undefined
       });
-      toast.success(`${form.firstName} ${form.lastName} has been registered.`);
+      if (response.outcome === 'access_request_sent') {
+        // Email + DOB matched an existing Onus account: no new record was created
+        toast.info(response.message, { autoClose: 10000 });
+      } else {
+        toast.success(response.message || `${form.firstName} ${form.lastName} has been registered.`);
+        if (response.warning === 'EMAIL_IN_USE_DIFFERENT_DOB') {
+          toast.warning(response.warningMessage, { autoClose: false });
+        }
+      }
       navigate('/practice-admin/patients');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to register patient');

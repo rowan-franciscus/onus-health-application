@@ -422,6 +422,8 @@ const createConnections = async (provider, patients) => {
         provider: provider._id,
         patient: patients[i]._id,
         initiatedBy: provider._id,
+        onboardingSource: 'patient_initiated',
+        consent: { status: 'ACTIVE' },
       });
 
       console.log(
@@ -534,6 +536,30 @@ const seedDatabase = async (reset = false) => {
 
     // Create connection between provider and patient
     await createConnections(provider, [patient]);
+
+    // A provider-added patient still waiting for consent, to exercise the
+    // pending-consent UI (no email is sent; the provider can "Resend")
+    const pendingEmail = "pending.consent@email.com";
+    let pendingPatient = await User.findOne({ email: pendingEmail, isOnusUser: false });
+    if (!pendingPatient) {
+      pendingPatient = await User.create({
+        email: pendingEmail,
+        firstName: "Pending",
+        lastName: "Consent",
+        role: "patient",
+        isOnusUser: false,
+        registeredBy: provider._id,
+        patientProfile: { dateOfBirth: new Date("1990-04-15"), gender: "female" },
+      });
+      await Connection.create({
+        patient: pendingPatient._id,
+        provider: provider._id,
+        initiatedBy: provider._id,
+        onboardingSource: "provider_initiated",
+        consent: { status: "PENDING_CONSENT" },
+      });
+      console.log(`Created pending-consent patient ${pendingEmail} (DOB 1990-04-15)`);
+    }
 
     // Practice + Practice Admin
     console.log("Setting up Practice and Practice Admin...");

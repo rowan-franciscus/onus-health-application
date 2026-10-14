@@ -87,7 +87,8 @@ class BaseMedicalRecordController {
           // Check if provider has full access to this patient
           const connection = await Connection.findOne({
             provider: userId,
-            patient: consultation.patient
+            patient: consultation.patient,
+            'consent.status': 'ACTIVE'
           });
 
           if (connection) {

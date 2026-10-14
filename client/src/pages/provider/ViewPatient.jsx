@@ -18,6 +18,8 @@ import { formatDate } from '../../utils/dateUtils';
 import { ordinal } from '../../utils/ordinal';
 import Badge from '../../components/common/Badge/Badge';
 import PhysicalRecordsTab from './PhysicalRecordsTab';
+import ConsentPendingPanel from '../../components/consent/ConsentPendingPanel';
+import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge';
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
@@ -37,6 +39,10 @@ const ProviderViewPatient = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [accessRequestStatus, setAccessRequestStatus] = useState(null);
+  // Patient consent (provider-initiated onboarding); anything but ACTIVE locks the record
+  const [consent, setConsent] = useState(null);
+  const [registrationDetails, setRegistrationDetails] = useState(null);
+  const consentLocked = Boolean(consent && consent.status && consent.status !== 'ACTIVE');
   const user = useSelector(state => state.auth.user);
   const verificationStatus = user?.isVerified;
 
@@ -69,6 +75,21 @@ const ProviderViewPatient = () => {
       if (patientResponse && patientResponse.success && patientResponse.patient) {
         const patientData = patientResponse.patient;
         const connectionInfo = patientResponse.connectionInfo;
+        setConsent(patientResponse.consent || null);
+
+        if (patientResponse.consent && patientResponse.consent.status !== 'ACTIVE') {
+          // Only the details entered at registration are available; clinical
+          // data requests would be refused, so don't make them
+          setRegistrationDetails(patientData);
+          setPatient({
+            id: patientData._id,
+            name: `${patientData.firstName} ${patientData.lastName}`,
+            email: patientData.email
+          });
+          setIsLoading(false);
+          return;
+        }
+        setRegistrationDetails(null);
         
         // Calculate age helper function
         const calculateAge = (dateOfBirth) => {
@@ -1458,8 +1479,9 @@ const ProviderViewPatient = () => {
               {patient?.accessLevel === 'pending' && (
                 <span className={styles.pendingBadge}>Pending</span>
               )}
+              {consentLocked && <ConsentStatusBadge status={consent.status} />}
             </h1>
-            {patient && (
+            {patient && !consentLocked && (
               <div className={styles.patientBasicInfo}>
                 <span>{patient.gender}</span>
                 <span className={styles.infoSeparator}>•</span>
@@ -1470,6 +1492,7 @@ const ProviderViewPatient = () => {
             )}
           </div>
           
+          {!consentLocked && (
           <div className={styles.actionButtons}>
             {patient && patient.accessLevel !== 'pending' && (
               <Button 
@@ -1496,20 +1519,34 @@ const ProviderViewPatient = () => {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
       
-      <div className={styles.tabsContainer}>
-        <Tabs 
-          tabs={recordTabs} 
-          activeTab={activeTab} 
-          onTabChange={handleTabChange} 
-        />
-      </div>
-      
-      <div className={styles.contentContainer}>
-        {renderTabContent()}
-      </div>
+      {consentLocked ? (
+        <div className={styles.contentContainer}>
+          <ConsentPendingPanel
+            patientId={id}
+            consent={consent}
+            details={registrationDetails}
+            onChanged={fetchAllPatientData}
+          />
+        </div>
+      ) : (
+        <>
+          <div className={styles.tabsContainer}>
+            <Tabs 
+              tabs={recordTabs} 
+              activeTab={activeTab} 
+              onTabChange={handleTabChange} 
+            />
+          </div>
+          
+          <div className={styles.contentContainer}>
+            {renderTabContent()}
+          </div>
+        </>
+      )}
     </div>
   );
 };

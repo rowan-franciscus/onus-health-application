@@ -36,7 +36,7 @@ exports.createPhysicalRecord = async (req, res) => {
       const practice = await Practice.findById(adminUser.practiceAdminProfile.practiceId).select('owner');
       recordProviderId = practice.owner;
     } else {
-      const connection = await Connection.findOne({ provider: providerId, patient: patientId });
+      const connection = await Connection.findOne({ provider: providerId, patient: patientId, 'consent.status': 'ACTIVE' });
       if (!connection) {
         fs.unlink(req.file.path, () => {});
         return res.status(403).json({ message: 'No connection to this patient' });
@@ -81,7 +81,7 @@ exports.getPhysicalRecords = async (req, res) => {
         return res.status(403).json({ message: 'Access denied' });
       }
     } else if (userRole === 'provider') {
-      const connection = await Connection.findOne({ provider: userId, patient: patientId });
+      const connection = await Connection.findOne({ provider: userId, patient: patientId, 'consent.status': 'ACTIVE' });
       if (!connection) {
         return res.status(403).json({ message: 'No connection to this patient' });
       }

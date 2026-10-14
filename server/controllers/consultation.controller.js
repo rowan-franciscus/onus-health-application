@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
 const User = require('../models/User');
 const Connection = require('../models/Connection');
+const { lockedPatientIds } = require('../middleware/auth.middleware');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/environment');
@@ -42,7 +43,8 @@ exports.getAllConsultations = async (req, res) => {
         // Check provider's access level to this patient
         const connection = await Connection.findOne({
           provider: userId,
-          patient: patient
+          patient: patient,
+          'consent.status': 'ACTIVE'
         });
         
         if (!connection) {
@@ -61,8 +63,10 @@ exports.getAllConsultations = async (req, res) => {
           query.provider = userId;
         }
       } else {
-        // If no patient specified, show all consultations created by this provider
+        // If no patient specified, show all consultations created by this provider,
+        // except for patients whose consent is not active
         query.provider = userId;
+        query.patient = { $nin: await lockedPatientIds(userId) };
       }
     } else if (userRole === 'admin') {
       // Admins can filter by patient and provider
@@ -194,7 +198,8 @@ exports.getConsultationById = async (req, res) => {
         // Check if provider has full access to this patient
         const connection = await Connection.findOne({
           provider: userId,
-          patient: consultation.patient._id
+          patient: consultation.patient._id,
+          'consent.status': 'ACTIVE'
         });
         
         console.log('Connection check:', {
@@ -304,7 +309,7 @@ exports.createConsultation = async (req, res) => {
     // If patientEmail is provided instead of patient ID, find the patient by email
     if (!patientId && patientEmail) {
       console.log('Looking up patient by email:', patientEmail);
-      patientUser = await User.findOne({ email: patientEmail, role: 'patient' });
+      patientUser = await User.findOne({ email: patientEmail, role: 'patient', isOnusUser: { $ne: false } });
       if (!patientUser) {
         console.log('Patient not found by email');
         await session.abortTransaction();
@@ -331,6 +336,25 @@ exports.createConsultation = async (req, res) => {
       provider: providerId
     }).session(session);
     
+    if (connection && connection.consent?.status !== 'ACTIVE') {
+      await session.abortTransaction();
+      return res.status(403).json({
+        code: 'CONSENT_REQUIRED',
+        consentStatus: connection.consent?.status,
+        message: 'Patient consent is required before adding clinical data'
+      });
+    }
+
+    if (!connection && patientUser.isOnusUser === false) {
+      // Provider-created placeholders are only reachable through Add New Patient,
+      // which captures consent; never auto-connect to one here
+      await session.abortTransaction();
+      return res.status(403).json({
+        code: 'CONSENT_REQUIRED',
+        message: 'Add this patient via Add New Patient so they can give consent'
+      });
+    }
+
     if (!connection) {
       console.log('Creating new connection');
       // Create new connection with limited access
@@ -340,7 +364,9 @@ exports.createConsultation = async (req, res) => {
         initiatedBy: providerId,
         accessLevel: 'limited',
         fullAccessStatus: 'none',
-        patientNotified: false
+        patientNotified: false,
+        onboardingSource: 'patient_initiated',
+        consent: { status: 'ACTIVE' }
       });
       
       await connection.save({ session });

@@ -18,8 +18,11 @@ class AuthService {
     } catch (error) {
       console.error('Registration error:', error);
       // Format error message from API or use a generic one
-      const errorMessage = error.userMessage || 'Registration failed. Please try again.';
-      throw new Error(errorMessage);
+      const errorMessage = error.response?.data?.message || error.userMessage || 'Registration failed. Please try again.';
+      const registrationError = new Error(errorMessage);
+      // e.g. RECORD_EXISTS_VERIFY_DOB: a provider-created record may exist for this email
+      registrationError.code = error.response?.data?.code;
+      throw registrationError;
     }
   }
 

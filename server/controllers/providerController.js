@@ -10,6 +10,23 @@ const logger = require('../utils/logger');
 const auditService = require('../services/audit.service');
 const mongoose = require('mongoose');
 const { validatePassword } = require('../utils/passwordPolicy');
+const { lockedPatientIds } = require('../middleware/auth.middleware');
+const consentService = require('../services/consent.service');
+
+// What a provider may see before the patient consents: the details entered
+// on Add New Patient, nothing the patient may have added since
+const pickRegistrationDetails = (patient) => ({
+  _id: patient._id,
+  firstName: patient.firstName,
+  lastName: patient.lastName,
+  email: patient.email,
+  phone: patient.phone,
+  patientProfile: {
+    dateOfBirth: patient.patientProfile?.dateOfBirth,
+    gender: patient.patientProfile?.gender,
+    insurance: patient.patientProfile?.insurance
+  }
+});
 
 /**
  * Get provider dashboard data
@@ -82,11 +99,14 @@ exports.getDashboard = async (req, res) => {
 exports.getPatients = async (req, res) => {
   try {
     const providerId = req.user.id;
+
+    // Lapsed consent links show as EXPIRED in the list
+    await consentService.expireStale({ provider: providerId });
     
     // Find all connections for this provider
     const connections = await Connection.find({ 
       provider: providerId
-    }).populate('patient', 'firstName lastName email phone profileImage patientProfile');
+    }).populate('patient', 'firstName lastName email phone profileImage patientProfile isOnusUser');
     
     // Extract patient data from connections, filtering out null patients
     const validConnections = connections.filter(conn => conn.patient !== null);
@@ -119,11 +139,17 @@ exports.getPatients = async (req, res) => {
     
     // Build patient data with all necessary fields
     const patients = validConnections.map(conn => {
-      const patientData = conn.patient.toObject();
+      const consentStatus = conn.consent?.status;
+      // Without active consent the provider sees only the details entered at registration
+      const patientData = consentStatus === 'ACTIVE'
+        ? conn.patient.toObject()
+        : pickRegistrationDetails(conn.patient);
       const patientId = patientData._id.toString();
       
       return {
         ...patientData,
+        consentStatus,
+        claimed: conn.patient.isOnusUser !== false,
         // Include dateOfBirth from patientProfile for age calculation
         dateOfBirth: patientData.patientProfile?.dateOfBirth,
         // Include last consultation date
@@ -132,7 +158,8 @@ exports.getPatients = async (req, res) => {
           accessLevel: conn.accessLevel,
           fullAccessStatus: conn.fullAccessStatus,
           connectionId: conn._id,
-          initiatedAt: conn.initiatedAt
+          initiatedAt: conn.initiatedAt,
+          consentStatus
         }
       };
     });
@@ -160,7 +187,7 @@ exports.addPatient = async (req, res) => {
     }
     
     // Find patient by email
-    const patient = await User.findOne({ email, role: 'patient' });
+    const patient = await User.findOne({ email, role: 'patient', isOnusUser: { $ne: false } });
     
     if (!patient) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
@@ -202,7 +229,9 @@ exports.addPatient = async (req, res) => {
       accessLevel: 'limited',
       fullAccessStatus: 'none',
       initiatedBy: providerId,
-      initiatedAt: Date.now()
+      initiatedAt: Date.now(),
+      onboardingSource: 'patient_initiated',
+      consent: { status: 'ACTIVE' }
     });
     
     await connection.save();
@@ -229,6 +258,12 @@ exports.getPatientById = async (req, res) => {
     const providerId = req.user.id;
     const { patientId } = req.params;
     
+    if (!mongoose.isValidObjectId(patientId)) {
+      return res.status(400).json({ success: false, message: 'Invalid patient ID' });
+    }
+
+    await consentService.expireStale({ provider: providerId, patient: patientId });
+
     // Check if provider has a connection to this patient
     const connection = await Connection.findOne({
       provider: providerId,
@@ -239,13 +274,20 @@ exports.getPatientById = async (req, res) => {
       return res.status(403).json({ success: false, message: 'No connection to this patient' });
     }
     
-    // Determine what data to return based on access level and status
+    // Determine what data to return based on consent, access level and status
     let patientData;
+    const consentStatus = connection.consent?.status;
     
-    if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
+    if (consentStatus !== 'ACTIVE') {
+      // Pending/declined/expired/withdrawn consent: the provider can see the
+      // patient exists and the details they entered, nothing more
+      const patient = await User.findById(patientId)
+        .select('firstName lastName email phone patientProfile.dateOfBirth patientProfile.gender patientProfile.insurance');
+      patientData = patient && pickRegistrationDetails(patient);
+    } else if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
       // Full access approved - return all patient data
       patientData = await User.findById(patientId)
-        .select('-password -resetPasswordToken -resetPasswordExpires');
+        .select('-password -resetPasswordToken -resetPasswordExpires -claimTokens');
     } else {
       // Limited access or pending/denied full access - return only basic info
       patientData = await User.findById(patientId)
@@ -262,12 +304,89 @@ exports.getPatientById = async (req, res) => {
       connectionInfo: {
         accessLevel: connection.accessLevel,
         fullAccessStatus: connection.fullAccessStatus,
-        connectionId: connection._id
+        connectionId: connection._id,
+        consentStatus,
+        onboardingSource: connection.onboardingSource
+      },
+      consent: {
+        status: consentStatus,
+        inviteSentAt: connection.consent?.inviteSentAt,
+        linkExpiresAt: connection.consent?.tokenExpires,
+        // Link invalidated by too many DOB attempts: a resend is needed
+        linkLocked: consentStatus === 'PENDING_CONSENT' && Boolean(connection.consent?.inviteSentAt) && !connection.consent?.tokenHash,
+        respondedAt: connection.consent?.respondedAt,
+        withdrawnAt: connection.consent?.withdrawnAt,
+        resendCount: connection.consent?.resendCount || 0,
+        deferralCount: connection.consent?.deferrals?.length || 0,
+        canResend: consentService.AWAITING_STATUSES.includes(consentStatus) && Boolean(patientData?.email)
       }
     });
   } catch (error) {
     logger.error('Error getting patient by ID:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch patient' });
+  }
+};
+
+const CONSENT_ERROR_MESSAGES = {
+  INVALID_REASON: 'Please choose a valid reason',
+  NOTE_REQUIRED: 'Please describe the reason',
+  NOT_PENDING: 'Consent is not pending for this patient',
+  INVALID_CONSENT_STATE: 'Consent can only be re-requested while pending or expired'
+};
+
+const findProviderInitiatedConnection = (providerId, patientId) => (
+  mongoose.isValidObjectId(patientId)
+    ? Connection.findOne({ provider: providerId, patient: patientId, onboardingSource: 'provider_initiated' })
+    : null
+);
+
+/**
+ * Re-send the consent request (new link; the old one stops working).
+ * Allowed while consent is pending or expired.
+ */
+exports.resendConsent = async (req, res) => {
+  try {
+    const connection = await findProviderInitiatedConnection(req.user.id, req.params.patientId);
+    if (!connection) {
+      return res.status(404).json({ success: false, message: 'No consent request for this patient' });
+    }
+    if (!consentService.AWAITING_STATUSES.includes(connection.consent.status)) {
+      return res.status(409).json({ success: false, message: CONSENT_ERROR_MESSAGES.INVALID_CONSENT_STATE });
+    }
+    const patient = await User.findById(connection.patient).select('email');
+    if (!patient?.email) {
+      return res.status(400).json({ success: false, message: 'This patient has no email address on file' });
+    }
+
+    const { emailed } = await consentService.sendConsentInvite(connection._id, { req, isResend: true });
+    res.json({ success: true, consentEmailSent: emailed, consentStatus: 'PENDING_CONSENT' });
+  } catch (error) {
+    if (error.code === 'INVALID_CONSENT_STATE') {
+      return res.status(409).json({ success: false, message: CONSENT_ERROR_MESSAGES.INVALID_CONSENT_STATE });
+    }
+    logger.error('Error resending consent request:', error);
+    res.status(500).json({ success: false, message: 'Failed to resend consent request' });
+  }
+};
+
+/**
+ * Record that the patient couldn't consent at the point of care
+ * (instrumentation; does not change the consent state).
+ */
+exports.recordConsentDeferral = async (req, res) => {
+  try {
+    const connection = await findProviderInitiatedConnection(req.user.id, req.params.patientId);
+    if (!connection) {
+      return res.status(404).json({ success: false, message: 'No consent request for this patient' });
+    }
+    const result = await consentService.recordDeferral(connection, req.body || {}, req);
+    if (!result.ok) {
+      return res.status(400).json({ success: false, code: result.code, message: CONSENT_ERROR_MESSAGES[result.code] });
+    }
+    res.status(201).json({ success: true });
+  } catch (error) {
+    logger.error('Error recording consent deferral:', error);
+    res.status(500).json({ success: false, message: 'Failed to record reason' });
   }
 };
 
@@ -279,11 +398,12 @@ exports.getConsultations = async (req, res) => {
     const providerId = req.user.id;
     const { patientId, page = 1, limit = 20 } = req.query;
     
-    const query = { provider: providerId };
+    const lockedIds = await lockedPatientIds(providerId);
+    const query = { provider: providerId, patient: { $nin: lockedIds } };
     
-    // If patientId is provided, filter by patient
+    // If patientId is provided, filter by patient (unless consent isn't active)
     if (patientId) {
-      query.patient = patientId;
+      query.patient = { $eq: patientId, $nin: lockedIds };
     }
     
     const skip = (page - 1) * limit;
@@ -329,7 +449,8 @@ exports.createConsultation = async (req, res) => {
     // Check if provider has a connection to this patient
     const connection = await Connection.findOne({
       provider: providerId,
-      patient: patientId
+      patient: patientId,
+      'consent.status': 'ACTIVE'
     });
     
     if (!connection) {
@@ -652,7 +773,7 @@ exports.invitePracticeAdmin = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Create a practice first' });
     }
 
-    const existing = await User.findOne({ email: trimmedEmail });
+    const existing = await User.findOne({ email: trimmedEmail, isOnusUser: { $ne: false } });
     if (existing) {
       return res.status(409).json({ success: false, message: 'A user with this email already exists' });
     }

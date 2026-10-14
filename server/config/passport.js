@@ -66,7 +66,7 @@ if (config.googleClientId && config.googleClientSecret && config.googleCallbackU
         }
         
         // Check if a user with the same email exists
-        user = await User.findOne({ email: profile.emails[0].value });
+        user = await User.findOne({ email: profile.emails[0].value, isOnusUser: { $ne: false } });
         
         if (user) {
           // Link Google ID to existing account
@@ -114,7 +114,7 @@ if (config.facebookAppId && config.facebookAppSecret && config.facebookCallbackU
         
         // Check if a user with the same email exists
         if (profile.emails && profile.emails.length > 0) {
-          user = await User.findOne({ email: profile.emails[0].value });
+          user = await User.findOne({ email: profile.emails[0].value, isOnusUser: { $ne: false } });
           
           if (user) {
             // Link Facebook ID to existing account

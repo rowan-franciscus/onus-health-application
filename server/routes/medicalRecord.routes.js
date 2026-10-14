@@ -3,7 +3,7 @@ const router = express.Router();
 const { query, param } = require('express-validator');
 
 // Import middleware
-const { authenticateJWT, isProvider, isPatient, isAdminOrProvider } = require('../middleware/auth.middleware');
+const { authenticateJWT, isProvider, isPatient, isAdminOrProvider, requireActiveConsent, patientFromBody } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
 const { auditRead, recordTypeFromParam } = require('../middleware/audit.middleware');
 
@@ -36,9 +36,10 @@ router.post('/patient/vitals', authenticateJWT, isPatient,
 
 // Provider standalone record creation (independent of consultations)
 const standaloneRecordController = require('../controllers/medicalRecords/standaloneRecord.controller');
-router.post('/provider/immunizations', authenticateJWT, isProvider, standaloneRecordController.createImmunization);
-router.post('/provider/hospital-records', authenticateJWT, isProvider, standaloneRecordController.createHospitalRecord);
-router.post('/provider/surgery-records', authenticateJWT, isProvider, standaloneRecordController.createSurgeryRecord);
+const consentForBodyPatient = requireActiveConsent(patientFromBody('patientId'));
+router.post('/provider/immunizations', authenticateJWT, isProvider, consentForBodyPatient, standaloneRecordController.createImmunization);
+router.post('/provider/hospital-records', authenticateJWT, isProvider, consentForBodyPatient, standaloneRecordController.createHospitalRecord);
+router.post('/provider/surgery-records', authenticateJWT, isProvider, consentForBodyPatient, standaloneRecordController.createSurgeryRecord);
 
 // Get single vitals record by ID
 router.get('/vitals/:id', authenticateJWT, auditRead('Vitals'), require('../controllers/medicalRecords/vitals.controller').getVitalsById);

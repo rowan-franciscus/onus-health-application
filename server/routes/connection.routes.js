@@ -3,11 +3,12 @@ const router = express.Router();
 const { body, param, query } = require('express-validator');
 
 // Import middleware
-const { authenticateJWT, isProvider, isPatient } = require('../middleware/auth.middleware');
+const { authenticateJWT, isProvider, isPatient, requireActiveConsent, patientFromDocument } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
 
 // Import connection controller
 const connectionController = require('../controllers/connection.controller');
+const consentController = require('../controllers/consent.controller');
 
 // PATIENT SPECIFIC ROUTES - More specific routes first
 // ---------------------------------------------------------------
@@ -43,6 +44,27 @@ router.post('/patient/grant-full-access/:connectionId', authenticateJWT, isPatie
   connectionController.grantFullAccess
 );
 
+// Consents from provider-initiated onboarding (view, respond, withdraw)
+router.get('/patient/consents', authenticateJWT, isPatient, consentController.getMyConsents);
+
+router.post('/patient/consent/:connectionId/respond', authenticateJWT, isPatient,
+  [
+    param('connectionId').isMongoId().withMessage('Invalid connection ID'),
+    body('decision').isIn(['accept', 'decline']).withMessage('Decision must be either "accept" or "decline"'),
+    body('textVersion').isString().withMessage('Consent text version is required'),
+  ],
+  validateRequest,
+  consentController.respondAsPatient
+);
+
+router.post('/patient/consent/:connectionId/withdraw', authenticateJWT, isPatient,
+  [
+    param('connectionId').isMongoId().withMessage('Invalid connection ID'),
+  ],
+  validateRequest,
+  consentController.withdrawConsent
+);
+
 // PROVIDER SPECIFIC ROUTES
 // ---------------------------------------------------------------
 
@@ -52,6 +74,7 @@ router.post('/provider/request-full-access/:connectionId', authenticateJWT, isPr
     param('connectionId').isMongoId().withMessage('Invalid connection ID'),
   ],
   validateRequest,
+  requireActiveConsent(patientFromDocument('Connection', 'connectionId')),
   connectionController.requestFullAccess
 );
 

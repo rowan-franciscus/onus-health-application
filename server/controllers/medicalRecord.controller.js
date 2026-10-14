@@ -4,6 +4,7 @@
  */
 
 const mongoose = require("mongoose");
+const { lockedPatientIds } = require("../middleware/auth.middleware");
 const VitalsRecord = require("../models/VitalsRecord");
 const MedicationRecord = require("../models/MedicationRecord");
 const ImmunizationRecord = require("../models/ImmunizationRecord");
@@ -74,6 +75,7 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
         const connection = await Connection.findOne({
           provider: req.user._id,
           patient: patientId,
+          "consent.status": "ACTIVE",
         });
 
         if (!connection) {
@@ -95,8 +97,10 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
           query.provider = req.user._id;
         }
       } else {
-        // If no patient specified, show all records created by this provider
+        // If no patient specified, show all records created by this provider,
+        // except for patients whose consent is not active
         query.provider = req.user._id;
+        query.patient = { $nin: await lockedPatientIds(req.user._id) };
       }
     } else if (req.user.role === "admin") {
       // Admins can filter by patient and provider
@@ -356,6 +360,7 @@ exports.getProviderVitals = async (req, res) => {
       const connection = await Connection.findOne({
         provider: providerId,
         patient: new mongoose.Types.ObjectId(patientId),
+        "consent.status": "ACTIVE",
       });
 
       if (!connection) {
@@ -377,8 +382,10 @@ exports.getProviderVitals = async (req, res) => {
         query.provider = providerId;
       }
     } else {
-      // If no patient specified, show all vitals created by this provider
+      // If no patient specified, show all vitals created by this provider,
+      // except for patients whose consent is not active
       query.provider = providerId;
+      query.patient = { $nin: await lockedPatientIds(providerId) };
     }
 
     console.log("Provider vitals query:", query);

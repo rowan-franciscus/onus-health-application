@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
 const Surgery = require('../models/Surgery');
 const Connection = require('../models/Connection');
+const { lockedPatientIds } = require('../middleware/auth.middleware');
 
 const PATIENT_POPULATE = 'firstName lastName email profileImage patientProfile';
 const PROVIDER_POPULATE = 'firstName lastName email providerProfile';
 
 // Any connection suffices for read access; full approved access required for mutations.
 async function providerCanAccessPatient(providerId, patientId) {
-  const connection = await Connection.findOne({ provider: providerId, patient: patientId });
+  const connection = await Connection.findOne({ provider: providerId, patient: patientId, 'consent.status': 'ACTIVE' });
   return Boolean(connection);
 }
 
@@ -17,6 +18,7 @@ async function providerCanMutateSurgery(providerId, patientId) {
     patient: patientId,
     accessLevel: 'full',
     fullAccessStatus: 'approved',
+    'consent.status': 'ACTIVE',
   });
   return Boolean(connection);
 }
@@ -133,10 +135,13 @@ exports.listSurgeriesForProvider = async (req, res) => {
       provider: providerId,
       accessLevel: 'full',
       fullAccessStatus: 'approved',
+      'consent.status': 'ACTIVE',
     }).select('patient');
     const fullAccessPatientIds = fullAccessConnections.map(c => c.patient);
+    const lockedIds = await lockedPatientIds(providerId);
 
     const accessFilter = {
+      patient: { $nin: lockedIds },
       $or: [{ provider: new mongoose.Types.ObjectId(providerId) }, { patient: { $in: fullAccessPatientIds } }],
     };
     const baseMatch = patientId && mongoose.isValidObjectId(patientId)

@@ -7,6 +7,7 @@ import Button from '../../components/common/Button';
 import { toast } from 'react-toastify';
 import ConnectionService from '../../services/connection.service';
 import { formatDate } from '../../utils/dateUtils';
+import PatientConsentsSection from '../../components/consent/PatientConsentsSection';
 
 // Icon imports
 import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
@@ -34,7 +35,11 @@ const PatientConnections = () => {
       const connectionsArray = Array.isArray(allConnections) ? allConnections : [];
       
       setConnectionRequests(pendingArray);
-      setConnectedProviders(connectionsArray);
+      // Providers who added this patient appear here only while consent is
+      // active; the Provider consent section covers every other state
+      setConnectedProviders(connectionsArray.filter((c) =>
+        c.onboardingSource !== 'provider_initiated' || c.consent?.status === 'ACTIVE'
+      ));
     } catch (error) {
       console.error('Error fetching connections data:', error);
       toast.error('Failed to load connection data. Please refresh the page.');
@@ -181,6 +186,12 @@ const PatientConnections = () => {
           <p>Manage your healthcare provider connections and access requests</p>
         </div>
         
+        <PatientConsentsSection
+          sectionClassName={styles.connectionsSection}
+          descriptionClassName={styles.sectionDescription}
+          onChanged={fetchConnectionsData}
+        />
+
         {/* Full Access Requests */}
         <Card className={styles.connectionsSection}>
           <h2>Full Access Requests</h2>

@@ -3,11 +3,10 @@ const { auditRead } = require('../middleware/audit.middleware');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
-const { authenticateJWT, isProvider, isPatient, isAdmin } = require('../middleware/auth.middleware');
+const { authenticateJWT, isProvider, isPatient, isAdmin, getActiveConnection } = require('../middleware/auth.middleware');
 const Consultation = require('../models/Consultation');
 const User = require('../models/User');
 const PhysicalRecord = require('../models/PhysicalRecord');
-const Connection = require('../models/Connection');
 const logger = require('../utils/logger');
 
 // Determine base upload directory based on environment
@@ -280,10 +279,11 @@ router.get('/consultation/:consultationId/attachments', authenticateJWT, auditRe
       return res.status(404).json({ message: 'Consultation not found' });
     }
     
-    // Check if user has access to this consultation
+    // Check if user has access to this consultation (providers need active consent)
     const hasAccess = req.user.role === 'admin' || 
-                     consultation.provider.toString() === req.user.id ||
-                     consultation.patient.toString() === req.user.id;
+                     consultation.patient.toString() === req.user.id ||
+                     (consultation.provider.toString() === req.user.id &&
+                      await providerHasActiveConsent(req.user.id, consultation.patient));
     
     if (!hasAccess) {
       return res.status(403).json({ message: 'Access denied' });
@@ -307,6 +307,11 @@ router.get('/consultation/:consultationId/attachments', authenticateJWT, auditRe
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Providers lose file access when the patient's consent is not ACTIVE
+async function providerHasActiveConsent(providerId, patientId) {
+  return Boolean(await getActiveConnection(providerId, patientId));
+}
 
 /**
  * Check if user has permission to access a file
@@ -336,8 +341,9 @@ async function checkFilePermission(user, fileType, filename) {
         
         if (!consultation) return false;
         
-        return consultation.provider.toString() === user.id ||
-               consultation.patient.toString() === user.id;
+        if (consultation.patient.toString() === user.id) return true;
+        return consultation.provider.toString() === user.id &&
+               await providerHasActiveConsent(user.id, consultation.patient);
         
       case 'profile-images':
         // Users can access their own profile images
@@ -352,12 +358,10 @@ async function checkFilePermission(user, fileType, filename) {
         const physicalRecord = await PhysicalRecord.findOne({ 'file.filename': filename });
         if (!physicalRecord) return false;
         if (physicalRecord.patient.toString() === user.id) return true;
-        if (physicalRecord.provider.toString() === user.id) return true;
         if (user.role === 'provider') {
-          const conn = await Connection.findOne({ provider: user.id, patient: physicalRecord.patient });
-          return !!conn;
+          return providerHasActiveConsent(user.id, physicalRecord.patient);
         }
-        return false;
+        return physicalRecord.provider.toString() === user.id;
 
       default:
         return false;
@@ -395,7 +399,8 @@ async function checkDeletePermission(user, fileType, filename) {
         
         if (!consultation) return false;
         
-        return consultation.provider.toString() === user.id;
+        return consultation.provider.toString() === user.id &&
+               await providerHasActiveConsent(user.id, consultation.patient);
         
       case 'profile-images':
         // Users can delete their own profile images
@@ -409,7 +414,8 @@ async function checkDeletePermission(user, fileType, filename) {
       case 'physical-records':
         const physicalRecord = await PhysicalRecord.findOne({ 'file.filename': filename });
         if (!physicalRecord) return false;
-        return physicalRecord.provider.toString() === user.id;
+        return physicalRecord.provider.toString() === user.id &&
+               await providerHasActiveConsent(user.id, physicalRecord.patient);
 
       default:
         return false;

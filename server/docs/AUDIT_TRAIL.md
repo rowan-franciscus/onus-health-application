@@ -56,6 +56,12 @@ regulatory certification of any kind.**
 | consent | connection-created | C | Connection plugin |
 | consent | consent-requested / consent-approved / consent-denied / consent-revoked | U/D | Connection plugin (state transitions & deletes) |
 | consent | access-escalated | U | Connection plugin (limited → full) |
+| consent | consent-invite-sent / consent-invite-resent | U | consent.service (provider-initiated onboarding, resend) |
+| consent | consent-granted / consent-declined / consent-withdrawn | U | consent.service — **authoritative patient-consent record** |
+| consent | consent-expired | U | consent.service (14-day link lapsed; system actor) |
+| consent | consent-dob-mismatch / consent-link-locked | U (outcome 4) | consent.service (public consent link) |
+| consent | consent-deferred | U | consent.service ("patient couldn't consent now"; reason code only, never the note) |
+| auth | record-claimed / record-claim-failed | U / E | authController (claim link or signup with email + DOB) |
 | admin | user-update / role-change / user-deleted | E | admin.controller |
 | admin | provider-approved / provider-rejected | E | admin.controller |
 | admin | practice-admin-invited / practice-admin-revoked | E | providerController |
@@ -64,6 +70,19 @@ regulatory certification of any kind.**
 | data | file-list | R | consultation attachment metadata listing |
 | security | access-denied | E | failedAccessAudit middleware |
 | audit | audit-query | E | admin getAuditLogs (self-auditing) |
+
+### Patient consent events
+
+Provider-initiated onboarding (Add New Patient) needs explicit patient consent
+before the provider can act on the record. Each transition writes one
+`consent` event from `services/consent.service.js` with: `entity.patientId`,
+`agent` (the patient for granted/declined/withdrawn, with IP and user agent),
+server UTC `recorded`, and in `context.after` the new `consentStatus`, the
+`providerId` and the `consentTextVersion` shown (see `config/consentText.js`;
+released versions are immutable). These live in `context.after` because that
+field is part of the hash-chained canonical form. The Connection plugin's
+generic update events still fire alongside them. Consent and claim link tokens
+in request paths are redacted to `:token` (`utils/requestContext.pathOf`).
 
 Each event records: actor (`agent.userId`, `role`, `ip`, `userAgent`), the
 action (FHIR C/R/U/D/E), the resource (`entity.resourceType`,

@@ -408,6 +408,8 @@ async function createConnection(provider, patient) {
       status: "approved",
       initiatedBy: provider._id, // Required field: who initiated the connection
       initiatedAt: new Date(),
+      onboardingSource: "patient_initiated",
+      consent: { status: "ACTIVE" },
       statusUpdatedAt: new Date(),
       permissions: {
         viewConsultations: true,
