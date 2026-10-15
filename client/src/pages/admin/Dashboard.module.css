@@ -20,7 +20,85 @@
 .dateRangeContainer {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 16px;
+}
+
+.presets {
+  display: flex;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.presetButton {
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.presetButton:hover {
+  background-color: #f4f3ef;
+}
+
+.presetButton:focus-visible,
+.refreshButton:focus-visible {
+  outline: 2px solid #6236ff;
+  outline-offset: 2px;
+}
+
+.presetActive,
+.presetActive:hover {
+  background-color: #efebff;
+  color: #4920c0;
+  font-weight: 600;
+}
+
+/* Hold the previous render while new data loads, rather than flashing */
+.refreshing {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refreshing {
+    transition: none;
+  }
+}
+
+.sectionHeader {
+  margin-bottom: 16px;
+}
+
+.sectionHeader h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 4px;
+}
+
+.sectionHeader p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.sectionError {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 0 0 32px;
+  color: #b02a2a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .datePickerWrapper {
@@ -171,6 +249,11 @@
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .presets {
+    width: 100%;
+    overflow-x: auto;
   }
   
   .datePickerWrapper {
