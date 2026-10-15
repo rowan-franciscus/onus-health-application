@@ -19,7 +19,6 @@ import { ordinal } from '../../utils/ordinal';
 import Badge from '../../components/common/Badge/Badge';
 import PhysicalRecordsTab from './PhysicalRecordsTab';
 import ConsentPendingPanel from '../../components/consent/ConsentPendingPanel';
-import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge';
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
@@ -1479,7 +1478,6 @@ const ProviderViewPatient = () => {
               {patient?.accessLevel === 'pending' && (
                 <span className={styles.pendingBadge}>Pending</span>
               )}
-              {consentLocked && <ConsentStatusBadge status={consent.status} />}
             </h1>
             {patient && !consentLocked && (
               <div className={styles.patientBasicInfo}>
