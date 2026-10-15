@@ -1,0 +1,81 @@
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+
+.info {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.nameRow h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.info p {
+  margin: 0.2rem 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.textToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 0.5rem;
+  color: #5930e5;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+
+.consentText {
+  flex-basis: 100%;
+  background: #faf9ff;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+.consentText h4 {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.95rem;
+  color: #20174C;
+}
+
+.consentText h4:first-child {
+  margin-top: 0;
+}
+
+.consentText ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.consentText p {
+  margin: 0;
+}

@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 
 import Button from '../../components/common/Button';
 import ConnectionService from '../../services/connection.service';
+import { isConsentActive } from '../../services/consent.service';
 import ProviderPatientList from './ProviderPatientList';
 import styles from './Patients.module.css';
 
@@ -45,6 +46,9 @@ const EllipsisMenu = ({ patient, canRequestFullAccess, onRequestFullAccess, acti
     fn();
   };
 
+  // Clinical actions only once the patient has consented (also enforced server-side)
+  const consentActive = isConsentActive(patient.consentStatus);
+
   const dropdown = open && ReactDOM.createPortal(
     <div
       ref={dropdownRef}
@@ -57,6 +61,7 @@ const EllipsisMenu = ({ patient, canRequestFullAccess, onRequestFullAccess, acti
       >
         View Patient Profile
       </button>
+      {consentActive && (<>
       <button
         className={styles.dropdownItem}
         onClick={() => handleAction(() => navigate(`/provider/consultations/new?patientId=${patient.id}`))}
@@ -75,7 +80,8 @@ const EllipsisMenu = ({ patient, canRequestFullAccess, onRequestFullAccess, acti
       >
         Surgery
       </button>
-      {canRequestFullAccess && (
+      </>)}
+      {consentActive && canRequestFullAccess && (
         <button
           className={styles.dropdownItem}
           onClick={() => handleAction(() => onRequestFullAccess())}

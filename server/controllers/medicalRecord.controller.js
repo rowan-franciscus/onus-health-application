@@ -4,6 +4,11 @@
  */
 
 const mongoose = require("mongoose");
+const {
+  activePatientIds,
+  getActiveConnection,
+  sendConsentRequired,
+} = require("../middleware/auth.middleware");
 const VitalsRecord = require("../models/VitalsRecord");
 const MedicationRecord = require("../models/MedicationRecord");
 const ImmunizationRecord = require("../models/ImmunizationRecord");
@@ -74,6 +79,7 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
         const connection = await Connection.findOne({
           provider: req.user._id,
           patient: patientId,
+          "consent.status": "ACTIVE",
         });
 
         if (!connection) {
@@ -95,8 +101,10 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
           query.provider = req.user._id;
         }
       } else {
-        // If no patient specified, show all records created by this provider
+        // If no patient specified, show all records created by this provider,
+        // for patients whose consent is ACTIVE
         query.provider = req.user._id;
+        query.patient = { $in: await activePatientIds(req.user._id) };
       }
     } else if (req.user.role === "admin") {
       // Admins can filter by patient and provider
@@ -239,6 +247,21 @@ exports.getMedicalRecordStatistics = async (req, res, next) => {
       query.patient = new mongoose.Types.ObjectId(patientId);
     }
 
+    // Providers: only patients with ACTIVE consent, and (as for record lists)
+    // only their own records unless they have approved full access
+    if (req.user.role === "provider") {
+      if (patientId) {
+        const connection = await getActiveConnection(req.user._id, patientId);
+        if (!connection) return sendConsentRequired(res);
+        if (!(connection.accessLevel === "full" && connection.fullAccessStatus === "approved")) {
+          query.provider = req.user._id;
+        }
+      } else {
+        query.provider = req.user._id;
+        query.patient = { $in: await activePatientIds(req.user._id) };
+      }
+    }
+
     // Add date range filter
     if (startDate || endDate) {
       query.date = {};
@@ -356,6 +379,7 @@ exports.getProviderVitals = async (req, res) => {
       const connection = await Connection.findOne({
         provider: providerId,
         patient: new mongoose.Types.ObjectId(patientId),
+        "consent.status": "ACTIVE",
       });
 
       if (!connection) {
@@ -377,8 +401,10 @@ exports.getProviderVitals = async (req, res) => {
         query.provider = providerId;
       }
     } else {
-      // If no patient specified, show all vitals created by this provider
+      // If no patient specified, show all vitals created by this provider,
+      // for patients whose consent is ACTIVE
       query.provider = providerId;
+      query.patient = { $in: await activePatientIds(providerId) };
     }
 
     console.log("Provider vitals query:", query);
@@ -448,8 +474,10 @@ exports.getRadiologyReports = async (req, res) => {
     const query = {};
 
     if (req.user.role === "provider") {
-      // Providers can only see their own radiology reports
+      // Providers can only see their own radiology reports, for patients
+      // whose consent is ACTIVE
       query.provider = req.user._id;
+      query.patient = { $in: await activePatientIds(req.user._id) };
     } else if (req.user.role === "patient") {
       // Patients can only see their own records
       query.patient = req.user._id;
@@ -460,6 +488,9 @@ exports.getRadiologyReports = async (req, res) => {
     if (patientId) {
       if (req.user.role === "provider") {
         // Provider can filter by patient they have access to
+        if (!(await getActiveConnection(req.user._id, patientId))) {
+          return sendConsentRequired(res);
+        }
         query.patient = new mongoose.Types.ObjectId(patientId);
       } else if (
         req.user.role === "patient" &&

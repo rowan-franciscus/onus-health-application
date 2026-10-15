@@ -62,6 +62,62 @@ const ConnectionSchema = new Schema({
   // When the connection was last accessed by the provider
   lastAccessedAt: {
     type: Date
+  },
+  // How the link was created: provider "Add New Patient" (needs patient
+  // consent) or an access request to an existing patient account
+  onboardingSource: {
+    type: String,
+    enum: ['provider_initiated', 'patient_initiated'],
+    required: true
+  },
+  // Snapshot of the details the provider entered on Add New Patient. Until
+  // consent is ACTIVE this, not the live patient profile, is what they see.
+  registration: {
+    firstName: { type: String },
+    lastName: { type: String },
+    email: { type: String },
+    phone: { type: String },
+    dateOfBirth: { type: Date },
+    gender: { type: String },
+    insurance: {
+      provider: { type: String },
+      plan: { type: String }
+    }
+  },
+  // Patient consent for this provider. No default on status: every creation
+  // site must set it explicitly, so a missed site fails instead of granting access.
+  // All transitions go through services/consent.service.js.
+  consent: {
+    status: {
+      type: String,
+      enum: ['PENDING_CONSENT', 'ACTIVE', 'DECLINED', 'EXPIRED', 'WITHDRAWN'],
+      required: true
+    },
+    // SHA-256 of the emailed consent token; the raw token is never stored
+    tokenHash: { type: String },
+    tokenExpires: { type: Date },
+    dobAttempts: { type: Number, default: 0 },
+    // Consent text version shown when the patient responded
+    textVersion: { type: String },
+    inviteSentAt: { type: Date },
+    firstInviteSentAt: { type: Date },
+    resendCount: { type: Number, default: 0 },
+    respondedAt: { type: Date },
+    withdrawnAt: { type: Date },
+    // First time the link lapsed (kept across resends, for the expiry rate)
+    expiredAt: { type: Date },
+    // "Patient couldn't consent now" records (instrumentation)
+    deferrals: [{
+      _id: false,
+      reason: {
+        type: String,
+        enum: ['no_phone', 'no_email_access', 'no_email_address', 'declined_verbally', 'other'],
+        required: true
+      },
+      note: { type: String, trim: true, maxlength: 500 },
+      recordedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      at: { type: Date, default: Date.now }
+    }]
   }
 }, {
   timestamps: true
@@ -75,6 +131,8 @@ ConnectionSchema.index({ patient: 1, accessLevel: 1 });
 ConnectionSchema.index({ provider: 1, accessLevel: 1 });
 ConnectionSchema.index({ patient: 1, fullAccessStatus: 1 });
 ConnectionSchema.index({ provider: 1, fullAccessStatus: 1 });
+ConnectionSchema.index({ 'consent.tokenHash': 1 }, { sparse: true });
+ConnectionSchema.index({ onboardingSource: 1, 'consent.status': 1 });
 
 // Method to request full access
 ConnectionSchema.methods.requestFullAccess = function() {

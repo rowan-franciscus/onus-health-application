@@ -146,7 +146,8 @@ const environments = {
     backendUrl: process.env.BACKEND_URL || 'http://localhost:5000',
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || defaultConfig.maxFileSize),
     logLevel: 'debug',
-    mongoDbName: 'onus-health'
+    mongoDbName: 'onus-health',
+    emailFrom: 'noreply@onushealth.com'
   },
   production: {
     port: process.env.PORT || defaultConfig.port,

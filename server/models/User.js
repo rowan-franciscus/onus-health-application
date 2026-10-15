@@ -6,10 +6,10 @@ const config = require('../config/environment');
 // Base User Schema that contains common fields for all user types
 const UserSchema = new mongoose.Schema({
   // Common fields for all users
+  // Unique among real accounts only (partial index below): provider-created
+  // placeholders may share an email, e.g. a family address
   email: {
     type: String,
-    unique: true,
-    sparse: true,
     trim: true,
     lowercase: true
   },
@@ -89,6 +89,24 @@ const UserSchema = new mongoose.Schema({
     type: String
   },
   resetPasswordExpires: {
+    type: Date
+  },
+  // Claim links for provider-created placeholder patients (SHA-256 of each
+  // token). Several can be live at once: the emailed link and the one shown
+  // on the consent confirmation screen. Cleared when the record is claimed.
+  claimTokens: [{
+    _id: false,
+    hash: { type: String, required: true },
+    expires: { type: Date, required: true }
+  }],
+  // Wrong dates of birth entered on claim links; at the limit every claim
+  // link is invalidated (see consent.service MAX_DOB_ATTEMPTS)
+  claimDobAttempts: {
+    type: Number,
+    default: 0
+  },
+  // When a placeholder patient claimed the record by creating an account
+  claimedAt: {
     type: Date
   },
   
@@ -227,6 +245,12 @@ const UserSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+UserSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { isOnusUser: true, email: { $type: 'string' } } }
+);
+UserSchema.index({ 'claimTokens.hash': 1 }, { sparse: true });
 
 // Pre-save middleware to hash password
 UserSchema.pre('save', async function(next) {

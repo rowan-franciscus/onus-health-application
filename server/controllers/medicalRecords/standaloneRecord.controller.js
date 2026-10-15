@@ -26,7 +26,8 @@ const createStandaloneRecord = (Model, recordLabel) => async (req, res) => {
 
     const connection = await Connection.findOne({
       provider: providerId,
-      patient: patientId
+      patient: patientId,
+      'consent.status': 'ACTIVE'
     });
 
     if (!connection) {

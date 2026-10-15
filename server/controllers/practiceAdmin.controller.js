@@ -13,6 +13,9 @@ const Connection = require('../models/Connection');
 const Consultation = require('../models/Consultation');
 const logger = require('../utils/logger');
 const config = require('../config/environment');
+const { onboardProviderInitiatedPatient } = require('../services/patientOnboarding.service');
+const consentService = require('../services/consent.service');
+const { consentedConsultationFilter } = require('../middleware/auth.middleware');
 const {
   sanitizeConsultationForPracticeAdmin,
   sanitizePatientForPracticeAdmin
@@ -69,6 +72,8 @@ exports.getPatients = async (req, res) => {
       return res.json({ success: true, patients: [] });
     }
 
+    await consentService.expireStale({ provider: { $in: providerIds } });
+
     const connections = await Connection.find({ provider: { $in: providerIds } })
       .populate('patient', 'firstName lastName email phone profileImage patientProfile');
 
@@ -78,7 +83,10 @@ exports.getPatients = async (req, res) => {
       if (!c.patient) continue;
       const id = c.patient._id.toString();
       if (!seen.has(id)) {
-        seen.set(id, sanitizePatientForPracticeAdmin(c.patient));
+        seen.set(id, { ...sanitizePatientForPracticeAdmin(c.patient), consentStatus: c.consent?.status });
+      } else if (c.consent?.status === 'ACTIVE') {
+        // Show ACTIVE if any provider in the practice has consent
+        seen.get(id).consentStatus = 'ACTIVE';
       }
     }
 
@@ -95,81 +103,19 @@ exports.getPatients = async (req, res) => {
  */
 exports.registerPatient = async (req, res) => {
   try {
-    const { providerId, firstName, lastName, gender, dateOfBirth, phone, email, medicalAidProvider, plan } = req.body;
+    const { providerId } = req.body;
     const { providerIds } = await loadPracticeContext(req);
 
     if (!providerId || !providerIds.includes(providerId.toString())) {
       return res.status(400).json({ success: false, message: 'Treating provider must be a member of your practice' });
     }
-    if (!firstName || !lastName || !gender || !dateOfBirth) {
-      return res.status(400).json({ success: false, message: 'firstName, lastName, gender and dateOfBirth are required' });
-    }
 
-    const parsedDob = new Date(dateOfBirth);
-    if (isNaN(parsedDob.getTime())) {
-      return res.status(400).json({ success: false, message: 'Invalid date of birth' });
-    }
-
-    const validGenders = ['male', 'female', 'other', 'prefer not to say'];
-    if (!validGenders.includes(gender)) {
-      return res.status(400).json({ success: false, message: 'Invalid gender value' });
-    }
-
-    const trimmedEmail = email ? email.trim().toLowerCase() : null;
-    let patient = null;
-    if (trimmedEmail) {
-      const existing = await User.findOne({ email: trimmedEmail });
-      if (existing) {
-        if (existing.isOnusUser) {
-          return res.status(409).json({
-            success: false,
-            message: 'A user with this email already exists on Onus.'
-          });
-        }
-        const existingConn = await Connection.findOne({ patient: existing._id, provider: providerId });
-        if (existingConn) {
-          return res.status(409).json({ success: false, message: 'This provider already has a connection with this patient.' });
-        }
-        patient = existing;
-      }
-    }
-
-    if (!patient) {
-      patient = new User({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: trimmedEmail || undefined,
-        phone: phone ? phone.trim() : undefined,
-        role: 'patient',
-        isOnusUser: false,
-        isEmailVerified: false,
-        isProfileCompleted: false,
-        registeredBy: providerId,
-        patientProfile: {
-          dateOfBirth: parsedDob,
-          gender,
-          insurance: {
-            provider: medicalAidProvider ? medicalAidProvider.trim() : undefined,
-            plan: plan ? plan.trim() : undefined
-          }
-        }
-      });
-      await patient.save();
-    }
-
-    const connection = new Connection({
-      patient: patient._id,
-      provider: providerId,
-      initiatedBy: req.user._id,
-      accessLevel: 'limited',
-      fullAccessStatus: 'none',
-      patientNotified: false
-    });
-    await connection.save();
-
-    res.status(201).json({
-      success: true,
-      patient: sanitizePatientForPracticeAdmin(patient)
+    const provider = await User.findById(providerId);
+    const result = await onboardProviderInitiatedPatient({ provider, req, data: req.body });
+    const { patient } = result;
+    res.status(result.status).json({
+      ...result.body,
+      ...(patient && result.status < 300 ? { patient: sanitizePatientForPracticeAdmin(patient) } : {})
     });
   } catch (error) {
     logger.error('practiceAdmin.registerPatient error:', error);
@@ -222,10 +168,8 @@ exports.getOperationalOverview = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Patient not in your practice' });
     }
 
-    const consultations = await Consultation.find({
-      patient: patientId,
-      provider: { $in: providerIds }
-    })
+    // Only consultations whose patient's consent to that provider is ACTIVE
+    const consultations = await Consultation.find(await consentedConsultationFilter(providerIds, patientId))
       .sort({ date: -1 })
       .populate('provider', 'firstName lastName')
       .select('date general.diagnosis billingStatus status provider');
@@ -247,7 +191,7 @@ exports.getOperationalOverview = async (req, res) => {
 exports.getBilling = async (req, res) => {
   try {
     const { providerIds } = await loadPracticeContext(req);
-    const consultations = await Consultation.find({ provider: { $in: providerIds } })
+    const consultations = await Consultation.find(await consentedConsultationFilter(providerIds))
       .sort({ date: -1 })
       .populate('patient', 'firstName lastName')
       .populate('provider', 'firstName lastName')
@@ -277,7 +221,7 @@ exports.updateBillingStatus = async (req, res) => {
     const { providerIds } = await loadPracticeContext(req);
     const consultation = await Consultation.findOne({
       _id: consultationId,
-      provider: { $in: providerIds }
+      ...(await consentedConsultationFilter(providerIds))
     });
     if (!consultation) {
       return res.status(404).json({ success: false, message: 'Consultation not found in your practice' });
@@ -300,7 +244,7 @@ exports.updateBillingStatus = async (req, res) => {
 exports.exportBillingCsv = async (req, res) => {
   try {
     const { providerIds } = await loadPracticeContext(req);
-    const consultations = await Consultation.find({ provider: { $in: providerIds } })
+    const consultations = await Consultation.find(await consentedConsultationFilter(providerIds))
       .sort({ date: -1 })
       .populate('patient', 'firstName lastName')
       .populate('provider', 'firstName lastName')

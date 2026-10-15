@@ -8,7 +8,10 @@ const {
   isProvider, 
   isAdminOrProvider,
   isOwnProfileOrAdmin,
-  isPatient
+  isPatient,
+  requireActiveConsent,
+  patientFromDocument,
+  patientFromConsultationBody
 } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
 const { auditRead } = require('../middleware/audit.middleware');
@@ -16,6 +19,9 @@ const { uploadConsultationFile } = require('../middleware/upload.middleware');
 
 // Import consultation controller
 const consultationController = require('../controllers/consultation.controller');
+
+// Patient consent must be ACTIVE for providers to read or change a consultation
+const consentForConsultation = (param) => requireActiveConsent(patientFromDocument('Consultation', param));
 
 // Basic test route
 router.get('/test', (req, res) => {
@@ -78,6 +84,7 @@ router.get('/:id',
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest, 
   auditRead('Consultation'),
+  consentForConsultation('id'),
   (req, res) => {
     console.log('=== Calling consultationController.getConsultationById ===');
     consultationController.getConsultationById(req, res);
@@ -104,6 +111,9 @@ router.post('/', authenticateJWT, isProvider,
     return true;
   }),
   validateRequest, 
+  // A missing connection is allowed: creating a consultation for a real
+  // patient account connects them (path 1); placeholders are refused in the controller
+  requireActiveConsent(patientFromConsultationBody, { allowMissingConnection: true }),
   (req, res) => {
     consultationController.createConsultation(req, res);
   }
@@ -115,6 +125,7 @@ router.put('/:id', authenticateJWT, isProvider,
   body('general').optional(),
   body('status').optional().isIn(['draft', 'completed', 'archived']).withMessage('Invalid status'),
   validateRequest, 
+  consentForConsultation('id'),
   (req, res) => {
     console.log('=== PUT /consultations/:id route hit ===');
     console.log('Consultation ID:', req.params.id);
@@ -138,6 +149,7 @@ router.post('/:id/follow-ups', authenticateJWT, isProvider,
     return true;
   }),
   validateRequest,
+  consentForConsultation('id'),
   (req, res) => {
     consultationController.addFollowUp(req, res);
   }
@@ -147,6 +159,7 @@ router.post('/:id/follow-ups', authenticateJWT, isProvider,
 router.post('/:id/close', authenticateJWT, isProvider,
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest,
+  consentForConsultation('id'),
   (req, res) => {
     consultationController.closeCase(req, res);
   }
@@ -156,6 +169,7 @@ router.post('/:id/close', authenticateJWT, isProvider,
 router.post('/:id/reopen', authenticateJWT, isProvider,
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest,
+  consentForConsultation('id'),
   (req, res) => {
     consultationController.reopenCase(req, res);
   }
@@ -165,6 +179,7 @@ router.post('/:id/reopen', authenticateJWT, isProvider,
 router.delete('/:id', authenticateJWT, isProvider,
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest, 
+  consentForConsultation('id'),
   (req, res) => {
     consultationController.deleteConsultation(req, res);
   }
@@ -174,6 +189,7 @@ router.delete('/:id', authenticateJWT, isProvider,
 router.post('/:id/attachments', authenticateJWT, isProvider,
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   validateRequest, 
+  consentForConsultation('id'),
   uploadConsultationFile.single('file'), 
   (req, res) => {
     consultationController.addAttachment(req, res);
@@ -184,6 +200,7 @@ router.delete('/:id/attachments/:attachmentId', authenticateJWT, isProvider,
   param('id').isMongoId().withMessage('Invalid consultation ID'),
   param('attachmentId').isMongoId().withMessage('Invalid attachment ID'),
   validateRequest, 
+  consentForConsultation('id'),
   (req, res) => {
     consultationController.deleteAttachment(req, res);
   }
@@ -199,12 +216,15 @@ const hospitalRecordsRoutes = require('./medicalRecords/hospitalRecords.routes')
 const surgeryRecordsRoutes = require('./medicalRecords/surgeryRecords.routes');
 
 // Mount medical record routes
-router.use('/:consultationId/vitals', vitalsRoutes);
-router.use('/:consultationId/medications', medicationsRoutes);
-router.use('/:consultationId/immunizations', immunizationsRoutes);
-router.use('/:consultationId/lab-results', labResultsRoutes);
-router.use('/:consultationId/radiology-reports', radiologyReportsRoutes);
-router.use('/:consultationId/hospital-records', hospitalRecordsRoutes);
-router.use('/:consultationId/surgery-records', surgeryRecordsRoutes);
+// authenticateJWT runs here so the consent guard sees req.user; the
+// sub-routers re-run it, which is harmless
+const subRecordGuard = [authenticateJWT, consentForConsultation('consultationId')];
+router.use('/:consultationId/vitals', subRecordGuard, vitalsRoutes);
+router.use('/:consultationId/medications', subRecordGuard, medicationsRoutes);
+router.use('/:consultationId/immunizations', subRecordGuard, immunizationsRoutes);
+router.use('/:consultationId/lab-results', subRecordGuard, labResultsRoutes);
+router.use('/:consultationId/radiology-reports', subRecordGuard, radiologyReportsRoutes);
+router.use('/:consultationId/hospital-records', subRecordGuard, hospitalRecordsRoutes);
+router.use('/:consultationId/surgery-records', subRecordGuard, surgeryRecordsRoutes);
 
 module.exports = router; 

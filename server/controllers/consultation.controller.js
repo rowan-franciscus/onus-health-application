@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
 const User = require('../models/User');
 const Connection = require('../models/Connection');
+const { activePatientIds } = require('../middleware/auth.middleware');
 const fs = require('fs');
 const path = require('path');
 const config = require('../config/environment');
@@ -15,6 +16,7 @@ const MedicationRecord = require('../models/MedicationRecord');
 // Immunization, Hospital, and Surgery records are now standalone (not part of consultations).
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
+const stripIdentityFields = require('../utils/stripIdentityFields');
 
 /**
  * Get all consultations with filtering
@@ -42,7 +44,8 @@ exports.getAllConsultations = async (req, res) => {
         // Check provider's access level to this patient
         const connection = await Connection.findOne({
           provider: userId,
-          patient: patient
+          patient: patient,
+          'consent.status': 'ACTIVE'
         });
         
         if (!connection) {
@@ -61,8 +64,10 @@ exports.getAllConsultations = async (req, res) => {
           query.provider = userId;
         }
       } else {
-        // If no patient specified, show all consultations created by this provider
+        // If no patient specified, show all consultations created by this provider,
+        // for patients whose consent is ACTIVE
         query.provider = userId;
+        query.patient = { $in: await activePatientIds(userId) };
       }
     } else if (userRole === 'admin') {
       // Admins can filter by patient and provider
@@ -194,7 +199,8 @@ exports.getConsultationById = async (req, res) => {
         // Check if provider has full access to this patient
         const connection = await Connection.findOne({
           provider: userId,
-          patient: consultation.patient._id
+          patient: consultation.patient._id,
+          'consent.status': 'ACTIVE'
         });
         
         console.log('Connection check:', {
@@ -280,7 +286,10 @@ exports.createConsultation = async (req, res) => {
     console.log('Request user:', { id: req.user.id, role: req.user.role, email: req.user.email });
     
     const providerId = req.user.id;
-    const { patient, patientEmail, vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    const { patient, patientEmail, vitals, medication, labResults, radiology, ...rawConsultationData } = req.body;
+    // Patient/provider links are never taken from the payload: consent was
+    // checked for `patient` / `patientEmail` only
+    const consultationData = stripIdentityFields(rawConsultationData);
     // Note: immunization, hospital, and surgery are intentionally NOT destructured here.
     // They are standalone records and any leftover values in req.body are ignored.
     delete consultationData.immunization;
@@ -304,7 +313,7 @@ exports.createConsultation = async (req, res) => {
     // If patientEmail is provided instead of patient ID, find the patient by email
     if (!patientId && patientEmail) {
       console.log('Looking up patient by email:', patientEmail);
-      patientUser = await User.findOne({ email: patientEmail, role: 'patient' });
+      patientUser = await User.findOne({ email: patientEmail, role: 'patient', isOnusUser: { $ne: false } });
       if (!patientUser) {
         console.log('Patient not found by email');
         await session.abortTransaction();
@@ -331,6 +340,25 @@ exports.createConsultation = async (req, res) => {
       provider: providerId
     }).session(session);
     
+    if (connection && connection.consent?.status !== 'ACTIVE') {
+      await session.abortTransaction();
+      return res.status(403).json({
+        code: 'CONSENT_REQUIRED',
+        consentStatus: connection.consent?.status,
+        message: 'Patient consent is required before adding clinical data'
+      });
+    }
+
+    if (!connection && patientUser.isOnusUser === false) {
+      // Provider-created placeholders are only reachable through Add New Patient,
+      // which captures consent; never auto-connect to one here
+      await session.abortTransaction();
+      return res.status(403).json({
+        code: 'CONSENT_REQUIRED',
+        message: 'Add this patient via Add New Patient so they can give consent'
+      });
+    }
+
     if (!connection) {
       console.log('Creating new connection');
       // Create new connection with limited access
@@ -340,7 +368,9 @@ exports.createConsultation = async (req, res) => {
         initiatedBy: providerId,
         accessLevel: 'limited',
         fullAccessStatus: 'none',
-        patientNotified: false
+        patientNotified: false,
+        onboardingSource: 'patient_initiated',
+        consent: { status: 'ACTIVE' }
       });
       
       await connection.save({ session });
@@ -405,7 +435,7 @@ exports.createConsultation = async (req, res) => {
           provider: providerId,
           consultation: consultation._id,
           date: consultation.date,
-          ...vitals
+          ...stripIdentityFields(vitals)
         });
         await vitalsRecord.save({ session });
         console.log('Vitals record created:', vitalsRecord._id);
@@ -432,7 +462,7 @@ exports.createConsultation = async (req, res) => {
               provider: providerId,
               consultation: consultation._id,
               date: consultation.date,
-              ...med
+              ...stripIdentityFields(med)
             });
             await medicationRecord.save({ session });
             return medicationRecord._id;
@@ -462,7 +492,7 @@ exports.createConsultation = async (req, res) => {
               provider: providerId,
               consultation: consultation._id,
               date: consultation.date,
-              ...lab
+              ...stripIdentityFields(lab)
             });
             await labResultRecord.save({ session });
             return labResultRecord._id;
@@ -492,7 +522,7 @@ exports.createConsultation = async (req, res) => {
               provider: providerId,
               consultation: consultation._id,
               date: consultation.date,
-              ...rad
+              ...stripIdentityFields(rad)
             });
             await radiologyRecord.save({ session });
             return radiologyRecord._id;
@@ -594,7 +624,9 @@ exports.updateConsultation = async (req, res) => {
     
     const { id } = req.params;
     const providerId = req.user.id;
-    const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    const { vitals, medication, labResults, radiology, ...rawConsultationData } = req.body;
+    // Patient/provider/consultation links are never taken from the client
+    const consultationData = stripIdentityFields(rawConsultationData);
     // Immunization, hospital, surgery are standalone records — strip from update body.
     delete consultationData.immunization;
     delete consultationData.hospital;
@@ -643,7 +675,7 @@ exports.updateConsultation = async (req, res) => {
           // Update existing vitals record
           await VitalsRecord.findByIdAndUpdate(
             consultation.vitals,
-            { ...vitals, updatedAt: Date.now() },
+            { ...stripIdentityFields(vitals), updatedAt: Date.now() },
             { session }
           );
           console.log('Updated existing vitals record');
@@ -654,7 +686,7 @@ exports.updateConsultation = async (req, res) => {
             provider: providerId,
             consultation: consultation._id,
             date: consultation.date,
-            ...vitals
+            ...stripIdentityFields(vitals)
           });
           await vitalsRecord.save({ session });
           consultation.vitals = vitalsRecord._id;
@@ -684,7 +716,7 @@ exports.updateConsultation = async (req, res) => {
               provider: providerId,
               consultation: consultation._id,
               date: consultation.date,
-              ...med
+              ...stripIdentityFields(med)
             });
             await medicationRecord.save({ session });
             return medicationRecord._id;
@@ -714,7 +746,7 @@ exports.updateConsultation = async (req, res) => {
               provider: providerId,
               consultation: consultation._id,
               date: consultation.date,
-              ...lab
+              ...stripIdentityFields(lab)
             });
             await labResultRecord.save({ session });
             return labResultRecord._id;
@@ -744,7 +776,7 @@ exports.updateConsultation = async (req, res) => {
               provider: providerId,
               consultation: consultation._id,
               date: consultation.date,
-              ...rad
+              ...stripIdentityFields(rad)
             });
             await radiologyRecord.save({ session });
             return radiologyRecord._id;
@@ -1093,7 +1125,9 @@ exports.addFollowUp = async (req, res) => {
       return res.status(400).json({ message: 'Cannot add a follow-up to a closed case. Reopen the case first.' });
     }
 
-    const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    const { vitals, medication, labResults, radiology, ...rawConsultationData } = req.body;
+    // Patient/provider/consultation links are never taken from the client
+    const consultationData = stripIdentityFields(rawConsultationData);
     delete consultationData.patient;
     delete consultationData.patientEmail;
     delete consultationData.provider;
@@ -1134,7 +1168,7 @@ exports.addFollowUp = async (req, res) => {
         provider: providerId,
         consultation: followUp._id,
         date: followUp.date,
-        ...vitals
+        ...stripIdentityFields(vitals)
       });
       await vitalsRecord.save({ session });
       followUp.vitals = vitalsRecord._id;
@@ -1149,7 +1183,7 @@ exports.addFollowUp = async (req, res) => {
             provider: providerId,
             consultation: followUp._id,
             date: followUp.date,
-            ...med
+            ...stripIdentityFields(med)
           });
           await medicationRecord.save({ session });
           return medicationRecord._id;
@@ -1167,7 +1201,7 @@ exports.addFollowUp = async (req, res) => {
             provider: providerId,
             consultation: followUp._id,
             date: followUp.date,
-            ...lab
+            ...stripIdentityFields(lab)
           });
           await labResultRecord.save({ session });
           return labResultRecord._id;
@@ -1185,7 +1219,7 @@ exports.addFollowUp = async (req, res) => {
             provider: providerId,
             consultation: followUp._id,
             date: followUp.date,
-            ...rad
+            ...stripIdentityFields(rad)
           });
           await radiologyRecord.save({ session });
           return radiologyRecord._id;

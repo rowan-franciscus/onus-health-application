@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PracticeAdminService from '../../services/practiceAdmin.service';
+import ConsentStatusBadge from '../../components/consent/ConsentStatusBadge';
 import styles from './Patients.module.css';
 
 const calculateAge = (dob) => {
@@ -136,6 +137,9 @@ const PracticeAdminPatients = () => {
                 <Link className={styles.nameLink} to={`/practice-admin/patients/${p._id}`}>
                   {p.firstName} {p.lastName}
                 </Link>
+                {p.consentStatus && p.consentStatus !== 'ACTIVE' && (
+                  <> <ConsentStatusBadge status={p.consentStatus} /></>
+                )}
               </div>
               <div>{truncateId(p._id)}</div>
               <div>{calculateAge(p.patientProfile?.dateOfBirth)}</div>

@@ -208,7 +208,6 @@ const RegisterNewPatientTab = () => {
     plan: '',
   });
   const [errors, setErrors] = useState({});
-  const [startConsultation, setStartConsultation] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
@@ -253,18 +252,20 @@ const RegisterNewPatientTab = () => {
       const response = await PatientService.registerNewPatient(payload);
 
       if (response && response.success) {
-        toast.success(`${formData.firstName} ${formData.lastName} has been registered successfully.`);
-
-        if (startConsultation) {
-          const { patient } = response;
-          if (patient.email) {
-            navigate(`/provider/consultations/new?patientEmail=${encodeURIComponent(patient.email)}`);
-          } else {
-            navigate(`/provider/consultations/new?patientId=${patient._id}`);
-          }
-        } else {
+        if (response.outcome === 'access_request_sent') {
+          // Email + DOB matched an existing Onus account: no new record was created
+          toast.info(response.message, { autoClose: 10000 });
           navigate('/provider/patients');
+          return;
         }
+
+        toast.success(response.message || `${formData.firstName} ${formData.lastName} has been added.`);
+        if (response.warning === 'EMAIL_IN_USE_DIFFERENT_DOB') {
+          toast.warning(response.warningMessage, { autoClose: false });
+        }
+        // The record is pending consent: open it so the provider can see its
+        // status or record why the patient couldn't consent now
+        navigate(`/provider/patients/${response.patient._id}`);
       } else {
         throw new Error(response?.message || 'Failed to register patient');
       }
@@ -280,7 +281,7 @@ const RegisterNewPatientTab = () => {
     <>
       <div className={styles.infoBanner}>
         <span className={styles.infoBannerIcon}>ⓘ</span>
-        Register a patient who doesn't have an Onus account. They can link their account later.
+        Register a patient who doesn't have an Onus account. We'll email them a consent request — you can add clinical information once they consent.
       </div>
 
       <form onSubmit={handleSubmit} className={styles.registerForm}>
@@ -410,20 +411,6 @@ const RegisterNewPatientTab = () => {
               disabled={isSubmitting}
             />
           </div>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label className={styles.checkboxContainer}>
-            <input
-              type="checkbox"
-              checked={startConsultation}
-              onChange={(e) => setStartConsultation(e.target.checked)}
-              disabled={isSubmitting}
-            />
-            <span className={styles.checkboxLabel}>
-              Start a consultation for this patient after adding
-            </span>
-          </label>
         </div>
 
         <div className={styles.formActions}>

@@ -5,6 +5,8 @@ const { body, param, query } = require('express-validator');
 // Import middleware
 const { authenticateJWT, isAdmin } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
+const { getConsentReport } = require('../services/consentReport.service');
+const logger = require('../utils/logger');
 
 // Import admin controller (to be implemented later)
 const adminController = require('../controllers/admin.controller');
@@ -128,5 +130,32 @@ router.put('/change-password', adminController.changePassword);
 
 // Admin profile update
 router.put('/profile', adminController.updateProfile);
+
+// Internal consent instrumentation report (patient-consent pilot)
+router.get(
+  '/reports/consent',
+  [
+    query('from').optional().isISO8601().withMessage('from must be an ISO date'),
+    query('to').optional().isISO8601().withMessage('to must be an ISO date'),
+    query('practiceId').optional().isMongoId().withMessage('Invalid practice ID'),
+  ],
+  validateRequest,
+  async (req, res) => {
+    try {
+      const { from, to, practiceId } = req.query;
+      // 'to' is a calendar date: include the whole day
+      const toDate = to ? new Date(new Date(to).getTime() + 24 * 60 * 60 * 1000 - 1) : undefined;
+      const report = await getConsentReport({
+        from: from ? new Date(from) : undefined,
+        to: toDate,
+        practiceId
+      });
+      res.json({ success: true, report });
+    } catch (error) {
+      logger.error('Error building consent report:', error);
+      res.status(500).json({ success: false, message: 'Failed to build consent report' });
+    }
+  }
+);
 
 module.exports = router; 

@@ -90,7 +90,9 @@ async function testConnectionCreation(provider, patient) {
     provider: provider._id,
     initiatedBy: provider._id,
     accessLevel: 'limited',
-    fullAccessStatus: 'none'
+    fullAccessStatus: 'none',
+    onboardingSource: 'patient_initiated',
+    consent: { status: 'ACTIVE' }
   });
   
   await connection1.save();

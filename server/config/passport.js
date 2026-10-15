@@ -11,6 +11,13 @@ const User = require('../models/User');
 const config = require('./environment');
 const logger = require('../utils/logger');
 
+// A provider may already hold an unclaimed record for this email. Social
+// sign-in can't check the date of birth, so it must not create a second
+// record: the person signs up with email instead (DOB check + claim link).
+const RECORD_EXISTS = { code: 'record_exists' };
+const hasUnclaimedRecord = (email) =>
+  User.exists({ email: String(email).trim().toLowerCase(), role: 'patient', isOnusUser: false });
+
 // Configure JWT Strategy
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -66,7 +73,7 @@ if (config.googleClientId && config.googleClientSecret && config.googleCallbackU
         }
         
         // Check if a user with the same email exists
-        user = await User.findOne({ email: profile.emails[0].value });
+        user = await User.findOne({ email: profile.emails[0].value, isOnusUser: { $ne: false } });
         
         if (user) {
           // Link Google ID to existing account
@@ -75,6 +82,10 @@ if (config.googleClientId && config.googleClientSecret && config.googleCallbackU
           return done(null, user);
         }
         
+        if (await hasUnclaimedRecord(profile.emails[0].value)) {
+          return done(null, false, RECORD_EXISTS);
+        }
+
         // Create a new user
         const newUser = new User({
           googleId: profile.id,
@@ -114,7 +125,7 @@ if (config.facebookAppId && config.facebookAppSecret && config.facebookCallbackU
         
         // Check if a user with the same email exists
         if (profile.emails && profile.emails.length > 0) {
-          user = await User.findOne({ email: profile.emails[0].value });
+          user = await User.findOne({ email: profile.emails[0].value, isOnusUser: { $ne: false } });
           
           if (user) {
             // Link Facebook ID to existing account
@@ -123,6 +134,10 @@ if (config.facebookAppId && config.facebookAppSecret && config.facebookCallbackU
             return done(null, user);
           }
           
+          if (await hasUnclaimedRecord(profile.emails[0].value)) {
+            return done(null, false, RECORD_EXISTS);
+          }
+
           // Create a new user
           const newUser = new User({
             facebookId: profile.id,

@@ -84,6 +84,8 @@ const PracticeAdminBilling = lazy(() => import('./pages/practiceAdmin/Billing'))
 const PracticeAdminProfile = lazy(() => import('./pages/practiceAdmin/Profile'));
 const PracticeAdminSettings = lazy(() => import('./pages/practiceAdmin/Settings'));
 const AcceptPracticeAdminInvite = lazy(() => import('./pages/auth/AcceptPracticeAdminInvite'));
+const ClaimProfile = lazy(() => import('./pages/auth/ClaimProfile'));
+const PublicConsent = lazy(() => import('./pages/public/Consent'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -97,6 +99,7 @@ const AdminViewPatient = lazy(() => import('./pages/admin/ViewPatient'));
 const AdminEditPatient = lazy(() => import('./pages/admin/EditPatient'));
 const AdminPatientProfile = lazy(() => import('./pages/admin/PatientProfile'));
 const AdminAuditLogs = lazy(() => import('./pages/admin/AuditLogs'));
+const AdminConsentReport = lazy(() => import('./pages/admin/ConsentReport'));
 
 // Shared pages
 const NotFound = lazy(() => import('./pages/shared/NotFound'));
@@ -194,6 +197,9 @@ function App() {
             <Route path="/verify-your-email" element={<EmailVerificationSent />} />
             <Route path="/verification-error" element={<VerificationError />} />
             <Route path="/accept-practice-admin/:token" element={<AcceptPracticeAdminInvite />} />
+            {/* Patient consent links from provider-initiated onboarding (no account needed) */}
+            <Route path="/consent/:token" element={<PublicConsent />} />
+            <Route path="/claim/:token" element={<ClaimProfile />} />
           </Route>
 
           {/* Onboarding routes */}
@@ -823,6 +829,15 @@ function App() {
               element={
                 <ProtectedRoute
                   element={<AdminAuditLogs />}
+                  allowedRoles={['admin']}
+                />
+              }
+            />
+            <Route
+              path="/admin/consent-report"
+              element={
+                <ProtectedRoute
+                  element={<AdminConsentReport />}
                   allowedRoles={['admin']}
                 />
               }

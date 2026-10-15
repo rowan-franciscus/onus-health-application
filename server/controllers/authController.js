@@ -10,6 +10,7 @@ const { validationResult } = require("express-validator");
 const logger = require("../utils/logger");
 const { validatePassword } = require("../utils/passwordPolicy");
 const auditService = require("../services/audit.service");
+const consentService = require("../services/consent.service");
 
 // Audit helper for authentication outcomes. Never pass credentials in here.
 const auditAuth = (req, subtype, outcome, extra = {}) => {
@@ -20,6 +21,105 @@ const auditAuth = (req, subtype, outcome, extra = {}) => {
     outcome,
     ...extra,
   });
+};
+
+/**
+ * Tell the provider who created a placeholder record that the patient has
+ * claimed it. Non-fatal on failure.
+ */
+const notifyProviderOfClaim = async (user) => {
+  if (!user.registeredBy) return;
+  try {
+    const emailService = require("../services/email.service");
+    const provider = await User.findById(user.registeredBy).select("firstName lastName email");
+    if (provider && provider.email) {
+      await emailService.sendTemplateEmail(
+        provider.email,
+        "patientClaimed",
+        {
+          providerFirstName: provider.firstName,
+          patientName: `${user.firstName} ${user.lastName}`,
+          patientEmail: user.email,
+          frontendUrl: config.frontendUrl,
+        },
+        {
+          subject: `${user.firstName} ${user.lastName} has joined Onus Health`,
+          userId: provider._id,
+          queue: true,
+        },
+      );
+    }
+  } catch (notifyErr) {
+    logger.error(`Failed to notify provider of patient claim:`, notifyErr);
+  }
+};
+
+/**
+ * Email a claim link to a provider-created record's own address (used when
+ * sign-up matches it on email + DOB). Resolves whether the email was queued.
+ */
+const sendClaimLinkEmail = async (req, placeholder) => {
+  try {
+    const rawClaim = await consentService.issueClaimToken(placeholder._id);
+    if (!rawClaim) return false;
+    const emailService = require("../services/email.service");
+    // Resolves false (rather than throwing) when the email couldn't be queued
+    const queued = await emailService.sendTemplateEmail(
+      placeholder.email,
+      "claimProfileLink",
+      {
+        title: "Claim your health record",
+        patientFirstName: placeholder.firstName,
+        claimUrl: `${config.frontendUrl}/claim/${rawClaim}`,
+      },
+      {
+        subject: "Claim your health record on Onus Health",
+        userId: placeholder._id,
+        queue: true,
+      },
+    );
+    if (!queued) return false;
+    auditService.logFromRequest(req, {
+      type: "auth",
+      subtype: "record-claim-link-sent",
+      action: "E",
+      entity: { resourceType: "User", resourceId: placeholder._id, patientId: placeholder._id },
+    });
+    return true;
+  } catch (error) {
+    logger.error(`Failed to send claim link for ${placeholder._id}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Turn a provider-created placeholder into the patient's own account, in
+ * place (same _id, so every connection and record stays attached).
+ * Caller must already have matched the patient by claim token and DOB; the
+ * link was emailed to this address, which proves access to it.
+ */
+const claimPlaceholder = async (req, placeholder, { password, firstName, lastName }) => {
+  placeholder.password = password;
+  placeholder.firstName = (firstName && firstName.trim()) || placeholder.firstName;
+  placeholder.lastName = (lastName && lastName.trim()) || placeholder.lastName;
+  placeholder.isOnusUser = true;
+  placeholder.isEmailVerified = true;
+  placeholder.claimedAt = new Date();
+  placeholder.claimTokens = [];
+  await placeholder.save();
+  logger.info(`Non-Onus patient ${placeholder._id} claimed via claim-link`);
+
+  auditService.logFromRequest(req, {
+    type: "auth",
+    subtype: "record-claimed",
+    action: "U",
+    outcomeDesc: "claim-link",
+    agent: { userId: placeholder._id, role: "patient" },
+    entity: { resourceType: "User", resourceId: placeholder._id, patientId: placeholder._id },
+  });
+
+  await notifyProviderOfClaim(placeholder);
+  return placeholder;
 };
 
 /**
@@ -49,65 +149,71 @@ exports.register = async (req, res) => {
     // attacker registers directly as an administrator.
     const requestedRole = req.body.role === 'provider' ? 'provider' : 'patient';
 
-    // Check if user already exists
-    let user = await User.findOne({ email });
+    // Real accounts are unique per email; provider-created placeholders are not
+    let user = await User.findOne({ email, isOnusUser: { $ne: false } });
     if (user) {
-      // Allow claiming a non-Onus placeholder patient record
-      if (user.isOnusUser === false && user.role === 'patient') {
-        logger.info(`Claiming non-Onus placeholder for email ${email}`);
-        user.password = password;
-        user.firstName = firstName || user.firstName;
-        user.lastName = lastName || user.lastName;
-        user.isOnusUser = true;
-        user.isEmailVerified = false;
-        await user.save();
-        logger.info(`Non-Onus patient ${user._id} claimed via registration`);
-
-        // Notify the provider who registered this patient, if any
-        if (user.registeredBy) {
-          try {
-            const emailService = require('../services/email.service');
-            const provider = await User.findById(user.registeredBy).select('firstName lastName email');
-            if (provider && provider.email) {
-              await emailService.sendTemplateEmail(
-                provider.email,
-                'patientClaimed',
-                {
-                  providerFirstName: provider.firstName,
-                  patientName: `${user.firstName} ${user.lastName}`,
-                  patientEmail: user.email,
-                  frontendUrl: config.frontendUrl,
-                },
-                {
-                  subject: `${user.firstName} ${user.lastName} has joined Onus Health`,
-                  userId: provider._id,
-                  queue: true,
-                }
-              );
-            }
-          } catch (notifyErr) {
-            logger.error(`Failed to notify provider of patient claim:`, notifyErr);
-          }
-        }
-      } else {
-        logger.warn(
-          `Registration failed: User already exists with email ${email}`,
-        );
-        return res.status(400).json({ message: "User already exists" });
-      }
-    } else {
-      // Create new user
-      user = new User({
-        email,
-        password,
-        firstName,
-        lastName,
-        role: requestedRole,
-      });
-
-      await user.save();
-      logger.info(`User created with ID ${user._id} and email ${email}`);
+      logger.warn(
+        `Registration failed: User already exists with email ${email}`,
+      );
+      return res.status(400).json({ message: "User already exists" });
     }
+
+    // A provider may already hold a record for this person. Link to it only
+    // on email AND date of birth (shared family emails are common), so the
+    // patient never ends up with two records and email alone never links one.
+    const placeholders = requestedRole === "patient"
+      ? await User.find({ email, role: "patient", isOnusUser: false })
+      : [];
+    const { dateOfBirth } = req.body;
+
+    if (placeholders.length > 0 && !dateOfBirth) {
+      return res.status(409).json({
+        code: "RECORD_EXISTS_VERIFY_DOB",
+        message:
+          "A health record may already exist for this email. Enter your date of birth so we can link it to your account.",
+      });
+    }
+    if (dateOfBirth && !consentService.toDateKey(dateOfBirth)) {
+      return res.status(400).json({ message: "Invalid date of birth" });
+    }
+
+    const placeholder = placeholders.find((p) =>
+      consentService.sameDob(dateOfBirth, p.patientProfile?.dateOfBirth),
+    );
+
+    if (placeholder) {
+      // Email + DOB aren't secret, so they never hand over the record (and its
+      // clinical data) here. Email a claim link instead: claiming then needs
+      // access to the inbox, exactly like the link in the consent email.
+      if (!(await sendClaimLinkEmail(req, placeholder))) {
+        return res.status(503).json({
+          code: "CLAIM_LINK_FAILED",
+          message:
+            "A health record already exists for you, but we couldn't send the link to claim it. Please try again shortly.",
+        });
+      }
+      return res.status(202).json({
+        success: true,
+        code: "CLAIM_LINK_SENT",
+        message:
+          "A health record already exists for you. We've emailed you a link to claim it and finish creating your account.",
+      });
+    }
+
+    // Create new user
+    user = new User({
+      email,
+      password,
+      firstName,
+      lastName,
+      role: requestedRole,
+      ...(requestedRole === "patient" && dateOfBirth
+        ? { patientProfile: { dateOfBirth: new Date(consentService.toDateKey(dateOfBirth)) } }
+        : {}),
+    });
+
+    await user.save();
+    logger.info(`User created with ID ${user._id} and email ${email}`);
 
     // Generate verification token
     const verificationToken = jwt.sign({ id: user._id, type: "verify" }, config.jwtSecret, {
@@ -196,7 +302,7 @@ exports.login = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, isOnusUser: { $ne: false } });
     if (!user) {
       logger.warn(`Login attempt failed: user not found with email ${email}`);
       auditAuth(req, "login-failure", "8", { outcomeDesc: "user-not-found" });
@@ -684,7 +790,7 @@ exports.forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, isOnusUser: { $ne: false } });
     if (!user) {
       return res
         .status(200)
@@ -851,7 +957,7 @@ exports.resendVerificationEmail = async (req, res) => {
     }
 
     // Find the user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email, isOnusUser: { $ne: false } });
     if (!user) {
       // For security reasons, don't reveal that the user doesn't exist
       return res.status(200).json({
@@ -1027,4 +1133,96 @@ exports.acceptPracticeAdminInvite = async (req, res) => {
 exports.logout = async (req, res) => {
   auditAuth(req, "logout", "0");
   res.json({ success: true, message: "Logged out" });
+};
+
+const maskEmail = (email) => {
+  if (!email) return null;
+  const [local, domain] = email.split("@");
+  return `${local.slice(0, 1)}${"*".repeat(Math.max(local.length - 1, 1))}@${domain}`;
+};
+
+/**
+ * GET /api/auth/claim/:token — who the claim link is for (masked).
+ */
+exports.getClaim = async (req, res) => {
+  try {
+    const patient = await consentService.findPatientByClaimToken(req.params.token);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "This link is no longer valid. Your profile may already be claimed — try signing in.",
+      });
+    }
+    res.json({
+      success: true,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      email: patient.email,
+      maskedEmail: maskEmail(patient.email),
+    });
+  } catch (error) {
+    logger.error(`Get claim error: ${error.message}`, { error });
+    res.status(500).json({ success: false, message: "Something went wrong. Please try again." });
+  }
+};
+
+/**
+ * POST /api/auth/claim/:token — create an account by claiming the
+ * provider-created record. Requires the claim link AND the record's DOB.
+ */
+exports.claimProfile = async (req, res) => {
+  try {
+    const { password, dateOfBirth, firstName, lastName } = req.body || {};
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ success: false, message: passwordError });
+    }
+    if (!consentService.toDateKey(dateOfBirth)) {
+      return res.status(400).json({ success: false, message: "Please enter a valid date of birth." });
+    }
+
+    const patient = await consentService.findPatientByClaimToken(req.params.token);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "This link is no longer valid. Your profile may already be claimed — try signing in.",
+      });
+    }
+    if (!consentService.sameDob(dateOfBirth, patient.patientProfile?.dateOfBirth)) {
+      const { locked, attemptsRemaining } = await consentService.recordClaimDobMismatch(patient._id);
+      auditAuth(req, "record-claim-failed", "4", {
+        outcomeDesc: locked ? "claim-link-locked" : "dob-mismatch",
+        entity: { resourceType: "User", resourceId: patient._id, patientId: patient._id },
+      });
+      if (locked) {
+        return res.status(423).json({
+          success: false,
+          message: "Too many incorrect attempts. This link has been disabled; ask your provider to resend your consent email, or sign up again to get a new link.",
+        });
+      }
+      return res.status(422).json({
+        success: false,
+        message: "That date of birth does not match our records.",
+        attemptsRemaining,
+      });
+    }
+
+    await claimPlaceholder(req, patient, { password, firstName, lastName });
+
+    res.status(201).json({
+      success: true,
+      message: "Your profile has been claimed. You can now sign in.",
+      email: patient.email,
+    });
+  } catch (error) {
+    if (error && error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "An Onus Health account already uses this email address. Please sign in instead.",
+      });
+    }
+    logger.error(`Claim profile error: ${error.message}`, { error });
+    res.status(500).json({ success: false, message: "Something went wrong. Please try again." });
+  }
 };

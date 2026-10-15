@@ -230,6 +230,20 @@ const startServer = async () => {
       logger.error('Audit service initialization failed (will retry lazily):', error);
     }
 
+    // Patient-consent migrations must run before this code serves traffic:
+    // connections without a consent state deny every provider
+    try {
+      const Connection = require('./models/Connection');
+      if (await Connection.exists({ 'consent.status': { $exists: false } })) {
+        logger.error(
+          'CONSENT_MIGRATION_PENDING: some connections have no consent state, so providers cannot access ' +
+          'those patients. Run migrations/consent-email-partial-index.js and migrations/backfill-connection-consent.js --apply.'
+        );
+      }
+    } catch (error) {
+      logger.warn('Could not check consent migration state:', error.message);
+    }
+
     // Automatically check and fix test authentication in development mode
     if (config.env === 'development') {
       const User = require('./models/User');

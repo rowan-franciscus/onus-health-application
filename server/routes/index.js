@@ -16,6 +16,7 @@ const hospitalAdmissionRoutes = require('./hospitalAdmission.routes');
 const surgeryRoutes = require('./surgery.routes');
 const biometricRoutes = require('./biometric.routes');
 const practiceAdminRoutes = require('./practiceAdmin.routes');
+const consentRoutes = require('./consent.routes');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -31,6 +32,7 @@ router.use('/hospital-admissions', hospitalAdmissionRoutes);
 router.use('/surgeries', surgeryRoutes);
 router.use('/biometrics', biometricRoutes);
 router.use('/practice-admin', practiceAdminRoutes);
+router.use('/consent', consentRoutes);
 router.use('/', physicalRecordRoutes);
 
 module.exports = router; 

@@ -1,0 +1,27 @@
+<h1>Your consent is needed</h1>
+
+<p>Hi {{patientFirstName}},</p>
+
+<p><strong>{{providerName}}</strong>{{#if practiceName}} at <strong>{{practiceName}}</strong>{{/if}} has started a health record for you on Onus Health. Before they can add anything to it, they need your consent.</p>
+
+<p>It takes about a minute, and you don't need an account.</p>
+
+<div style="text-align: center; margin: 32px 0 12px;">
+  <a href="{{consentUrl}}" class="btn" style="font-size: 18px; padding: 16px 40px;">Review and give consent</a>
+</div>
+
+<p style="text-align: center; font-size: 13px; color: #666666; margin: 0 0 32px;">This link can be used once and expires on {{expiresOn}}.</p>
+
+{{#if claimUrl}}
+<div style="border-top: 1px solid #e5e5e5; padding-top: 20px; text-align: center;">
+  <p style="font-size: 14px; color: #444444; margin: 0 0 8px;">Optional: create an account to own, view and control your health data.</p>
+  <a href="{{claimUrl}}" style="font-size: 14px; color: #555555; text-decoration: underline;">Claim your profile</a>
+</div>
+{{/if}}
+
+<p class="backup-link" style="text-align: center; margin: 28px 0 0; font-size: 12px;">
+  If the button doesn't work, copy this link into your browser:<br>
+  <a href="{{consentUrl}}">{{consentUrl}}</a>
+</p>
+
+<p style="font-size: 13px; color: #666666;">If you don't know {{providerName}}, you can ignore this email or choose "Decline" on the consent page.</p>

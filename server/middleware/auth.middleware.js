@@ -4,6 +4,7 @@
  */
 
 const passport = require('passport');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 const rateLimit = require('express-rate-limit');
@@ -77,6 +78,32 @@ const passwordResetLimiter = rateLimit({
     // Skip rate limiting in development for easier testing
     return config.env === 'development';
   }
+});
+
+/**
+ * Rate limiter for the public consent and claim links. Each link also has its
+ * own DOB attempt limit; this caps guessing across many links from one IP.
+ */
+const consentLinkLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn(`Consent link rate limit exceeded for IP: ${req.ip}`);
+    auditService.logFromRequest(req, {
+      type: 'security',
+      subtype: 'rate-limit-lockout',
+      action: 'E',
+      outcome: '8',
+      outcomeDesc: 'too-many-consent-link-attempts'
+    });
+    res.status(429).json({
+      success: false,
+      message: 'Too many attempts, please try again after 15 minutes'
+    });
+  },
+  skip: () => config.env === 'development' || config.env === 'test'
 });
 
 /**
@@ -381,6 +408,27 @@ const isOwnProfileOrAdmin = async (req, res, next) => {
 };
 
 /**
+ * The provider's connection to a patient, only if the patient's consent is
+ * ACTIVE: pending, declined, expired and withdrawn consents all deny. Use it
+ * (or requireActiveConsent) for "may this provider act on this patient's
+ * clinical data" checks.
+ * @param {String} providerId - Provider ID
+ * @param {String} patientId - Patient ID
+ * @param {Object} [options]
+ * @param {Boolean} [options.requireFullAccess] - Also require approved full access
+ * @returns {Promise<Object|null>} The Connection, or null
+ */
+const getActiveConnection = async (providerId, patientId, { requireFullAccess = false } = {}) => {
+  const Connection = require('../models/Connection');
+  const query = { provider: providerId, patient: patientId, 'consent.status': 'ACTIVE' };
+  if (requireFullAccess) {
+    query.accessLevel = 'full';
+    query.fullAccessStatus = 'approved';
+  }
+  return Connection.findOne(query);
+};
+
+/**
  * Helper function to check if provider has access to patient data
  * @param {String} providerId - Provider ID
  * @param {String} patientId - Patient ID
@@ -389,36 +437,172 @@ const isOwnProfileOrAdmin = async (req, res, next) => {
  */
 const canProviderAccessPatient = async (providerId, patientId, requireFullAccess = false) => {
   try {
-    // Import Connection model
-    const Connection = require('../models/Connection');
-    
-    // Find connection between provider and patient
-    const connection = await Connection.findOne({
-      provider: providerId,
-      patient: patientId
-    });
-    
-    if (!connection) {
-      return false;
-    }
-    
-    // If full access is required, check that it's approved
-    if (requireFullAccess) {
-      return connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved';
-    }
-    
-    // Otherwise, any connection is sufficient (for limited access)
-    return true;
+    return Boolean(await getActiveConnection(providerId, patientId, { requireFullAccess }));
   } catch (error) {
     logger.error('Error checking provider-patient connection:', error);
     return false;
   }
 };
 
+/**
+ * Patients whose consent to this provider is ACTIVE. Provider list endpoints
+ * only return records for these patients (an allowlist, so a deleted or
+ * missing connection never re-exposes records the provider created earlier).
+ */
+const activePatientIds = async (providerId) => {
+  const Connection = require('../models/Connection');
+  const active = await Connection.find({
+    provider: providerId,
+    'consent.status': 'ACTIVE'
+  }).select('patient').lean();
+  return active.map((c) => c.patient);
+};
+
+/**
+ * 403 for a provider acting on a patient whose consent isn't ACTIVE.
+ */
+const sendConsentRequired = (res) =>
+  res.status(403).json({
+    success: false,
+    code: 'CONSENT_REQUIRED',
+    message: 'The patient has not given consent, so this action is not available'
+  });
+
+/**
+ * Mongo filter for consultations written by `providerIds` whose patient's
+ * consent to that same provider is ACTIVE (optionally for one patient). Used
+ * by billing and overview pages, which list consultations across providers.
+ */
+const consentedConsultationFilter = async (providerIds, patientId) => {
+  const Connection = require('../models/Connection');
+  const query = { provider: { $in: providerIds }, 'consent.status': 'ACTIVE' };
+  if (patientId) query.patient = patientId;
+  const active = await Connection.find(query).select('provider patient').lean();
+  if (active.length === 0) {
+    return { _id: { $in: [] } };
+  }
+  return { $or: active.map((c) => ({ provider: c.provider, patient: c.patient })) };
+};
+
+// ---- Patient-consent guard ----
+// Resolvers map a request to the patient it acts on. They return null when
+// the target can't be resolved (bad ID, not found) so the route's own
+// validation/404 handling still applies.
+
+const asObjectId = (value) => (mongoose.isValidObjectId(value) ? value : null);
+
+const patientFromParam = (name) => async (req) => asObjectId(req.params[name]);
+
+const patientFromBody = (...names) => async (req) => {
+  for (const name of names) {
+    const value = req.body && req.body[name];
+    if (value) return asObjectId(value._id ? value._id : value);
+  }
+  return null;
+};
+
+// Looks up `Model` by the ID in req.params[param] and returns its patient
+const patientFromDocument = (modelName, param, field = 'patient') => async (req) => {
+  const id = asObjectId(req.params[param]);
+  if (!id) return null;
+  const doc = await mongoose.model(modelName).findById(id).select(field).lean();
+  return doc ? doc[field] : null;
+};
+
+// POST /consultations accepts a patient ID or a patient email (real accounts only)
+const patientFromConsultationBody = async (req) => {
+  const byId = await patientFromBody('patient', 'patientId')(req);
+  if (byId) return byId;
+  const email = req.body && req.body.patientEmail;
+  if (!email) return null;
+  const patient = await User.findOne({
+    email: String(email).trim().toLowerCase(),
+    role: 'patient',
+    isOnusUser: { $ne: false }
+  }).select('_id').lean();
+  return patient ? patient._id : null;
+};
+
+const providerIdsForPracticeAdmin = async (userId) => {
+  const Practice = require('../models/Practice');
+  const adminUser = await User.findById(userId).select('practiceAdminProfile');
+  const practiceId = adminUser && adminUser.practiceAdminProfile && adminUser.practiceAdminProfile.practiceId;
+  if (!practiceId) return [];
+  const practice = await Practice.findById(practiceId).select('owner members');
+  return practice ? [practice.owner, ...(practice.members || [])] : [];
+};
+
+/**
+ * Route guard: providers (and practice admins, through any provider in their
+ * practice) may only act on a patient whose consent is ACTIVE. Patients and
+ * platform admins pass through to the route's existing checks.
+ *
+ * Responds 403 { code: 'CONSENT_REQUIRED', consentStatus } when a connection
+ * exists but consent isn't active, and 403 when there is no connection at all
+ * (unless allowMissingConnection, for routes that create path-1 connections to
+ * real patient accounts).
+ */
+const requireActiveConsent = (resolvePatientId, { allowMissingConnection = false } = {}) =>
+  async (req, res, next) => {
+    try {
+      const role = req.user && req.user.role;
+      if (role !== 'provider' && role !== 'practice_admin') {
+        return next();
+      }
+
+      const patientId = await resolvePatientId(req);
+      if (!patientId) {
+        return next();
+      }
+
+      const Connection = require('../models/Connection');
+      const providerFilter = role === 'provider'
+        ? req.user._id || req.user.id
+        : { $in: await providerIdsForPracticeAdmin(req.user._id || req.user.id) };
+
+      const connections = await Connection.find({ provider: providerFilter, patient: patientId })
+        .select('_id accessLevel consent.status');
+      const active = connections.find((c) => c.consent && c.consent.status === 'ACTIVE');
+
+      if (active) {
+        if (req.audit) {
+          req.audit.set({ connectionId: active._id, accessLevel: active.accessLevel });
+        }
+        return next();
+      }
+
+      if (connections.length === 0) {
+        // Only real patient accounts can be auto-connected; provider-created
+        // placeholders are reachable only through Add New Patient (consent)
+        if (allowMissingConnection) {
+          const patient = await User.findById(patientId).select('isOnusUser').lean();
+          if (!patient || patient.isOnusUser !== false) return next();
+          return res.status(403).json({
+            success: false,
+            code: 'CONSENT_REQUIRED',
+            message: 'Add this patient via Add New Patient so they can give consent'
+          });
+        }
+        return res.status(403).json({ success: false, message: 'No connection to this patient' });
+      }
+
+      return res.status(403).json({
+        success: false,
+        code: 'CONSENT_REQUIRED',
+        consentStatus: connections[0].consent && connections[0].consent.status,
+        message: 'The patient has not given consent, so this action is not available'
+      });
+    } catch (error) {
+      logger.error('Error in requireActiveConsent middleware:', error);
+      return res.status(500).json({ success: false, message: 'Server error during consent check' });
+    }
+  };
+
 module.exports = {
   authenticateJWT,
   authRateLimiter,
   passwordResetLimiter,
+  consentLinkLimiter,
   sessionTimeout,
   isAdmin,
   isProvider,
@@ -430,5 +614,14 @@ module.exports = {
   isPracticeAdmin,
   isProviderOrPracticeAdmin,
   canPracticeAdminAccessPatient,
-  canProviderAccessPatient
+  canProviderAccessPatient,
+  getActiveConnection,
+  activePatientIds,
+  consentedConsultationFilter,
+  sendConsentRequired,
+  requireActiveConsent,
+  patientFromParam,
+  patientFromBody,
+  patientFromDocument,
+  patientFromConsultationBody
 };

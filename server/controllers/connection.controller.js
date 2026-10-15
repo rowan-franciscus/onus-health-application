@@ -3,6 +3,35 @@ const User = require('../models/User');
 const EmailQueue = require('../models/EmailQueue');
 const mongoose = require('mongoose');
 const config = require('../config/environment');
+const connectionService = require('../services/connection.service');
+const consentService = require('../services/consent.service');
+const registrationDetails = require('../utils/registrationDetails');
+
+// A connection that carries the patient's consent history: provider-initiated
+// links, and any link where the patient withdrew or declined. These are never
+// deleted, so the history survives and the provider can't re-create access.
+const holdsConsentRecord = (connection) =>
+  connection.onboardingSource === 'provider_initiated' ||
+  ['WITHDRAWN', 'DECLINED'].includes(connection.consent?.status);
+
+/**
+ * Connection as returned to clients: never the consent token hash, and for a
+ * provider without ACTIVE consent only the details entered at registration.
+ */
+const serializeConnection = (connection, role) => {
+  const obj = connection.toObject();
+  if (obj.consent) {
+    delete obj.consent.tokenHash;
+    if (role === 'patient') {
+      // Provider-entered notes about the point of care aren't patient-facing
+      delete obj.consent.deferrals;
+    }
+  }
+  if (role === 'provider' && obj.consent?.status !== 'ACTIVE' && obj.patient) {
+    obj.patient = registrationDetails(obj, obj.patient);
+  }
+  return obj;
+};
 
 /**
  * Create a new connection (provider initiated)
@@ -15,7 +44,7 @@ exports.createConnection = async (req, res) => {
     const providerId = req.user.id;
 
     // Find patient by email
-    const patient = await User.findOne({ email: patientEmail, role: 'patient' });
+    const patient = await User.findOne({ email: patientEmail, role: 'patient', isOnusUser: { $ne: false } });
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
@@ -34,40 +63,12 @@ exports.createConnection = async (req, res) => {
     }
 
     // Create new connection with limited access by default
-    const connection = new Connection({
-      patient: patient._id,
-      provider: providerId,
-      initiatedBy: providerId,
-      accessLevel: 'limited', // Always start with limited access
-      fullAccessStatus: fullAccessRequested ? 'pending' : 'none',
-      notes,
-      patientNotified: false
+    const connection = await connectionService.createAccessRequest({
+      provider: req.user,
+      patient,
+      fullAccessRequested,
+      notes
     });
-
-    await connection.save();
-
-    // Queue email notification to patient if full access is requested
-    if (fullAccessRequested) {
-      await EmailQueue.create({
-        to: patient.email,
-        from: config.emailFrom || 'noreply@onushealth.com',
-        subject: 'Healthcare Provider Connection Request',
-        html: `<p>Dear ${patient.firstName},</p><p>Your healthcare provider ${req.user.firstName} ${req.user.lastName} has requested full access to your medical records on Onus Health.</p><p>Please log in to your account to approve or deny this request.</p>`,
-        template: 'fullAccessRequest',
-        templateData: {
-          patientName: `${patient.firstName} ${patient.lastName}`,
-          providerName: `${req.user.firstName} ${req.user.lastName}`,
-          providerSpecialty: req.user.providerProfile?.specialty || 'Healthcare Provider',
-          notes: notes || 'No additional notes'
-        },
-        userId: patient._id
-      });
-       
-      // Mark as notified
-      connection.patientNotified = true;
-      connection.patientNotifiedAt = Date.now();
-      await connection.save();
-    }
 
     // Populate the connection for the response
     await connection.populate(['patient', 'provider']);
@@ -208,7 +209,7 @@ exports.getConnections = async (req, res) => {
     
     return res.json({
       success: true,
-      connections
+      connections: connections.map((c) => serializeConnection(c, req.user.role))
     });
   } catch (error) {
     console.error('Error fetching connections:', error);
@@ -253,7 +254,7 @@ exports.getConnectionById = async (req, res) => {
     
     return res.json({
       success: true,
-      connection
+      connection: serializeConnection(connection, req.user.role)
     });
   } catch (error) {
     console.error('Error fetching connection:', error);
@@ -433,6 +434,16 @@ exports.revokeConnection = async (req, res) => {
         success: false,
         message: 'Connection not found'
       });
+    }
+
+    // Removing the provider means withdrawing consent, which keeps the record
+    // of it (never a delete)
+    if (holdsConsentRecord(connection)) {
+      const result = await consentService.withdraw(connectionId, patientId, req);
+      if (!result.ok) {
+        return res.status(409).json({ success: false, message: 'Consent is not currently active for this provider.' });
+      }
+      return res.json({ success: true, message: 'Consent withdrawn. This provider can no longer access your record.' });
     }
     
     let message = '';
@@ -646,6 +657,13 @@ exports.deleteConnection = async (req, res) => {
     if (connection.patient.toString() !== userId && 
         connection.provider.toString() !== userId) {
       return res.status(403).json({ message: 'Unauthorized to delete this connection' });
+    }
+
+    if (holdsConsentRecord(connection)) {
+      return res.status(409).json({
+        code: 'CONSENT_RECORD',
+        message: 'This connection holds a consent record and cannot be deleted. The patient can withdraw consent instead.'
+      });
     }
     
     await Connection.findByIdAndDelete(id);

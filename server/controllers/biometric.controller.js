@@ -6,7 +6,7 @@ const PATIENT_POPULATE = 'firstName lastName email profileImage patientProfile';
 const PROVIDER_POPULATE = 'firstName lastName email providerProfile';
 
 async function providerCanAccessPatient(providerId, patientId) {
-  const connection = await Connection.findOne({ provider: providerId, patient: patientId });
+  const connection = await Connection.findOne({ provider: providerId, patient: patientId, 'consent.status': 'ACTIVE' });
   return Boolean(connection);
 }
 

@@ -230,7 +230,9 @@ describe('Audit trail', () => {
       const created = new Connection({
         patient: patient._id,
         provider: provider._id,
-        initiatedBy: provider._id
+        initiatedBy: provider._id,
+        onboardingSource: 'patient_initiated',
+        consent: { status: 'ACTIVE' }
       });
       await created.save();
 

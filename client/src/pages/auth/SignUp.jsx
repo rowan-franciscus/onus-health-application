@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { validatePassword } from '../../utils/passwordPolicy';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { authStart, authFail } from '../../store/slices/authSlice';
+import { authStart, authFail, resetAuthLoading } from '../../store/slices/authSlice';
 import AuthService from '../../services/auth.service';
 import styles from './Auth.module.css';
 
@@ -21,8 +21,16 @@ const SignUp = () => {
     email: prefillEmail,
     password: '',
     confirmPassword: '',
+    dateOfBirth: '',
   });
   const [errors, setErrors] = useState({});
+  // Set when a provider-created record may exist for this email: the DOB is
+  // needed to link the new account to it (email alone never links)
+  const [needsDob, setNeedsDob] = useState(false);
+  // Sign-up matched a provider-created record: a claim link was emailed instead
+  const [claimLinkSent, setClaimLinkSent] = useState(false);
+  // Social sign-in refused because a provider-created record uses that email
+  const recordExists = searchParams.get('error') === 'record_exists';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('patient');
@@ -38,6 +46,9 @@ const SignUp = () => {
       ...formData,
       [name]: value,
     });
+    if (name === 'email') {
+      setNeedsDob(false);
+    }
     
     // Clear error when user starts typing
     if (errors[name]) {
@@ -74,6 +85,10 @@ const SignUp = () => {
       }
     }
     
+    if (needsDob && !formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    }
+    
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.confirmPassword !== formData.password) {
@@ -100,6 +115,7 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         role: selectedRole,
+        ...(needsDob ? { dateOfBirth: formData.dateOfBirth } : {}),
       };
       
       console.log('Sending registration data:', { ...userData, password: '****' });
@@ -107,6 +123,12 @@ const SignUp = () => {
       
       // Debug the registration response
       console.log('Registration response:', response);
+
+      if (response && response.code === 'CLAIM_LINK_SENT') {
+        dispatch(resetAuthLoading());
+        setClaimLinkSent(true);
+        return;
+      }
       
       // Always navigate to email verification page after successful registration
       // The backend will send the verification email regardless
@@ -120,6 +142,9 @@ const SignUp = () => {
       }
     } catch (error) {
       console.error('Registration error:', error);
+      if (error.code === 'RECORD_EXISTS_VERIFY_DOB') {
+        setNeedsDob(true);
+      }
       dispatch(authFail(error.message || 'Sign up failed'));
     }
   };
@@ -138,7 +163,23 @@ const SignUp = () => {
         </div>
       
       <h1 className={styles.title}>Create an Account</h1>
-      
+
+      {claimLinkSent ? (
+        <div className={styles.verificationCard}>
+          <div className={styles.verificationTitle}>Check your email</div>
+          <p className={styles.verificationText}>
+            A health record already exists for you. We&apos;ve sent a link to <strong>{formData.email}</strong> to
+            claim it and finish creating your account.
+          </p>
+        </div>
+      ) : (
+      <>
+      {recordExists && !error && (
+        <div className={styles.errorMessage}>
+          A health record already exists for this email. Sign up with your email below, and we&apos;ll ask for your
+          date of birth to link it.
+        </div>
+      )}
       {error && <div className={styles.errorMessage}>{error}</div>}
       
       <p className={styles.methodText}>Sign up as Patient or Health Provider:</p>
@@ -231,6 +272,22 @@ const SignUp = () => {
           />
           {errors.email && <div className={styles.errorText}>{errors.email}</div>}
         </div>
+
+        {needsDob && (
+          <div className={styles.formGroup}>
+            <label htmlFor="dateOfBirth" className={styles.label}>Date of birth*</label>
+            <input
+              type="date"
+              id="dateOfBirth"
+              name="dateOfBirth"
+              value={formData.dateOfBirth}
+              onChange={handleChange}
+              max={new Date().toISOString().slice(0, 10)}
+              className={`${styles.input} ${errors.dateOfBirth ? styles.inputError : ''}`}
+            />
+            {errors.dateOfBirth && <div className={styles.errorText}>{errors.dateOfBirth}</div>}
+          </div>
+        )}
         
         <div className={styles.formGroup}>
           <label htmlFor="password" className={styles.label}>Password*</label>
@@ -286,6 +343,8 @@ const SignUp = () => {
           {loading ? 'Signing up...' : 'Sign Up'}
         </button>
       </form>
+      </>
+      )}
       
       <div className={styles.authFooter}>
         Already have an account? <Link to="/sign-in">Sign in</Link>

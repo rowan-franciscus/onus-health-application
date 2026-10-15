@@ -3,7 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const passport = require('passport');
-const { authenticateJWT, authRateLimiter, passwordResetLimiter } = require('../middleware/auth.middleware');
+const { authenticateJWT, authRateLimiter, passwordResetLimiter, consentLinkLimiter } = require('../middleware/auth.middleware');
 const { validatePassword } = require('../utils/passwordPolicy');
 
 // Reusable strong-password rule. Delegates to the shared password policy so the
@@ -43,11 +43,31 @@ router.get('/me', authenticateJWT, authController.getCurrentUser);
 router.get('/practice-admin-invite/:token', authController.getPracticeAdminInvite);
 router.post('/practice-admin-invite/:token/accept', authController.acceptPracticeAdminInvite);
 
+// Claim a provider-created patient record (link from the consent email)
+router.get('/claim/:token', consentLinkLimiter, authController.getClaim);
+router.post('/claim/:token', consentLinkLimiter, authController.claimProfile);
+
 // Social authentication
+
+// Runs a social strategy without sessions; on failure sends the person back
+// to the frontend with a reason (e.g. record_exists: sign up with email to
+// link a provider-created record) instead of an API-relative redirect.
+const socialCallback = (strategy) => (req, res, next) => {
+  passport.authenticate(strategy, { session: false }, (err, user, info) => {
+    if (err || !user) {
+      const reason = (info && info.code) || 'auth_failed';
+      const page = reason === 'record_exists' ? 'sign-up' : 'sign-in';
+      return res.redirect(`${process.env.FRONTEND_URL}/${page}?error=${reason}`);
+    }
+    req.user = user;
+    return next();
+  })(req, res, next);
+};
+
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get('/google/callback', 
-  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  socialCallback('google'),
   async (req, res) => {
     try {
       const user = req.user;
@@ -79,7 +99,7 @@ router.get('/google/callback',
 router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
 
 router.get('/facebook/callback', 
-  passport.authenticate('facebook', { session: false, failureRedirect: '/login' }),
+  socialCallback('facebook'),
   async (req, res) => {
     try {
       const user = req.user;
