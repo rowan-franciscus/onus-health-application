@@ -15,6 +15,7 @@ const logger = require('../utils/logger');
 const config = require('../config/environment');
 const { onboardProviderInitiatedPatient } = require('../services/patientOnboarding.service');
 const consentService = require('../services/consent.service');
+const { consentedConsultationFilter } = require('../middleware/auth.middleware');
 const {
   sanitizeConsultationForPracticeAdmin,
   sanitizePatientForPracticeAdmin
@@ -167,10 +168,8 @@ exports.getOperationalOverview = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Patient not in your practice' });
     }
 
-    const consultations = await Consultation.find({
-      patient: patientId,
-      provider: { $in: providerIds }
-    })
+    // Only consultations whose patient's consent to that provider is ACTIVE
+    const consultations = await Consultation.find(await consentedConsultationFilter(providerIds, patientId))
       .sort({ date: -1 })
       .populate('provider', 'firstName lastName')
       .select('date general.diagnosis billingStatus status provider');
@@ -192,7 +191,7 @@ exports.getOperationalOverview = async (req, res) => {
 exports.getBilling = async (req, res) => {
   try {
     const { providerIds } = await loadPracticeContext(req);
-    const consultations = await Consultation.find({ provider: { $in: providerIds } })
+    const consultations = await Consultation.find(await consentedConsultationFilter(providerIds))
       .sort({ date: -1 })
       .populate('patient', 'firstName lastName')
       .populate('provider', 'firstName lastName')
@@ -222,7 +221,7 @@ exports.updateBillingStatus = async (req, res) => {
     const { providerIds } = await loadPracticeContext(req);
     const consultation = await Consultation.findOne({
       _id: consultationId,
-      provider: { $in: providerIds }
+      ...(await consentedConsultationFilter(providerIds))
     });
     if (!consultation) {
       return res.status(404).json({ success: false, message: 'Consultation not found in your practice' });
@@ -245,7 +244,7 @@ exports.updateBillingStatus = async (req, res) => {
 exports.exportBillingCsv = async (req, res) => {
   try {
     const { providerIds } = await loadPracticeContext(req);
-    const consultations = await Consultation.find({ provider: { $in: providerIds } })
+    const consultations = await Consultation.find(await consentedConsultationFilter(providerIds))
       .sort({ date: -1 })
       .populate('patient', 'firstName lastName')
       .populate('provider', 'firstName lastName')

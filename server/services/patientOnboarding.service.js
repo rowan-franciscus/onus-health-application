@@ -10,7 +10,8 @@
  *     provider) -> reuse it; a new pending consent for this provider
  *   - email matches but DOB doesn't -> new record, plus a warning
  *   - no match -> new record
- * New provider links always start in PENDING_CONSENT.
+ * Records created or reused here start in PENDING_CONSENT for this provider;
+ * the access-request case follows the existing path-1 rules instead.
  */
 
 const User = require('../models/User');

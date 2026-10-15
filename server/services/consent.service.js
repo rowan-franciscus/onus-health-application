@@ -8,6 +8,7 @@
  *   PENDING_CONSENT --accept--> ACTIVE --withdraw--> WITHDRAWN
  *   PENDING_CONSENT --decline-> DECLINED
  *   PENDING_CONSENT --14 days-> EXPIRED --resend--> PENDING_CONSENT
+ *   EXPIRED --accept/decline (signed-in patient, no link needed)--> ACTIVE / DECLINED
  *
  * Tokens: 32 random bytes, emailed raw, stored only as SHA-256. Transitions
  * are a single conditional findOneAndUpdate so a link can be used once even

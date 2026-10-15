@@ -61,7 +61,8 @@ regulatory certification of any kind.**
 | consent | consent-expired | U | consent.service (14-day link lapsed; system actor) |
 | consent | consent-dob-mismatch / consent-link-locked | U (outcome 4) | consent.service (public consent link) |
 | consent | consent-deferred | U | consent.service ("patient couldn't consent now"; reason code only, never the note) |
-| auth | record-claimed / record-claim-failed | U / E | authController (claim link or signup with email + DOB) |
+| auth | record-claimed / record-claim-failed | U / E | authController.claimProfile (claim link + DOB) |
+| auth | record-claim-link-sent | E | authController.register (sign-up matched a provider-created record on email + DOB) |
 | admin | user-update / role-change / user-deleted | E | admin.controller |
 | admin | provider-approved / provider-rejected | E | admin.controller |
 | admin | practice-admin-invited / practice-admin-revoked | E | providerController |

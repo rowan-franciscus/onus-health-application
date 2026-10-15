@@ -10,7 +10,7 @@ const logger = require('../utils/logger');
 const auditService = require('../services/audit.service');
 const mongoose = require('mongoose');
 const { validatePassword } = require('../utils/passwordPolicy');
-const { lockedPatientIds } = require('../middleware/auth.middleware');
+const { lockedPatientIds, consentedConsultationFilter } = require('../middleware/auth.middleware');
 const consentService = require('../services/consent.service');
 
 // What a provider may see before the patient consents: the details entered
@@ -39,6 +39,9 @@ exports.getDashboard = async (req, res) => {
     // Calculate date for "this week" (last 7 days)
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    // Consultations for patients whose consent isn't ACTIVE stay out of view
+    const consented = await consentedConsultationFilter([providerId]);
     
     // Get basic statistics
     const [
@@ -52,11 +55,11 @@ exports.getDashboard = async (req, res) => {
       Connection.find({ provider: providerId })
         .populate('patient', '_id'),
       
-      // Count consultations created by this provider
-      Consultation.countDocuments({ provider: providerId }),
+      // Count consultations created by this provider (consented patients only)
+      Consultation.countDocuments(consented),
       
       // Get recent consultations
-      Consultation.find({ provider: providerId })
+      Consultation.find(consented)
         .sort({ createdAt: -1 })
         .limit(5)
         .populate('patient', 'firstName lastName'),
@@ -899,7 +902,7 @@ exports.revokePracticeAdmin = async (req, res) => {
 exports.getBilling = async (req, res) => {
   try {
     const providerId = req.user.id;
-    const consultations = await Consultation.find({ provider: providerId })
+    const consultations = await Consultation.find(await consentedConsultationFilter([providerId]))
       .sort({ date: -1 })
       .populate('patient', 'firstName lastName')
       .populate('provider', 'firstName lastName')
@@ -920,7 +923,7 @@ exports.getBilling = async (req, res) => {
 exports.exportProviderBillingCsv = async (req, res) => {
   try {
     const providerId = req.user.id;
-    const consultations = await Consultation.find({ provider: providerId })
+    const consultations = await Consultation.find(await consentedConsultationFilter([providerId]))
       .sort({ date: -1 })
       .populate('patient', 'firstName lastName')
       .populate('provider', 'firstName lastName')
@@ -959,7 +962,10 @@ exports.updateProviderBillingStatus = async (req, res) => {
     if (!['pending', 'processed', 'submitted'].includes(billingStatus)) {
       return res.status(400).json({ success: false, message: 'Invalid billingStatus' });
     }
-    const consultation = await Consultation.findOne({ _id: consultationId, provider: req.user.id });
+    const consultation = await Consultation.findOne({
+      _id: consultationId,
+      ...(await consentedConsultationFilter([req.user.id]))
+    });
     if (!consultation) {
       return res.status(404).json({ success: false, message: 'Consultation not found' });
     }

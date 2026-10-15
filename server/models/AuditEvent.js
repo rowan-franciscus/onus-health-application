@@ -80,7 +80,8 @@ const AuditEventSchema = new Schema({
     path: { type: String },
     // Names of modified fields only — never field values
     modifiedFields: [{ type: String }],
-    // State transitions (consent enum states only)
+    // State transitions: consent enum states only, plus (for consent.service
+    // events) the provider ID and consent text version — never clinical values
     before: { type: Schema.Types.Mixed },
     after: { type: Schema.Types.Mixed }
   },

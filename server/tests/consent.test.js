@@ -224,6 +224,52 @@ describe('Server-side enforcement of patient consent', () => {
       expect(listed).not.toContain(String(ids.surgery));
     });
 
+    it('keeps the patient\'s consultations out of billing, overview and the dashboard', async () => {
+      const cid = String(ids.consultation);
+      const practice = await Practice.create({ name: 'Clinic', owner: provider._id, members: [provider._id] });
+      const admin = await makeUser({ role: 'practice_admin', practiceAdminProfile: { practiceId: practice._id, status: 'active' } });
+
+      const overview = await request(app).get(`/api/practice-admin/patients/${patient._id}/operational-overview`).set(authHeader(admin));
+      expect(overview.body.consultations).toEqual([]);
+      for (const [who, url] of [[admin, '/api/practice-admin/billing'], [provider, '/api/provider/billing'], [provider, '/api/provider/dashboard']]) {
+        const res = await request(app).get(url).set(authHeader(who));
+        expect({ url, status: res.status }).toEqual({ url, status: 200 });
+        expect(JSON.stringify(res.body)).not.toContain(cid);
+      }
+      const csv = await request(app).get('/api/practice-admin/billing/export/csv').set(authHeader(admin));
+      expect(csv.text).not.toContain(patient.lastName);
+
+      for (const [who, url] of [[admin, `/api/practice-admin/billing/${cid}/status`], [provider, `/api/provider/billing/${cid}/status`]]) {
+        const res = await request(app).patch(url).set(authHeader(who)).send({ billingStatus: 'processed' });
+        expect({ url, status: res.status }).toEqual({ url, status: 404 });
+      }
+    });
+
+    it('refuses vitals, radiology and statistics reads for the patient', async () => {
+      const db = mongoose.connection;
+      const vitalsId = oid();
+      const radiologyId = oid();
+      await db.collection('medicalrecords').insertMany([
+        { _id: vitalsId, recordType: 'Vitals', patient: patient._id, provider: provider._id, date: new Date() },
+        { _id: radiologyId, recordType: 'RadiologyReport', patient: patient._id, provider: provider._id, date: new Date() }
+      ]);
+
+      const vitals = await request(app).get(`/api/medical-records/vitals/${vitalsId}`).set(authHeader(provider));
+      expect(vitals.body.code).toBe('CONSENT_REQUIRED');
+
+      const radiologyForPatient = await request(app)
+        .get(`/api/medical-records/radiology-reports?patientId=${patient._id}`)
+        .set(authHeader(provider));
+      expect(radiologyForPatient.body.code).toBe('CONSENT_REQUIRED');
+      const radiologyList = await request(app).get('/api/medical-records/radiology').set(authHeader(provider));
+      expect(JSON.stringify(radiologyList.body)).not.toContain(String(radiologyId));
+
+      const stats = await request(app)
+        .get(`/api/medical-records/medications/statistics?patientId=${patient._id}`)
+        .set(authHeader(provider));
+      expect(stats.body.code).toBe('CONSENT_REQUIRED');
+    });
+
     it('still shows that the patient exists, with only the entered details', async () => {
       await User.updateOne({ _id: patient._id }, { $set: { 'patientProfile.allergies': ['penicillin'] } });
       const res = await request(app).get(`/api/provider/patients/${patient._id}`).set(authHeader(provider));
@@ -597,21 +643,32 @@ describe('Claiming a profile', () => {
       expect(await User.countDocuments({ email: 'nomsa@example.com' })).toBe(2);
     });
 
-    it('claims the matching record in place, without a session until the email is verified', async () => {
+    it('never hands over the record on email + DOB alone: it emails a claim link instead', async () => {
       const usersBefore = await User.countDocuments();
-      const res = await signUp({ dateOfBirth: DOB });
-      expect(res.status).toBe(201);
+      const res = await signUp({ dateOfBirth: DOB, password: 'Attacker@123' });
+      expect(res.status).toBe(202);
+      expect(res.body.code).toBe('CLAIM_LINK_SENT');
       expect(res.body.tokens).toBeUndefined();
       expect(await User.countDocuments()).toBe(usersBefore);
-      const user = await User.findById(patientId);
-      expect(user.isOnusUser).toBe(true);
-      expect(user.isEmailVerified).toBe(false);
+
+      const placeholder = await User.findById(patientId);
+      expect(placeholder.isOnusUser).toBe(false);
+      expect(placeholder.password).toBeUndefined();
+
+      // The emailed link (sent to the record's own address) is what claims it
+      const email = await latestEmail('nomsa@example.com', 'claimProfileLink');
+      const claimToken = tokenFrom(email.templateData.claimUrl, 'claim');
+      const claim = await request(app).post(`/api/auth/claim/${claimToken}`).send({ password: 'Password@123', dateOfBirth: DOB });
+      expect(claim.status).toBe(201);
+      expect((await User.findById(patientId)).isOnusUser).toBe(true);
     });
 
-    it('links only the record whose DOB matches when two share an email', async () => {
+    it('sends the claim link for the record whose DOB matches when two share an email', async () => {
       const sibling = await makePlaceholder({ email: 'nomsa@example.com', patientProfile: { dateOfBirth: new Date('2012-06-01') } });
       await signUp({ dateOfBirth: '2012-06-01' });
-      expect((await User.findById(sibling._id)).isOnusUser).toBe(true);
+      const email = await latestEmail('nomsa@example.com', 'claimProfileLink');
+      expect(String(email.userId)).toBe(String(sibling._id));
+      expect((await User.findById(sibling._id)).isOnusUser).toBe(false);
       expect((await User.findById(patientId)).isOnusUser).toBe(false);
     });
   });

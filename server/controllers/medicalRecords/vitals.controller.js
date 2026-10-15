@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Vitals = require('../../models/VitalsRecord');
 const { getMedicalRecordsByType } = require('../medicalRecord.controller');
 const BaseMedicalRecordController = require('../baseMedicalRecord.controller');
+const { getActiveConnection, sendConsentRequired } = require('../../middleware/auth.middleware');
 
 /**
  * Vitals Record Controller
@@ -99,6 +100,11 @@ class VitalsController extends BaseMedicalRecordController {
           success: false,
           message: 'Unauthorized to access this vitals record' 
         });
+      }
+
+      // Providers also need the patient's ACTIVE consent (lost on decline/withdrawal)
+      if (userRole === 'provider' && !(await getActiveConnection(userId, vitalsRecord.patient._id))) {
+        return sendConsentRequired(res);
       }
       
       return res.json({

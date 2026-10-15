@@ -409,9 +409,9 @@ const isOwnProfileOrAdmin = async (req, res, next) => {
 
 /**
  * The provider's connection to a patient, only if the patient's consent is
- * ACTIVE. This is the single source of truth for "may this provider act on
- * this patient's clinical data" — pending, declined, expired and withdrawn
- * consents all deny.
+ * ACTIVE: pending, declined, expired and withdrawn consents all deny. Use it
+ * (or requireActiveConsent) for "may this provider act on this patient's
+ * clinical data" checks.
  * @param {String} providerId - Provider ID
  * @param {String} patientId - Patient ID
  * @param {Object} [options]
@@ -456,6 +456,32 @@ const lockedPatientIds = async (providerId) => {
     'consent.status': { $ne: 'ACTIVE' }
   }).select('patient').lean();
   return locked.map((c) => c.patient);
+};
+
+/**
+ * 403 for a provider acting on a patient whose consent isn't ACTIVE.
+ */
+const sendConsentRequired = (res) =>
+  res.status(403).json({
+    success: false,
+    code: 'CONSENT_REQUIRED',
+    message: 'The patient has not given consent, so this action is not available'
+  });
+
+/**
+ * Mongo filter for consultations written by `providerIds` whose patient's
+ * consent to that same provider is ACTIVE (optionally for one patient). Used
+ * by billing and overview pages, which list consultations across providers.
+ */
+const consentedConsultationFilter = async (providerIds, patientId) => {
+  const Connection = require('../models/Connection');
+  const query = { provider: { $in: providerIds }, 'consent.status': 'ACTIVE' };
+  if (patientId) query.patient = patientId;
+  const active = await Connection.find(query).select('provider patient').lean();
+  if (active.length === 0) {
+    return { _id: { $in: [] } };
+  }
+  return { $or: active.map((c) => ({ provider: c.provider, patient: c.patient })) };
 };
 
 // ---- Patient-consent guard ----
@@ -591,6 +617,8 @@ module.exports = {
   canProviderAccessPatient,
   getActiveConnection,
   lockedPatientIds,
+  consentedConsultationFilter,
+  sendConsentRequired,
   requireActiveConsent,
   patientFromParam,
   patientFromBody,

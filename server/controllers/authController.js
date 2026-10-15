@@ -55,26 +55,61 @@ const notifyProviderOfClaim = async (user) => {
 };
 
 /**
+ * Email a claim link to a provider-created record's own address (used when
+ * sign-up matches it on email + DOB). Non-fatal on failure.
+ */
+const sendClaimLinkEmail = async (req, placeholder) => {
+  try {
+    const rawClaim = await consentService.issueClaimToken(placeholder._id);
+    if (!rawClaim) return;
+    const emailService = require("../services/email.service");
+    await emailService.sendTemplateEmail(
+      placeholder.email,
+      "claimProfileLink",
+      {
+        title: "Claim your health record",
+        patientFirstName: placeholder.firstName,
+        claimUrl: `${config.frontendUrl}/claim/${rawClaim}`,
+      },
+      {
+        subject: "Claim your health record on Onus Health",
+        userId: placeholder._id,
+        queue: true,
+      },
+    );
+    auditService.logFromRequest(req, {
+      type: "auth",
+      subtype: "record-claim-link-sent",
+      action: "E",
+      entity: { resourceType: "User", resourceId: placeholder._id, patientId: placeholder._id },
+    });
+  } catch (error) {
+    logger.error(`Failed to send claim link for ${placeholder._id}:`, error);
+  }
+};
+
+/**
  * Turn a provider-created placeholder into the patient's own account, in
  * place (same _id, so every connection and record stays attached).
- * Caller must already have matched the patient by claim token or email + DOB.
+ * Caller must already have matched the patient by claim token and DOB; the
+ * link was emailed to this address, which proves access to it.
  */
-const claimPlaceholder = async (req, placeholder, { password, firstName, lastName, emailVerified, via }) => {
+const claimPlaceholder = async (req, placeholder, { password, firstName, lastName }) => {
   placeholder.password = password;
   placeholder.firstName = (firstName && firstName.trim()) || placeholder.firstName;
   placeholder.lastName = (lastName && lastName.trim()) || placeholder.lastName;
   placeholder.isOnusUser = true;
-  placeholder.isEmailVerified = emailVerified;
+  placeholder.isEmailVerified = true;
   placeholder.claimedAt = new Date();
   placeholder.claimTokens = [];
   await placeholder.save();
-  logger.info(`Non-Onus patient ${placeholder._id} claimed via ${via}`);
+  logger.info(`Non-Onus patient ${placeholder._id} claimed via claim-link`);
 
   auditService.logFromRequest(req, {
     type: "auth",
     subtype: "record-claimed",
     action: "U",
-    outcomeDesc: via,
+    outcomeDesc: "claim-link",
     agent: { userId: placeholder._id, role: "patient" },
     entity: { resourceType: "User", resourceId: placeholder._id, patientId: placeholder._id },
   });
@@ -143,31 +178,32 @@ exports.register = async (req, res) => {
     );
 
     if (placeholder) {
-      // Claim in place: same record, now owned by the patient. The email is
-      // verified as usual before they can sign in.
-      user = await claimPlaceholder(req, placeholder, {
-        password,
-        firstName,
-        lastName,
-        emailVerified: false,
-        via: "signup",
+      // Email + DOB aren't secret, so they never hand over the record (and its
+      // clinical data) here. Email a claim link instead: claiming then needs
+      // access to the inbox, exactly like the link in the consent email.
+      await sendClaimLinkEmail(req, placeholder);
+      return res.status(202).json({
+        success: true,
+        code: "CLAIM_LINK_SENT",
+        message:
+          "A health record already exists for you. We've emailed you a link to claim it and finish creating your account.",
       });
-    } else {
-      // Create new user
-      user = new User({
-        email,
-        password,
-        firstName,
-        lastName,
-        role: requestedRole,
-        ...(requestedRole === "patient" && dateOfBirth
-          ? { patientProfile: { dateOfBirth: new Date(consentService.toDateKey(dateOfBirth)) } }
-          : {}),
-      });
-
-      await user.save();
-      logger.info(`User created with ID ${user._id} and email ${email}`);
     }
+
+    // Create new user
+    user = new User({
+      email,
+      password,
+      firstName,
+      lastName,
+      role: requestedRole,
+      ...(requestedRole === "patient" && dateOfBirth
+        ? { patientProfile: { dateOfBirth: new Date(consentService.toDateKey(dateOfBirth)) } }
+        : {}),
+    });
+
+    await user.save();
+    logger.info(`User created with ID ${user._id} and email ${email}`);
 
     // Generate verification token
     const verificationToken = jwt.sign({ id: user._id, type: "verify" }, config.jwtSecret, {
@@ -214,13 +250,9 @@ exports.register = async (req, res) => {
       }
     }
 
-    // An existing record claimed by signup holds clinical data: no session
-    // until the email is verified (the claimant has only shown email + DOB)
-    const claimedExistingRecord = Boolean(placeholder);
-
     // Generate tokens
-    const authToken = claimedExistingRecord ? undefined : user.generateAuthToken();
-    const refreshToken = claimedExistingRecord ? undefined : user.generateRefreshToken();
+    const authToken = user.generateAuthToken();
+    const refreshToken = user.generateRefreshToken();
 
     logger.info(
       `User registered successfully: ${email} (${user.role})`,
@@ -236,9 +268,10 @@ exports.register = async (req, res) => {
         lastName: user.lastName,
         role: user.role,
       },
-      ...(claimedExistingRecord
-        ? { linkedExistingRecord: true }
-        : { tokens: { authToken, refreshToken } }),
+      tokens: {
+        authToken,
+        refreshToken,
+      },
     });
   } catch (error) {
     logger.error(`Registration error: ${error.message}`, { error });
@@ -1154,14 +1187,7 @@ exports.claimProfile = async (req, res) => {
       return res.status(422).json({ success: false, message: "That date of birth does not match our records." });
     }
 
-    // The link was emailed to this address, which proves access to it
-    await claimPlaceholder(req, patient, {
-      password,
-      firstName,
-      lastName,
-      emailVerified: true,
-      via: "claim-link",
-    });
+    await claimPlaceholder(req, patient, { password, firstName, lastName });
 
     res.status(201).json({
       success: true,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { validatePassword } from '../../utils/passwordPolicy';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { authStart, authFail } from '../../store/slices/authSlice';
+import { authStart, authFail, resetAuthLoading } from '../../store/slices/authSlice';
 import AuthService from '../../services/auth.service';
 import styles from './Auth.module.css';
 
@@ -27,6 +27,10 @@ const SignUp = () => {
   // Set when a provider-created record may exist for this email: the DOB is
   // needed to link the new account to it (email alone never links)
   const [needsDob, setNeedsDob] = useState(false);
+  // Sign-up matched a provider-created record: a claim link was emailed instead
+  const [claimLinkSent, setClaimLinkSent] = useState(false);
+  // Social sign-in refused because a provider-created record uses that email
+  const recordExists = searchParams.get('error') === 'record_exists';
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState('patient');
@@ -119,6 +123,12 @@ const SignUp = () => {
       
       // Debug the registration response
       console.log('Registration response:', response);
+
+      if (response && response.code === 'CLAIM_LINK_SENT') {
+        dispatch(resetAuthLoading());
+        setClaimLinkSent(true);
+        return;
+      }
       
       // Always navigate to email verification page after successful registration
       // The backend will send the verification email regardless
@@ -153,7 +163,23 @@ const SignUp = () => {
         </div>
       
       <h1 className={styles.title}>Create an Account</h1>
-      
+
+      {claimLinkSent ? (
+        <div className={styles.verificationCard}>
+          <div className={styles.verificationTitle}>Check your email</div>
+          <p className={styles.verificationText}>
+            A health record already exists for you. We&apos;ve sent a link to <strong>{formData.email}</strong> to
+            claim it and finish creating your account.
+          </p>
+        </div>
+      ) : (
+      <>
+      {recordExists && !error && (
+        <div className={styles.errorMessage}>
+          A health record already exists for this email. Sign up with your email below, and we&apos;ll ask for your
+          date of birth to link it.
+        </div>
+      )}
       {error && <div className={styles.errorMessage}>{error}</div>}
       
       <p className={styles.methodText}>Sign up as Patient or Health Provider:</p>
@@ -317,6 +343,8 @@ const SignUp = () => {
           {loading ? 'Signing up...' : 'Sign Up'}
         </button>
       </form>
+      </>
+      )}
       
       <div className={styles.authFooter}>
         Already have an account? <Link to="/sign-in">Sign in</Link>
