@@ -33,7 +33,7 @@ const args = new Set(process.argv.slice(2));
 async function classify() {
   const unset = await Connection.find({ 'consent.status': { $exists: false } })
     .select('_id patient provider')
-    .populate('patient', 'isOnusUser email')
+    .populate('patient', 'isOnusUser email firstName lastName phone patientProfile')
     .lean();
 
   const active = [];
@@ -77,11 +77,35 @@ async function apply({ active, pending }) {
     { _id: { $in: active.map((c) => c._id) }, 'consent.status': { $exists: false } },
     { $set: { onboardingSource: 'patient_initiated', 'consent.status': 'ACTIVE' } }
   );
-  const pendingResult = await Connection.updateMany(
-    { _id: { $in: pending.map((c) => c._id) }, 'consent.status': { $exists: false } },
-    { $set: { onboardingSource: 'provider_initiated', 'consent.status': 'PENDING_CONSENT' } }
-  );
-  console.log(`Set ACTIVE on ${activeResult.modifiedCount}, PENDING_CONSENT on ${pendingResult.modifiedCount}.`);
+  // Unclaimed placeholders still hold only what the provider entered, so
+  // snapshot it as the pre-consent view (see utils/registrationDetails)
+  let pendingCount = 0;
+  for (const c of pending) {
+    const p = c.patient;
+    const result = await Connection.updateOne(
+      { _id: c._id, 'consent.status': { $exists: false } },
+      {
+        $set: {
+          onboardingSource: 'provider_initiated',
+          'consent.status': 'PENDING_CONSENT',
+          registration: {
+            firstName: p.firstName,
+            lastName: p.lastName,
+            email: p.email,
+            phone: p.phone,
+            dateOfBirth: p.patientProfile?.dateOfBirth,
+            gender: p.patientProfile?.gender,
+            insurance: {
+              provider: p.patientProfile?.insurance?.provider,
+              plan: p.patientProfile?.insurance?.plan
+            }
+          }
+        }
+      }
+    );
+    pendingCount += result.modifiedCount;
+  }
+  console.log(`Set ACTIVE on ${activeResult.modifiedCount}, PENDING_CONSENT on ${pendingCount}.`);
 }
 
 async function sendInvites() {

@@ -10,23 +10,11 @@ const logger = require('../utils/logger');
 const auditService = require('../services/audit.service');
 const mongoose = require('mongoose');
 const { validatePassword } = require('../utils/passwordPolicy');
-const { lockedPatientIds, consentedConsultationFilter } = require('../middleware/auth.middleware');
+const { activePatientIds, consentedConsultationFilter } = require('../middleware/auth.middleware');
 const consentService = require('../services/consent.service');
+const stripIdentityFields = require('../utils/stripIdentityFields');
 
-// What a provider may see before the patient consents: the details entered
-// on Add New Patient, nothing the patient may have added since
-const pickRegistrationDetails = (patient) => ({
-  _id: patient._id,
-  firstName: patient.firstName,
-  lastName: patient.lastName,
-  email: patient.email,
-  phone: patient.phone,
-  patientProfile: {
-    dateOfBirth: patient.patientProfile?.dateOfBirth,
-    gender: patient.patientProfile?.gender,
-    insurance: patient.patientProfile?.insurance
-  }
-});
+const registrationDetails = require('../utils/registrationDetails');
 
 /**
  * Get provider dashboard data
@@ -146,7 +134,7 @@ exports.getPatients = async (req, res) => {
       // Without active consent the provider sees only the details entered at registration
       const patientData = consentStatus === 'ACTIVE'
         ? conn.patient.toObject()
-        : pickRegistrationDetails(conn.patient);
+        : registrationDetails(conn, conn.patient);
       const patientId = patientData._id.toString();
       
       return {
@@ -285,8 +273,8 @@ exports.getPatientById = async (req, res) => {
       // Pending/declined/expired/withdrawn consent: the provider can see the
       // patient exists and the details they entered, nothing more
       const patient = await User.findById(patientId)
-        .select('firstName lastName email phone patientProfile.dateOfBirth patientProfile.gender patientProfile.insurance');
-      patientData = patient && pickRegistrationDetails(patient);
+        .select('firstName lastName email');
+      patientData = patient && registrationDetails(connection, patient);
     } else if (connection.accessLevel === 'full' && connection.fullAccessStatus === 'approved') {
       // Full access approved - return all patient data
       patientData = await User.findById(patientId)
@@ -401,12 +389,12 @@ exports.getConsultations = async (req, res) => {
     const providerId = req.user.id;
     const { patientId, page = 1, limit = 20 } = req.query;
     
-    const lockedIds = await lockedPatientIds(providerId);
-    const query = { provider: providerId, patient: { $nin: lockedIds } };
+    const activeIds = await activePatientIds(providerId);
+    const query = { provider: providerId, patient: { $in: activeIds } };
     
     // If patientId is provided, filter by patient (unless consent isn't active)
     if (patientId) {
-      query.patient = { $eq: patientId, $nin: lockedIds };
+      query.patient = { $eq: patientId, $in: activeIds };
     }
     
     const skip = (page - 1) * limit;
@@ -464,7 +452,7 @@ exports.createConsultation = async (req, res) => {
     const consultation = new Consultation({
       patient: patientId,
       provider: providerId,
-      ...consultationData
+      ...stripIdentityFields(consultationData)
     });
     
     await consultation.save();
@@ -538,7 +526,9 @@ exports.updateConsultation = async (req, res) => {
     }
     
     // Update fields
-    Object.assign(consultation, updateData);
+    // Patient/provider links are immutable: consent was checked for this
+    // consultation's current patient
+    Object.assign(consultation, stripIdentityFields(updateData));
     consultation.updatedAt = Date.now();
     
     await consultation.save();

@@ -99,6 +99,12 @@ const UserSchema = new mongoose.Schema({
     hash: { type: String, required: true },
     expires: { type: Date, required: true }
   }],
+  // Wrong dates of birth entered on claim links; at the limit every claim
+  // link is invalidated (see consent.service MAX_DOB_ATTEMPTS)
+  claimDobAttempts: {
+    type: Number,
+    default: 0
+  },
   // When a placeholder patient claimed the record by creating an account
   claimedAt: {
     type: Date

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const Surgery = require('../models/Surgery');
 const Connection = require('../models/Connection');
-const { lockedPatientIds } = require('../middleware/auth.middleware');
+const { activePatientIds } = require('../middleware/auth.middleware');
 
 const PATIENT_POPULATE = 'firstName lastName email profileImage patientProfile';
 const PROVIDER_POPULATE = 'firstName lastName email providerProfile';
@@ -138,14 +138,14 @@ exports.listSurgeriesForProvider = async (req, res) => {
       'consent.status': 'ACTIVE',
     }).select('patient');
     const fullAccessPatientIds = fullAccessConnections.map(c => c.patient);
-    const lockedIds = await lockedPatientIds(providerId);
+    const activeIds = await activePatientIds(providerId);
 
     const accessFilter = {
-      patient: { $nin: lockedIds },
+      patient: { $in: activeIds },
       $or: [{ provider: new mongoose.Types.ObjectId(providerId) }, { patient: { $in: fullAccessPatientIds } }],
     };
     const baseMatch = patientId && mongoose.isValidObjectId(patientId)
-      ? { ...accessFilter, patient: new mongoose.Types.ObjectId(patientId) }
+      ? { ...accessFilter, patient: { $in: activeIds, $eq: new mongoose.Types.ObjectId(patientId) } }
       : accessFilter;
 
     const pipeline = [

@@ -6,6 +6,7 @@
 const mongoose = require('mongoose');
 const Consultation = require('../models/Consultation');
 const Connection = require('../models/Connection');
+const stripIdentityFields = require('../utils/stripIdentityFields');
 
 /**
  * Base controller class with common CRUD methods for medical records
@@ -36,7 +37,7 @@ class BaseMedicalRecordController {
       
       // Create record
       const record = new this.Model({
-        ...req.body,
+        ...stripIdentityFields(req.body),
         consultation: consultationId,
         provider: providerId,
         patient: consultation.patient
@@ -118,22 +119,25 @@ class BaseMedicalRecordController {
    */
   update = async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id, consultationId } = req.params;
       const providerId = req.user.id;
       
-      // Find record and check if provider is authorized
+      // Find record and check if provider is authorized. The record must
+      // belong to the URL's consultation, whose patient the consent guard checked
       const record = await this.Model.findOne({
         _id: id,
-        provider: providerId
+        provider: providerId,
+        consultation: consultationId
       });
       
       if (!record) {
         return res.status(404).json({ message: `${this.recordType} record not found or unauthorized` });
       }
       
-      // Update fields
-      Object.keys(req.body).forEach(key => {
-        record[key] = req.body[key];
+      // Update fields (never the patient/provider/consultation links)
+      const updates = stripIdentityFields(req.body);
+      Object.keys(updates).forEach(key => {
+        record[key] = updates[key];
       });
       
       record.updatedAt = Date.now();
@@ -157,21 +161,20 @@ class BaseMedicalRecordController {
    */
   delete = async (req, res) => {
     try {
-      const { id } = req.params;
+      const { id, consultationId } = req.params;
       const providerId = req.user.id;
       
-      // Find record and check if provider is authorized
+      // Find record and check if provider is authorized. The record must
+      // belong to the URL's consultation, whose patient the consent guard checked
       const record = await this.Model.findOne({
         _id: id,
-        provider: providerId
+        provider: providerId,
+        consultation: consultationId
       });
       
       if (!record) {
         return res.status(404).json({ message: `${this.recordType} record not found or unauthorized` });
       }
-      
-      // Store consultation ID before deleting
-      const consultationId = record.consultation;
       
       // Delete record (Document#remove was removed in Mongoose 7+)
       await record.deleteOne();

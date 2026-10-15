@@ -5,6 +5,14 @@ const mongoose = require('mongoose');
 const config = require('../config/environment');
 const connectionService = require('../services/connection.service');
 const consentService = require('../services/consent.service');
+const registrationDetails = require('../utils/registrationDetails');
+
+// A connection that carries the patient's consent history: provider-initiated
+// links, and any link where the patient withdrew or declined. These are never
+// deleted, so the history survives and the provider can't re-create access.
+const holdsConsentRecord = (connection) =>
+  connection.onboardingSource === 'provider_initiated' ||
+  ['WITHDRAWN', 'DECLINED'].includes(connection.consent?.status);
 
 /**
  * Connection as returned to clients: never the consent token hash, and for a
@@ -20,18 +28,7 @@ const serializeConnection = (connection, role) => {
     }
   }
   if (role === 'provider' && obj.consent?.status !== 'ACTIVE' && obj.patient) {
-    const p = obj.patient;
-    obj.patient = {
-      _id: p._id,
-      firstName: p.firstName,
-      lastName: p.lastName,
-      email: p.email,
-      patientProfile: {
-        dateOfBirth: p.patientProfile?.dateOfBirth,
-        gender: p.patientProfile?.gender,
-        insurance: p.patientProfile?.insurance
-      }
-    };
+    obj.patient = registrationDetails(obj, obj.patient);
   }
   return obj;
 };
@@ -439,9 +436,9 @@ exports.revokeConnection = async (req, res) => {
       });
     }
 
-    // Provider-initiated links: removing the provider means withdrawing
-    // consent, which keeps the record of it (never a delete)
-    if (connection.onboardingSource === 'provider_initiated') {
+    // Removing the provider means withdrawing consent, which keeps the record
+    // of it (never a delete)
+    if (holdsConsentRecord(connection)) {
       const result = await consentService.withdraw(connectionId, patientId, req);
       if (!result.ok) {
         return res.status(409).json({ success: false, message: 'Consent is not currently active for this provider.' });
@@ -662,9 +659,7 @@ exports.deleteConnection = async (req, res) => {
       return res.status(403).json({ message: 'Unauthorized to delete this connection' });
     }
 
-    // Provider-initiated links carry the patient's consent history, which
-    // must survive; patients withdraw consent instead of deleting the link
-    if (connection.onboardingSource === 'provider_initiated') {
+    if (holdsConsentRecord(connection)) {
       return res.status(409).json({
         code: 'CONSENT_RECORD',
         message: 'This connection holds a consent record and cannot be deleted. The patient can withdraw consent instead.'

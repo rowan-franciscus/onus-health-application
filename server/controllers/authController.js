@@ -56,14 +56,15 @@ const notifyProviderOfClaim = async (user) => {
 
 /**
  * Email a claim link to a provider-created record's own address (used when
- * sign-up matches it on email + DOB). Non-fatal on failure.
+ * sign-up matches it on email + DOB). Resolves whether the email was queued.
  */
 const sendClaimLinkEmail = async (req, placeholder) => {
   try {
     const rawClaim = await consentService.issueClaimToken(placeholder._id);
-    if (!rawClaim) return;
+    if (!rawClaim) return false;
     const emailService = require("../services/email.service");
-    await emailService.sendTemplateEmail(
+    // Resolves false (rather than throwing) when the email couldn't be queued
+    const queued = await emailService.sendTemplateEmail(
       placeholder.email,
       "claimProfileLink",
       {
@@ -77,14 +78,17 @@ const sendClaimLinkEmail = async (req, placeholder) => {
         queue: true,
       },
     );
+    if (!queued) return false;
     auditService.logFromRequest(req, {
       type: "auth",
       subtype: "record-claim-link-sent",
       action: "E",
       entity: { resourceType: "User", resourceId: placeholder._id, patientId: placeholder._id },
     });
+    return true;
   } catch (error) {
     logger.error(`Failed to send claim link for ${placeholder._id}:`, error);
+    return false;
   }
 };
 
@@ -181,7 +185,13 @@ exports.register = async (req, res) => {
       // Email + DOB aren't secret, so they never hand over the record (and its
       // clinical data) here. Email a claim link instead: claiming then needs
       // access to the inbox, exactly like the link in the consent email.
-      await sendClaimLinkEmail(req, placeholder);
+      if (!(await sendClaimLinkEmail(req, placeholder))) {
+        return res.status(503).json({
+          code: "CLAIM_LINK_FAILED",
+          message:
+            "A health record already exists for you, but we couldn't send the link to claim it. Please try again shortly.",
+        });
+      }
       return res.status(202).json({
         success: true,
         code: "CLAIM_LINK_SENT",
@@ -1180,11 +1190,22 @@ exports.claimProfile = async (req, res) => {
       });
     }
     if (!consentService.sameDob(dateOfBirth, patient.patientProfile?.dateOfBirth)) {
+      const { locked, attemptsRemaining } = await consentService.recordClaimDobMismatch(patient._id);
       auditAuth(req, "record-claim-failed", "4", {
-        outcomeDesc: "dob-mismatch",
+        outcomeDesc: locked ? "claim-link-locked" : "dob-mismatch",
         entity: { resourceType: "User", resourceId: patient._id, patientId: patient._id },
       });
-      return res.status(422).json({ success: false, message: "That date of birth does not match our records." });
+      if (locked) {
+        return res.status(423).json({
+          success: false,
+          message: "Too many incorrect attempts. This link has been disabled; ask your provider to resend your consent email, or sign up again to get a new link.",
+        });
+      }
+      return res.status(422).json({
+        success: false,
+        message: "That date of birth does not match our records.",
+        attemptsRemaining,
+      });
     }
 
     await claimPlaceholder(req, patient, { password, firstName, lastName });

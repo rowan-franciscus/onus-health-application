@@ -5,7 +5,7 @@
 
 const mongoose = require("mongoose");
 const {
-  lockedPatientIds,
+  activePatientIds,
   getActiveConnection,
   sendConsentRequired,
 } = require("../middleware/auth.middleware");
@@ -102,9 +102,9 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
         }
       } else {
         // If no patient specified, show all records created by this provider,
-        // except for patients whose consent is not active
+        // for patients whose consent is ACTIVE
         query.provider = req.user._id;
-        query.patient = { $nin: await lockedPatientIds(req.user._id) };
+        query.patient = { $in: await activePatientIds(req.user._id) };
       }
     } else if (req.user.role === "admin") {
       // Admins can filter by patient and provider
@@ -258,7 +258,7 @@ exports.getMedicalRecordStatistics = async (req, res, next) => {
         }
       } else {
         query.provider = req.user._id;
-        query.patient = { $nin: await lockedPatientIds(req.user._id) };
+        query.patient = { $in: await activePatientIds(req.user._id) };
       }
     }
 
@@ -402,9 +402,9 @@ exports.getProviderVitals = async (req, res) => {
       }
     } else {
       // If no patient specified, show all vitals created by this provider,
-      // except for patients whose consent is not active
+      // for patients whose consent is ACTIVE
       query.provider = providerId;
-      query.patient = { $nin: await lockedPatientIds(providerId) };
+      query.patient = { $in: await activePatientIds(providerId) };
     }
 
     console.log("Provider vitals query:", query);
@@ -477,7 +477,7 @@ exports.getRadiologyReports = async (req, res) => {
       // Providers can only see their own radiology reports, for patients
       // whose consent is ACTIVE
       query.provider = req.user._id;
-      query.patient = { $nin: await lockedPatientIds(req.user._id) };
+      query.patient = { $in: await activePatientIds(req.user._id) };
     } else if (req.user.role === "patient") {
       // Patients can only see their own records
       query.patient = req.user._id;

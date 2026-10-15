@@ -186,6 +186,10 @@ describe('Server-side enforcement of patient consent', () => {
     provider = await makeProvider();
     patient = await makePlaceholder();
     connection = await connect(patient, provider, status);
+    // What the provider entered on Add New Patient
+    await Connection.updateOne({ _id: connection._id }, {
+      $set: { registration: { firstName: patient.firstName, lastName: patient.lastName, dateOfBirth: new Date(DOB), insurance: { provider: 'MedAid' } } }
+    });
     ids = {
       consultation: oid(), surgery: oid(), admission: oid(), physicalRecord: oid()
     };
@@ -271,22 +275,29 @@ describe('Server-side enforcement of patient consent', () => {
     });
 
     it('still shows that the patient exists, with only the entered details', async () => {
-      await User.updateOne({ _id: patient._id }, { $set: { 'patientProfile.allergies': ['penicillin'] } });
+      // Added by the patient later (e.g. after claiming): never shown pre-consent
+      await User.updateOne({ _id: patient._id }, {
+        $set: { 'patientProfile.allergies': ['penicillin'], 'patientProfile.insurance.insuranceNumber': 'INS-99887' }
+      });
       const res = await request(app).get(`/api/provider/patients/${patient._id}`).set(authHeader(provider));
       expect(res.status).toBe(200);
       expect(res.body.consent.status).toBe(status);
       expect(res.body.patient.firstName).toBe(patient.firstName);
       expect(res.body.patient.patientProfile.dateOfBirth).toBeDefined();
+      expect(res.body.patient.patientProfile.insurance.provider).toBe('MedAid');
       expect(JSON.stringify(res.body)).not.toContain('penicillin');
+      expect(JSON.stringify(res.body)).not.toContain('INS-99887');
 
       const list = await request(app).get('/api/provider/patients').set(authHeader(provider));
       expect(list.body.patients[0].consentStatus).toBe(status);
       expect(JSON.stringify(list.body)).not.toContain('penicillin');
+      expect(JSON.stringify(list.body)).not.toContain('INS-99887');
 
       const connections = await request(app).get('/api/connections').set(authHeader(provider));
       expect(connections.status).toBe(200);
       expect(JSON.stringify(connections.body)).not.toContain('penicillin');
       expect(JSON.stringify(connections.body)).not.toContain('tokenHash');
+      expect(JSON.stringify(connections.body)).not.toContain('INS-99887');
     });
   });
 
@@ -812,5 +823,135 @@ describe('Consent report', () => {
 
     const forbidden = await request(app).get('/api/admin/reports/consent').set(authHeader(provider));
     expect(forbidden.status).toBe(403);
+  });
+});
+
+describe('PR review fixes', () => {
+  const emailService = require('../services/email.service');
+  let provider;
+  let consenting;
+  let withdrawn;
+
+  beforeEach(async () => {
+    provider = await makeProvider();
+    consenting = await makePlaceholder();
+    withdrawn = await makePlaceholder();
+    await connect(consenting, provider, 'ACTIVE');
+    await connect(withdrawn, provider, 'WITHDRAWN');
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('never lets a payload move clinical data to another patient', async () => {
+    const created = await request(app)
+      .post('/api/provider/consultations')
+      .set(authHeader(provider))
+      .send({ patientId: consenting._id, consultationData: { general: { specialistName: 'Dr', specialty: 'GP' }, patient: withdrawn._id, provider: oid() } });
+    expect(created.status).toBe(201);
+    expect(String(created.body.consultation.patient)).toBe(String(consenting._id));
+    expect(String(created.body.consultation.provider)).toBe(String(provider._id));
+
+    const id = created.body.consultation._id;
+    await request(app)
+      .put(`/api/provider/consultations/${id}`)
+      .set(authHeader(provider))
+      .send({ patient: withdrawn._id });
+    const stored = await mongoose.connection.collection('consultations').findOne({ _id: new mongoose.Types.ObjectId(id) });
+    expect(String(stored.patient)).toBe(String(consenting._id));
+  });
+
+  it('binds sub-record updates and deletes to the consultation in the URL', async () => {
+    const db = mongoose.connection;
+    const okConsultation = oid();
+    const lockedConsultation = oid();
+    const lockedRecord = oid();
+    await db.collection('consultations').insertMany([
+      { _id: okConsultation, patient: consenting._id, provider: provider._id },
+      { _id: lockedConsultation, patient: withdrawn._id, provider: provider._id }
+    ]);
+    await db.collection('medicalrecords').insertOne({
+      _id: lockedRecord, recordType: 'Medication', patient: withdrawn._id, provider: provider._id, consultation: lockedConsultation, name: 'x'
+    });
+
+    const update = await request(app)
+      .put(`/api/consultations/${okConsultation}/medications/${lockedRecord}`)
+      .set(authHeader(provider))
+      .send({ name: 'changed' });
+    expect(update.status).toBe(404);
+    const del = await request(app)
+      .delete(`/api/consultations/${okConsultation}/medications/${lockedRecord}`)
+      .set(authHeader(provider));
+    expect(del.status).toBe(404);
+    expect((await db.collection('medicalrecords').findOne({ _id: lockedRecord })).name).toBe('x');
+  });
+
+  it('keeps the consent filter when a list is filtered by patientId', async () => {
+    const surgery = oid();
+    await mongoose.connection.collection('surgeries').insertOne({ _id: surgery, patient: withdrawn._id, provider: provider._id, surgeryType: 'x', notes: [] });
+    const res = await request(app).get(`/api/surgeries?patientId=${withdrawn._id}`).set(authHeader(provider));
+    expect(res.status).toBe(200);
+    expect(JSON.stringify(res.body)).not.toContain(String(surgery));
+  });
+
+  it('never deletes a withdrawn connection, whatever its source', async () => {
+    const account = await makeUser();
+    const conn = await connect(account, provider, 'WITHDRAWN', 'patient_initiated');
+    const res = await request(app).delete(`/api/connections/${conn._id}`).set(authHeader(provider));
+    expect(res.status).toBe(409);
+    expect(await Connection.findById(conn._id)).not.toBeNull();
+  });
+
+  it('rejects a correct DOB on a link that has used up its attempts', async () => {
+    await addPatient(provider, { email: 'race@example.com' });
+    const token = await consentTokenFor('race@example.com');
+    // Simulates the lockout write being in flight: attempts exhausted, hash still present
+    await Connection.updateOne({ 'consent.tokenHash': sha256(token) }, { $set: { 'consent.dobAttempts': 5 } });
+    const res = await respond(token);
+    expect(res.status).not.toBe(200);
+    expect((await Connection.findOne({ 'consent.tokenHash': { $exists: true } }) || {}).consent?.status).not.toBe('ACTIVE');
+  });
+
+  it('limits wrong DOBs on claim links and then invalidates them', async () => {
+    await addPatient(provider, { email: 'claim@example.com' });
+    const claimToken = await claimTokenFor('claim@example.com');
+    const claim = (dateOfBirth) => request(app).post(`/api/auth/claim/${claimToken}`).send({ password: 'Password@123', dateOfBirth });
+    for (let left = 4; left >= 1; left -= 1) {
+      const res = await claim('1991-01-01');
+      expect(res.status).toBe(422);
+      expect(res.body.attemptsRemaining).toBe(left);
+    }
+    expect((await claim('1991-01-01')).status).toBe(423);
+    expect((await claim(DOB)).status).toBe(404);
+  });
+
+  it('reports a claim link that could not be queued instead of claiming it was sent', async () => {
+    await makePlaceholder({ email: 'fail@example.com' });
+    jest.spyOn(emailService, 'sendTemplateEmail').mockResolvedValue(false);
+    const res = await request(app).post('/api/auth/register').send({
+      email: 'fail@example.com', password: 'Password@123', firstName: 'A', lastName: 'B', dateOfBirth: DOB
+    });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('CLAIM_LINK_FAILED');
+  });
+
+  it('keeps a consent invite retryable when the email could not be queued', async () => {
+    jest.spyOn(emailService, 'sendTemplateEmail').mockResolvedValue(false);
+    const res = await addPatient(provider, { email: 'queue@example.com' });
+    expect(res.body.consentEmailSent).toBe(false);
+    const conn = await Connection.findOne({ patient: res.body.patient._id });
+    expect(conn.consent.firstInviteSentAt).toBeUndefined();
+    expect(conn.consent.inviteSentAt).toBeUndefined();
+  });
+
+  it('rejects impossible dates of birth', async () => {
+    expect((await addPatient(provider, { dateOfBirth: '1990-02-31' })).status).toBe(400);
+    expect((await addPatient(provider, { dateOfBirth: '1990-99-99' })).status).toBe(400);
+  });
+
+  it('only accepts real consent text versions', async () => {
+    await addPatient(provider, { email: 'version@example.com' });
+    const token = await consentTokenFor('version@example.com');
+    const res = await respond(token, { textVersion: 'toString' });
+    expect(res.status).toBe(400);
   });
 });

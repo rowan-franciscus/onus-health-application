@@ -45,7 +45,7 @@ const matchPatients = async (email, dateOfBirth) => {
   return { exact, emailOnly: candidates.filter((u) => !exact.includes(u)) };
 };
 
-const createPendingConnection = (patientId, providerId, initiatedBy) => new Connection({
+const createPendingConnection = (patientId, providerId, initiatedBy, registration) => new Connection({
   patient: patientId,
   provider: providerId,
   initiatedBy,
@@ -53,8 +53,23 @@ const createPendingConnection = (patientId, providerId, initiatedBy) => new Conn
   fullAccessStatus: 'none',
   patientNotified: false,
   onboardingSource: 'provider_initiated',
-  consent: { status: 'PENDING_CONSENT' }
+  consent: { status: 'PENDING_CONSENT' },
+  registration
 }).save();
+
+// The details this provider entered, kept on their connection (see utils/registrationDetails)
+const registrationSnapshot = (data, email) => ({
+  firstName: String(data.firstName).trim(),
+  lastName: String(data.lastName).trim(),
+  email: email || undefined,
+  phone: data.phone ? String(data.phone).trim() : undefined,
+  dateOfBirth: new Date(consentService.toDateKey(data.dateOfBirth)),
+  gender: data.gender,
+  insurance: {
+    provider: data.medicalAidProvider ? String(data.medicalAidProvider).trim() : undefined,
+    plan: data.plan ? String(data.plan).trim() : undefined
+  }
+});
 
 /**
  * @param {Object} params
@@ -131,7 +146,7 @@ const onboardProviderInitiatedPatient = async ({ provider, req, data }) => {
 
   let connection;
   try {
-    connection = await createPendingConnection(patient._id, provider._id, actorId);
+    connection = await createPendingConnection(patient._id, provider._id, actorId, registrationSnapshot(data, email));
   } catch (err) {
     if (created) {
       await User.deleteOne({ _id: patient._id });

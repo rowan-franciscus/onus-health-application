@@ -70,6 +70,20 @@ const ConnectionSchema = new Schema({
     enum: ['provider_initiated', 'patient_initiated'],
     required: true
   },
+  // Snapshot of the details the provider entered on Add New Patient. Until
+  // consent is ACTIVE this, not the live patient profile, is what they see.
+  registration: {
+    firstName: { type: String },
+    lastName: { type: String },
+    email: { type: String },
+    phone: { type: String },
+    dateOfBirth: { type: Date },
+    gender: { type: String },
+    insurance: {
+      provider: { type: String },
+      plan: { type: String }
+    }
+  },
   // Patient consent for this provider. No default on status: every creation
   // site must set it explicitly, so a missed site fails instead of granting access.
   // All transitions go through services/consent.service.js.

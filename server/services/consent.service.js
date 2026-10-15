@@ -54,8 +54,15 @@ const idOf = (ref) => (ref && ref._id ? ref._id : ref);
 const toDateKey = (value) => {
   if (!value) return null;
   if (typeof value === 'string') {
-    const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})/);
-    if (match) return match[1];
+    const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      // Reject impossible dates (1990-99-99, 31 February) instead of letting
+      // them roll over into a different day
+      const [, y, m, d] = match.map(Number);
+      const date = new Date(Date.UTC(y, m - 1, d));
+      const valid = date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+      return valid ? match[0].slice(0, 10) : null;
+    }
   }
   const date = value instanceof Date ? value : new Date(value);
   return isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
@@ -141,6 +148,8 @@ const issueClaimToken = async (patientId) => {
   const live = (patient.claimTokens || []).filter((t) => t.expires.getTime() > now);
   live.push({ hash, expires: new Date(now + CLAIM_TOKEN_TTL_MS) });
   patient.claimTokens = live.slice(-MAX_CLAIM_TOKENS);
+  // A fresh link (only ever sent to the record's own inbox) restarts the count
+  patient.claimDobAttempts = 0;
   await patient.save();
   return raw;
 };
@@ -151,8 +160,28 @@ const findPatientByClaimToken = async (raw) => {
   return User.findOne({
     role: 'patient',
     isOnusUser: false,
+    claimDobAttempts: { $not: { $gte: MAX_DOB_ATTEMPTS } },
     claimTokens: { $elemMatch: { hash: hashToken(raw), expires: { $gt: new Date() } } }
   });
+};
+
+/**
+ * Count a wrong DOB on a claim link. The count is persistent and atomic (not
+ * per IP); at MAX_DOB_ATTEMPTS every claim link for the record is invalidated
+ * and a new one must be sent. Returns { locked } or { attemptsRemaining }.
+ */
+const recordClaimDobMismatch = async (patientId) => {
+  const updated = await User.findOneAndUpdate(
+    { _id: patientId, isOnusUser: false },
+    { $inc: { claimDobAttempts: 1 } },
+    { new: true }
+  ).select('claimDobAttempts');
+  const attempts = updated ? updated.claimDobAttempts : MAX_DOB_ATTEMPTS;
+  if (attempts >= MAX_DOB_ATTEMPTS) {
+    await User.updateOne({ _id: patientId }, { $set: { claimTokens: [] } });
+    return { locked: true };
+  }
+  return { locked: false, attemptsRemaining: MAX_DOB_ATTEMPTS - attempts };
 };
 
 // ---- Invites ----
@@ -176,14 +205,12 @@ const sendConsentInvite = async (connectionId, { req, isResend = false } = {}) =
     'consent.status': 'PENDING_CONSENT',
     'consent.tokenHash': hash,
     'consent.tokenExpires': new Date(now.getTime() + CONSENT_TOKEN_TTL_MS),
-    'consent.dobAttempts': 0,
-    'consent.inviteSentAt': now
+    'consent.dobAttempts': 0
   };
-  if (!connection.consent.firstInviteSentAt) set['consent.firstInviteSentAt'] = now;
 
   const updated = await Connection.findOneAndUpdate(
     { _id: connection._id, 'consent.status': { $in: AWAITING_STATUSES } },
-    { $set: set, ...(isResend ? { $inc: { 'consent.resendCount': 1 } } : {}) },
+    { $set: set },
     { new: true }
   );
   if (!updated) {
@@ -191,14 +218,6 @@ const sendConsentInvite = async (connectionId, { req, isResend = false } = {}) =
     error.code = 'INVALID_CONSENT_STATE';
     throw error;
   }
-
-  logConsentEvent(req, {
-    subtype: isResend ? 'consent-invite-resent' : 'consent-invite-sent',
-    connection: updated,
-    before,
-    after: 'PENDING_CONSENT',
-    textVersion: CURRENT_VERSION
-  });
 
   const patient = connection.patient;
   if (!patient?.email) {
@@ -213,8 +232,10 @@ const sendConsentInvite = async (connectionId, { req, isResend = false } = {}) =
     day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'
   });
 
+  let queued = false;
   try {
-    await emailService.sendTemplateEmail(
+    // sendTemplateEmail resolves false (rather than throwing) on render/queue errors
+    queued = await emailService.sendTemplateEmail(
       patient.email,
       'consentRequest',
       {
@@ -234,8 +255,29 @@ const sendConsentInvite = async (connectionId, { req, isResend = false } = {}) =
     );
   } catch (error) {
     logger.error(`Failed to queue consent email for connection ${connection._id}:`, error);
+  }
+  if (!queued) {
+    // Leave the invite unmarked so it stays retryable (e.g. --send-invites)
     return { emailed: false };
   }
+
+  // Only a queued email counts as sent (metrics and resend counts rely on it)
+  const sentAt = new Date();
+  await Connection.updateOne(
+    { _id: connection._id },
+    { $set: { 'consent.inviteSentAt': sentAt }, ...(isResend ? { $inc: { 'consent.resendCount': 1 } } : {}) }
+  );
+  await Connection.updateOne(
+    { _id: connection._id, 'consent.firstInviteSentAt': { $exists: false } },
+    { $set: { 'consent.firstInviteSentAt': sentAt } }
+  );
+  logConsentEvent(req, {
+    subtype: isResend ? 'consent-invite-resent' : 'consent-invite-sent',
+    connection: updated,
+    before,
+    after: 'PENDING_CONSENT',
+    textVersion: CURRENT_VERSION
+  });
   return { emailed: true };
 };
 
@@ -352,9 +394,12 @@ const notifyProvider = async (connection, outcome) => {
 const DECISIONS = { accept: 'ACTIVE', decline: 'DECLINED' };
 
 /** Error code for an unknown decision or consent text version, else null. */
+// Own keys only: inherited names like 'toString' must not pass as a version
+const hasOwn = (obj, key) => typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key);
+
 const decisionError = (decision, textVersion) => {
-  if (!DECISIONS[decision]) return 'INVALID_DECISION';
-  if (!consentTextVersions[textVersion]) return 'INVALID_TEXT_VERSION';
+  if (!hasOwn(DECISIONS, decision)) return 'INVALID_DECISION';
+  if (!hasOwn(consentTextVersions, textVersion)) return 'INVALID_TEXT_VERSION';
   return null;
 };
 
@@ -420,7 +465,9 @@ const respondWithToken = async (raw, { dateOfBirth, decision, textVersion }, req
       _id: connection._id,
       'consent.tokenHash': hash,
       'consent.status': 'PENDING_CONSENT',
-      'consent.tokenExpires': { $gt: now }
+      'consent.tokenExpires': { $gt: now },
+      // An exhausted link can't succeed while the lockout write is in flight
+      'consent.dobAttempts': { $lt: MAX_DOB_ATTEMPTS }
     },
     {
       $set: { 'consent.status': toStatus, 'consent.respondedAt': now, 'consent.textVersion': textVersion },
@@ -552,6 +599,7 @@ module.exports = {
   sendConsentInvite,
   issueClaimToken,
   findPatientByClaimToken,
+  recordClaimDobMismatch,
   lookupConsentToken,
   getConsentRequest,
   expireStale,

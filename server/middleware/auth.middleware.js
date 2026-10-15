@@ -445,17 +445,17 @@ const canProviderAccessPatient = async (providerId, patientId, requireFullAccess
 };
 
 /**
- * Patients this provider is connected to but whose consent is not ACTIVE
- * (pending, declined, expired, withdrawn). List endpoints exclude them, so
- * records a provider created earlier disappear once consent is withdrawn.
+ * Patients whose consent to this provider is ACTIVE. Provider list endpoints
+ * only return records for these patients (an allowlist, so a deleted or
+ * missing connection never re-exposes records the provider created earlier).
  */
-const lockedPatientIds = async (providerId) => {
+const activePatientIds = async (providerId) => {
   const Connection = require('../models/Connection');
-  const locked = await Connection.find({
+  const active = await Connection.find({
     provider: providerId,
-    'consent.status': { $ne: 'ACTIVE' }
+    'consent.status': 'ACTIVE'
   }).select('patient').lean();
-  return locked.map((c) => c.patient);
+  return active.map((c) => c.patient);
 };
 
 /**
@@ -616,7 +616,7 @@ module.exports = {
   canPracticeAdminAccessPatient,
   canProviderAccessPatient,
   getActiveConnection,
-  lockedPatientIds,
+  activePatientIds,
   consentedConsultationFilter,
   sendConsentRequired,
   requireActiveConsent,

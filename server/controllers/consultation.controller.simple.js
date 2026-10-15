@@ -9,6 +9,7 @@ const VitalsRecord = require('../models/VitalsRecord');
 const MedicationRecord = require('../models/MedicationRecord');
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
+const stripIdentityFields = require('../utils/stripIdentityFields');
 // Immunization, Hospital, and Surgery records are standalone (not part of consultations).
 
 /**
@@ -23,7 +24,9 @@ exports.updateConsultationSimple = async (req, res) => {
   try {
     const { id } = req.params;
     const providerId = req.user.id;
-    const { vitals, medication, labResults, radiology, ...consultationData } = req.body;
+    const { vitals, medication, labResults, radiology, ...rawConsultationData } = req.body;
+    // Patient/provider/consultation links are never taken from the client
+    const consultationData = stripIdentityFields(rawConsultationData);
     // Immunization, hospital, surgery are standalone records — strip from update body.
     delete consultationData.immunization;
     delete consultationData.hospital;
@@ -99,7 +102,7 @@ exports.updateConsultationSimple = async (req, res) => {
           // Update existing vitals record
           await VitalsRecord.findByIdAndUpdate(
             consultation.vitals,
-            { ...vitals, updatedAt: Date.now() }
+            { ...stripIdentityFields(vitals), updatedAt: Date.now() }
           );
           console.log('Updated existing vitals record');
         } else {
@@ -109,7 +112,7 @@ exports.updateConsultationSimple = async (req, res) => {
             provider: providerId,
             consultation: consultation._id,
             date: consultation.date,
-            ...vitals
+            ...stripIdentityFields(vitals)
           });
           await vitalsRecord.save();
           consultation.vitals = vitalsRecord._id;
@@ -142,7 +145,7 @@ exports.updateConsultationSimple = async (req, res) => {
                 provider: providerId,
                 consultation: consultation._id,
                 date: consultation.date,
-                ...med
+                ...stripIdentityFields(med)
               });
               await medicationRecord.save();
               return medicationRecord._id;
@@ -177,7 +180,7 @@ exports.updateConsultationSimple = async (req, res) => {
                 provider: providerId,
                 consultation: consultation._id,
                 date: consultation.date,
-                ...lab
+                ...stripIdentityFields(lab)
               });
               await labResultRecord.save();
               return labResultRecord._id;
@@ -212,7 +215,7 @@ exports.updateConsultationSimple = async (req, res) => {
                 provider: providerId,
                 consultation: consultation._id,
                 date: consultation.date,
-                ...rad
+                ...stripIdentityFields(rad)
               });
               await radiologyRecord.save();
               return radiologyRecord._id;

@@ -66,9 +66,15 @@ const ClaimProfile = () => {
       toast.success('Your profile is now yours. Please sign in.');
       navigate('/sign-in');
     } catch (error) {
+      const data = error?.response?.data || {};
       if (error?.response?.status === 422) {
-        setErrors({ dateOfBirth: errorMessage(error) });
-      } else if (error?.response?.status === 404) {
+        const left = data.attemptsRemaining;
+        setErrors({
+          dateOfBirth: left !== undefined
+            ? `${errorMessage(error)} You have ${left} attempt${left === 1 ? '' : 's'} left.`
+            : errorMessage(error)
+        });
+      } else if ([404, 423].includes(error?.response?.status)) {
         setLoadError(errorMessage(error));
       } else {
         toast.error(errorMessage(error));
