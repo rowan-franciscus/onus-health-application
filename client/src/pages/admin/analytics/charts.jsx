@@ -172,7 +172,11 @@ export const ColumnChart = ({ data, ariaLabel, renderTooltip, height = 200 }) =>
  */
 export const LineChart = ({ data, ariaLabel, renderTooltip, gapLabel, height = 220 }) => {
   const [ref, width] = useElementWidth();
-  const [active, setActive] = useState(null);
+  const [hovered, setActive] = useState(null);
+  // The hovered index outlives a data change (e.g. a shorter date range
+  // arriving while the pointer rests on the chart), so check it still points
+  // at a plotted day before using it
+  const active = hovered !== null && data[hovered] && data[hovered].value !== null ? hovered : null;
 
   const plotWidth = Math.max(0, width - MARGIN.left - MARGIN.right);
   const plotHeight = height - MARGIN.top - MARGIN.bottom;

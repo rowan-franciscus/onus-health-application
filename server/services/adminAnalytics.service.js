@@ -15,6 +15,8 @@ const Consultation = require('../models/Consultation');
 const EmailQueue = require('../models/EmailQueue');
 const AuditEvent = require('../models/AuditEvent');
 const { MedicalRecord } = require('../models/MedicalRecord');
+const HospitalAdmission = require('../models/HospitalAdmission');
+const Surgery = require('../models/Surgery');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_PERIOD_DAYS = 30;
@@ -25,6 +27,10 @@ const STALE_DRAFT_DAYS = 7;
 // Audit events that represent someone using the product — excludes failed
 // access attempts ('security') and admins reading the audit log ('audit')
 const USAGE_EVENT_TYPES = ['auth', 'data', 'consent', 'export', 'admin'];
+
+// Successful actions only: failed sign-ins and session timeouts are 'auth'
+// events too, and carry the account they targeted
+const USAGE_EVENTS = { type: { $in: USAGE_EVENT_TYPES }, outcome: '0' };
 
 // Provider-created patient records: still unclaimed, or claimed since
 const PLACEHOLDER_ORIGIN = {
@@ -165,18 +171,24 @@ const activeProvidersByMonth = async (now) => {
           }
         }
       },
-      { $group: { _id: '$_id.month', active: { $sum: 1 } } }
+      { $group: { _id: '$_id.month', providers: { $push: '$_id.provider' } } }
     ]),
     User.find({ role: 'provider', 'providerProfile.isVerified': true }).select('createdAt').lean()
   ]);
 
-  const activeByMonth = new Map(activeRows.map((row) => [row._id, row.active]));
-  return months.map(({ month, end }) => ({
-    month,
-    active: activeByMonth.get(month) || 0,
-    approved: approvedProviders.filter((p) => p.createdAt < end).length,
-    monthToDate: end > now
-  }));
+  const joinedAt = new Map(approvedProviders.map((p) => [String(p._id), p.createdAt]));
+  const providersByMonth = new Map(activeRows.map((row) => [row._id, row.providers]));
+  return months.map(({ month, end }) => {
+    // Only providers in the denominator's cohort — approved, and joined by
+    // the month's end — so the share can never exceed 100%
+    const inCohort = (id) => joinedAt.has(String(id)) && joinedAt.get(String(id)) < end;
+    return {
+      month,
+      active: (providersByMonth.get(month) || []).filter(inCohort).length,
+      approved: approvedProviders.filter((p) => p.createdAt < end).length,
+      monthToDate: end > now
+    };
+  });
 };
 
 // ---- Activation ----
@@ -258,62 +270,96 @@ const placeholderConversion = async (period) => {
  */
 const providerActivity = async (period) => {
   const range = rangeOf(period);
-  const [approved, consultingIds, showedUpIds] = await Promise.all([
-    User.countDocuments({ role: 'provider', 'providerProfile.isVerified': true }),
+  const [approvedProviders, consultingIds, showedUpIds] = await Promise.all([
+    User.find({ role: 'provider', 'providerProfile.isVerified': true }).select('_id').lean(),
     Consultation.distinct('provider', { createdAt: range }),
     AuditEvent.distinct('agent.userId', {
+      ...USAGE_EVENTS,
       recorded: range,
-      'agent.role': 'provider',
-      type: { $in: USAGE_EVENT_TYPES }
+      'agent.role': 'provider'
     })
   ]);
 
-  const consulting = new Set(consultingIds.map(String));
+  // Count only currently approved providers, matching the denominator
+  const approvedIds = new Set(approvedProviders.map((p) => String(p._id)));
+  const approvedOnly = (ids) => ids.filter(Boolean).map(String).filter((id) => approvedIds.has(id));
+  const consulting = new Set(approvedOnly(consultingIds));
   // Anyone who created a consultation showed up, even before the audit trail
-  const showedUp = new Set([...showedUpIds.filter(Boolean).map(String), ...consulting]);
+  const showedUp = new Set([...approvedOnly(showedUpIds), ...consulting]);
 
   return {
-    approved,
+    approved: approvedIds.size,
     showedUp: showedUp.size,
     didSomething: consulting.size,
-    shareOfApproved: ratio(consulting.size, approved),
+    shareOfApproved: ratio(consulting.size, approvedIds.size),
     shareOfShowedUp: ratio(consulting.size, showedUp.size)
   };
 };
 
 /**
- * Patients opening their own clinical records (audited reads by patients —
- * the read middleware attributes a patient's read to themselves).
+ * Patients opening one of their own clinical records (audited reads by
+ * patients — the read middleware attributes a patient's read to themselves).
+ *
+ * Only reads of a specific record count. List and statistics endpoints are
+ * audited as reads too, but succeed even when there is nothing to show, so
+ * they cannot tell us a patient actually looked at a record.
  */
 const patientRecordViews = async (period) => {
   const range = rangeOf(period);
-  const [realPatients, patientsWithShared, activeIds, viewRows] = await Promise.all([
+  const [
+    realPatients,
+    withSharedConsultations,
+    withStandaloneRecords,
+    withAdmissions,
+    withSurgeries,
+    activeIds,
+    viewRows
+  ] = await Promise.all([
     User.countDocuments({ role: 'patient', isOnusUser: { $ne: false } }),
     Consultation.distinct('patient', { status: 'completed', isSharedWithPatient: true }),
+    MedicalRecord.distinct('patient', { consultation: null, isDeleted: { $ne: true } }),
+    HospitalAdmission.distinct('patient'),
+    Surgery.distinct('patient'),
     AuditEvent.distinct('agent.userId', {
+      ...USAGE_EVENTS,
       recorded: range,
-      'agent.role': 'patient',
-      type: { $in: USAGE_EVENT_TYPES }
+      'agent.role': 'patient'
     }),
     AuditEvent.aggregate([
-      { $match: { recorded: range, type: 'data', action: 'R', 'agent.role': 'patient' } },
+      {
+        $match: {
+          recorded: range,
+          type: 'data',
+          action: 'R',
+          outcome: '0',
+          'agent.role': 'patient',
+          'entity.resourceId': { $ne: null }
+        }
+      },
       { $group: { _id: '$agent.userId', views: { $sum: 1 } } }
     ])
   ]);
 
-  const withRecords = await User.countDocuments({
-    _id: { $in: patientsWithShared },
+  // Patients with anything to look at: shared consultations, or records that
+  // stand on their own outside a consultation
+  const eligible = await User.find({
+    _id: {
+      $in: [...withSharedConsultations, ...withStandaloneRecords, ...withAdmissions, ...withSurgeries]
+    },
     isOnusUser: { $ne: false }
-  });
-  const viewed = viewRows.length;
+  })
+    .select('_id')
+    .lean();
+  const eligibleIds = new Set(eligible.map((u) => String(u._id)));
+  const viewers = viewRows.filter((row) => row._id && eligibleIds.has(String(row._id)));
 
   return {
     realPatients,
-    withRecords,
+    withRecords: eligibleIds.size,
     active: activeIds.filter(Boolean).length,
-    viewed,
-    views: viewRows.reduce((sum, row) => sum + row.views, 0),
-    shareOfWithRecords: ratio(viewed, withRecords)
+    viewed: viewers.length,
+    views: viewers.reduce((sum, row) => sum + row.views, 0),
+    shareOfWithRecords: ratio(viewers.length, eligibleIds.size)
   };
 };
 
@@ -338,9 +384,11 @@ const abandonedDrafts = async (period, now) => {
     return { label, count };
   });
 
+  // Archiving is how consultations are deleted, whatever their state, so an
+  // archived entry is no evidence of completion: leave deleted ones out
   const byStatus = Object.fromEntries(statusRows.map((row) => [row._id, row.count]));
-  const startedInPeriod = statusRows.reduce((sum, row) => sum + row.count, 0);
-  const finishedInPeriod = (byStatus.completed || 0) + (byStatus.archived || 0);
+  const finishedInPeriod = byStatus.completed || 0;
+  const startedInPeriod = finishedInPeriod + (byStatus.draft || 0);
 
   return {
     openDrafts: drafts.length,
@@ -355,20 +403,21 @@ const abandonedDrafts = async (period, now) => {
 };
 
 /**
- * Of the cases (root consultations) opened in the period, how many have had at
- * least one follow-up consultation.
+ * Of the cases (completed root consultations) opened in the period, how many
+ * have had at least one completed follow-up. Archived (deleted) consultations
+ * count as neither, since drafts are archived too.
  */
 const followUps = async (period) => {
   const rootIds = await Consultation.distinct('_id', {
     parentConsultation: null,
-    status: { $ne: 'draft' },
+    status: 'completed',
     createdAt: rangeOf(period)
   });
   let withFollowUp = 0;
   if (rootIds.length > 0) {
     const followedUpIds = await Consultation.distinct('parentConsultation', {
       parentConsultation: { $in: rootIds },
-      status: { $ne: 'draft' }
+      status: 'completed'
     });
     withFollowUp = followedUpIds.length;
   }
@@ -575,14 +624,13 @@ const activityPulse = async (period, trackingSince) => {
   const periodDays = Math.round((lastDay - startOfUtcDay(period.start)) / DAY_MS) + 1;
   const days = Math.max(1, Math.min(periodDays, MAX_PULSE_DAYS));
   const firstDay = new Date(lastDay.getTime() - (days - 1) * DAY_MS);
+  // Buckets are whole days, but events outside the requested period (e.g. a
+  // timed range starting mid-day) must not be counted
+  const from = new Date(Math.max(firstDay.getTime(), period.start.getTime()));
+  const to = new Date(Math.min(lastDay.getTime() + DAY_MS, period.end.getTime()));
 
   const rows = await AuditEvent.aggregate([
-    {
-      $match: {
-        recorded: { $gte: firstDay, $lt: new Date(lastDay.getTime() + DAY_MS) },
-        type: { $in: USAGE_EVENT_TYPES }
-      }
-    },
+    { $match: { ...USAGE_EVENTS, recorded: { $gte: from, $lt: to } } },
     {
       $group: {
         _id: { $dateToString: { format: '%Y-%m-%d', date: '$recorded' } },
@@ -605,7 +653,9 @@ const activityPulse = async (period, trackingSince) => {
  */
 const getEngagementAnalytics = async (query = {}, now = new Date()) => {
   const period = resolvePeriod(query, now);
-  const firstEvent = await AuditEvent.findOne().sort({ seq: 1 }).select('recorded').lean();
+  // Earliest by time, not chain position: replayed dead-letter events keep
+  // their original timestamp but take a new, later sequence number
+  const firstEvent = await AuditEvent.findOne().sort({ recorded: 1 }).select('recorded').lean();
   const trackingSince = firstEvent ? firstEvent.recorded : null;
 
   const [

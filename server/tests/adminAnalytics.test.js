@@ -6,6 +6,7 @@
  */
 
 const request = require('supertest');
+const mongoose = require('mongoose');
 const app = require('../server');
 const User = require('../models/User');
 const Consultation = require('../models/Consultation');
@@ -73,7 +74,7 @@ const seedFixture = async () => {
   const activeProvider = await createUser({ role: 'provider', providerProfile: { isVerified: true } });
   const idleProvider = await createUser({ role: 'provider', providerProfile: { isVerified: true } });
   // Registered in the period but never approved
-  await createUser({ role: 'provider', providerProfile: { isVerified: false } });
+  const unapprovedProvider = await createUser({ role: 'provider', providerProfile: { isVerified: false } });
 
   // Real patients: one fully onboarded, one who never confirmed their email
   const viewer = await createUser({ patientProfile: { dateOfBirth: yearsAgo(40) } });
@@ -128,14 +129,25 @@ const seedFixture = async () => {
     general: { specialistName: 'Dr Test', specialty: 'General' }
   });
   await backdate(Consultation, draft, { updatedAt: daysAgo(40) });
+  // A deleted (archived) draft by a provider outside the approved cohort:
+  // neither finished work nor provider activity
+  await createConsultation({
+    patient: viewer._id,
+    provider: unapprovedProvider._id,
+    status: 'archived',
+    general: { specialistName: 'Dr Test', specialty: 'General' }
+  });
 
-  // Records referenced from the consultations; the deleted one is ignored
+  // Records referenced from the consultations; the deleted one is ignored.
+  // The claimed patient's vitals stand alone, outside any consultation.
+  const standaloneId = new mongoose.Types.ObjectId();
   await MedicalRecord.collection.insertMany([
     { recordType: 'Vitals', patient: viewer._id, consultation: full._id, date: NOW },
     { recordType: 'Medication', patient: viewer._id, consultation: full._id, date: NOW },
     { recordType: 'Medication', patient: viewer._id, consultation: full._id, date: NOW },
     { recordType: 'Medication', patient: viewer._id, consultation: partial._id, date: NOW },
-    { recordType: 'LabResult', patient: viewer._id, consultation: partial._id, date: NOW, isDeleted: true }
+    { recordType: 'LabResult', patient: viewer._id, consultation: partial._id, date: NOW, isDeleted: true },
+    { _id: standaloneId, recordType: 'Vitals', patient: claimed._id, date: NOW }
   ]);
 
   const email = (template, userId, status) => ({
@@ -168,11 +180,31 @@ const seedFixture = async () => {
       action: 'E',
       agent: { userId: idleProvider._id, role: 'provider' }
     }),
-    auditEvent({ agent: { userId: viewer._id, role: 'patient' }, entity: { patientId: viewer._id } }),
-    auditEvent({ agent: { userId: viewer._id, role: 'patient' }, entity: { patientId: viewer._id } }),
+    // Opening specific records: two consultations views, one standalone record
+    auditEvent({ agent: { userId: viewer._id, role: 'patient' }, entity: { patientId: viewer._id, resourceId: full._id } }),
+    auditEvent({ agent: { userId: viewer._id, role: 'patient' }, entity: { patientId: viewer._id, resourceId: full._id } }),
+    auditEvent({ agent: { userId: claimed._id, role: 'patient' }, entity: { patientId: claimed._id, resourceId: standaloneId } }),
+    // A statistics read names no record, even though it succeeds
+    auditEvent({ agent: { userId: unverified._id, role: 'patient' }, entity: { patientId: unverified._id } }),
+    // A failed sign-in carries the account it targeted, but isn't usage
+    auditEvent({
+      type: 'auth',
+      subtype: 'login-failure',
+      action: 'E',
+      outcome: '8',
+      agent: { userId: viewer._id, role: 'patient' }
+    }),
     auditEvent({ type: 'audit', subtype: 'audit-query', action: 'E', agent: { userId: admin._id, role: 'admin' } }),
     auditEvent({ type: 'security', subtype: 'access-denied', action: 'E', outcome: '8' }),
-    auditEvent({ type: 'admin', subtype: 'user-deleted', action: 'E', agent: { userId: admin._id, role: 'admin' } })
+    auditEvent({ type: 'admin', subtype: 'user-deleted', action: 'E', agent: { userId: admin._id, role: 'admin' } }),
+    // Replayed from the dead letter: newest in the chain, oldest in time
+    auditEvent({
+      recorded: daysAgo(10),
+      type: 'auth',
+      subtype: 'login-success',
+      action: 'E',
+      agent: { userId: idleProvider._id, role: 'provider' }
+    })
   ]);
   await auditService.init();
 
@@ -277,11 +309,13 @@ describe('GET /api/admin/analytics/engagement', () => {
     });
 
     it('counts patients opening their own records', () => {
+      // viewer (shared consultations) and claimed (a standalone record) have
+      // records to see; the statistics read names no record, so isn't a view
       expect(body.depthOfUse.patientRecordViews).toMatchObject({
         realPatients: 3,
-        withRecords: 1,
-        viewed: 1,
-        views: 2,
+        withRecords: 2,
+        viewed: 2,
+        views: 3,
         shareOfWithRecords: 1
       });
     });
@@ -339,11 +373,26 @@ describe('GET /api/admin/analytics/engagement', () => {
     it('counts usage per day and leaves days before tracking empty', () => {
       const pulse = body.platformHealth.activityPulse;
       const today = pulse[pulse.length - 1];
-      // two patient reads + one admin action; audit queries and denials excluded
-      expect(today.count).toBe(3);
+      // four patient reads + one admin action; the failed sign-in, audit
+      // queries and access denials are not usage
+      expect(today.count).toBe(5);
       expect(pulse[pulse.length - 6].count).toBe(1);
+      expect(pulse[pulse.length - 11].count).toBe(1);
       expect(pulse[0].count).toBeNull();
     });
+
+    it('starts tracking at the earliest event in time, not in the chain', () => {
+      expect(body.trackingSince).toBe(daysAgo(10).toISOString());
+    });
+  });
+
+  it('keeps the activity pulse inside a timed period', async () => {
+    // A one-minute window that ends before today's events were recorded
+    const { body } = await getEngagement({
+      startDate: new Date(NOW.getTime() - 2 * 60 * 1000).toISOString(),
+      endDate: new Date(NOW.getTime() - 60 * 1000).toISOString()
+    }).expect(200);
+    body.platformHealth.activityPulse.forEach(({ count }) => expect(count === null || count === 0).toBe(true));
   });
 });
 
