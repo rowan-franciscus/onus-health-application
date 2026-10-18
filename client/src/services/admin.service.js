@@ -20,6 +20,18 @@ const getDashboardAnalytics = async (startDate, endDate) => {
 };
 
 /**
+ * Get engagement analytics (retention, activation, depth of use, record
+ * quality, composition, platform health) for a date range
+ */
+const getEngagementAnalytics = async (startDate, endDate) => {
+  const params = {};
+  if (startDate) params.startDate = startDate;
+  if (endDate) params.endDate = endDate;
+
+  return await ApiService.get('/admin/analytics/engagement', params);
+};
+
+/**
  * Get detailed analytics with optional filters
  */
 const getAnalytics = async (startDate, endDate, metric) => {
@@ -155,6 +167,7 @@ const getProviderVerificationRequests = async () => {
 
 const adminService = {
   getDashboardAnalytics,
+  getEngagementAnalytics,
   getAnalytics,
   getUsers,
   getUserById,

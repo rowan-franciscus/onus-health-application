@@ -1,0 +1,511 @@
+/* Admin analytics panels — tokens follow the dashboard's light theme */
+.panel,
+.chart,
+.legend,
+.barList,
+.tableView,
+.dataTable {
+  --ink: #333;
+  --ink-secondary: #666;
+  --ink-muted: #898781;
+  --surface: #fff;
+  --series: #2a78d6;
+  --series-hover: #1c5cab;
+  --series-wash: rgba(42, 120, 214, 0.1);
+  --series-track: #e8f0fb;
+  --context: #dcdad3;
+  --grid: #eceae4;
+  --axis: #c3c2b7;
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warning: #fab219;
+  --warning-text: #8a5a00;
+  --critical: #d03b3b;
+  --critical-text: #b02a2a;
+}
+
+/* ---- panels & cards ---- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.panelIntro {
+  font-size: 14px;
+  color: var(--ink-secondary);
+  margin: 0;
+  max-width: 72ch;
+}
+
+/* Headline totals: one surface split by hairlines rather than four cards */
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background-color: var(--grid);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.kpiRow > .stat {
+  background-color: var(--surface);
+  padding: 20px 24px;
+}
+
+.periodGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 16px;
+}
+
+.periodGrid .statValue {
+  font-size: 22px;
+}
+
+.activityList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.activityItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--grid);
+}
+
+.activityItem:first-child {
+  padding-top: 0;
+}
+
+.activityItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.activityText {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.activityTime {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.card {
+  background-color: var(--surface);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cardWide {
+  grid-column: 1 / -1;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardHeader h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.cardHeader p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+  margin: 0;
+  max-width: 72ch;
+}
+
+.trackingNote {
+  align-self: flex-start;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  background-color: #f4f3ef;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.footnote,
+.empty {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+.empty {
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* ---- stats ---- */
+
+.statRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.statLabel {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.statDetail {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+/* ---- bar list ---- */
+
+.barList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) minmax(60px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.barLabel {
+  color: var(--ink);
+}
+
+.barTrack {
+  height: 12px;
+  background-color: var(--series-track);
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  background-color: var(--series);
+  border-radius: 0 4px 4px 0;
+}
+
+.barValue {
+  color: var(--ink-secondary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---- charts ---- */
+
+.chart {
+  position: relative;
+  width: 100%;
+}
+
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+
+.grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.axis {
+  stroke: var(--axis);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.crosshair {
+  stroke: var(--ink-muted);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.tick {
+  font-size: 12px;
+  fill: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.seriesMark {
+  fill: var(--series);
+}
+
+.seriesMarkActive {
+  fill: var(--series-hover);
+}
+
+.contextMark {
+  fill: var(--context);
+}
+
+.line {
+  fill: none;
+  stroke: var(--series);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.areaWash {
+  fill: var(--series-wash);
+}
+
+.endDot {
+  fill: var(--series);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.hitArea {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.hitArea:focus {
+  outline: none;
+}
+
+.hitArea:focus-visible {
+  stroke: var(--series);
+  stroke-width: 2;
+}
+
+.tooltip {
+  position: absolute;
+  transform: translateY(-100%);
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  max-width: 220px;
+  padding: 8px 10px;
+  background-color: var(--surface);
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(11, 11, 11, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.tooltipValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tooltipLabel {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+.tooltipDetail {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* ---- legend ---- */
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.swatchSeries {
+  background-color: var(--series);
+}
+
+.swatchContext {
+  background-color: var(--context);
+}
+
+/* ---- tables ---- */
+
+.tableView summary {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  width: fit-content;
+}
+
+.tableView summary:focus-visible {
+  outline: 2px solid var(--series);
+  outline-offset: 2px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.tableView table,
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tableView table {
+  margin-top: 8px;
+}
+
+.tableView th,
+.tableView td,
+.dataTable th,
+.dataTable td {
+  text-align: left;
+  padding: 8px 12px 8px 0;
+  border-bottom: 1px solid var(--grid);
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.tableView thead th,
+.dataTable thead th {
+  font-size: 12px;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.tableView tbody tr:last-child > *,
+.dataTable tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- status chips (icon + label, never colour alone) ---- */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.good {
+  color: var(--good-text);
+}
+
+.good svg {
+  color: var(--good);
+}
+
+.warning {
+  color: var(--warning-text);
+}
+
+.warning svg {
+  color: var(--warning);
+}
+
+.critical {
+  color: var(--critical-text);
+}
+
+.critical svg {
+  color: var(--critical);
+}
+
+@media (max-width: 1024px) {
+  .cardGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kpiRow,
+  .periodGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 16px;
+  }
+
+  .kpiRow > .stat {
+    padding: 16px;
+  }
+
+  .barRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .barTrack {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

@@ -102,6 +102,16 @@ router.get(
   adminController.getDashboardAnalytics
 );
 
+router.get(
+  '/analytics/engagement',
+  [
+    query('startDate').optional().isISO8601().withMessage('Start date must be a valid date'),
+    query('endDate').optional().isISO8601().withMessage('End date must be a valid date'),
+  ],
+  validateRequest,
+  adminController.getEngagementAnalytics
+);
+
 // Add provider verification routes
 router.get('/provider-verification-requests', adminController.getProviderVerificationRequests);
 router.post('/provider-verification/:providerId', adminController.processProviderVerification);

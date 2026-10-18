@@ -1,85 +1,143 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { formatDateTime } from '../../utils/dateUtils';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { FiRefreshCw } from 'react-icons/fi';
 import adminService from '../../services/admin.service';
+import {
+  ActivationPanel,
+  EngagementPanel,
+  OverviewPanel,
+  PlatformHealthPanel,
+  RecordQualityPanel
+} from './analytics/AnalyticsPanels';
 import styles from './Dashboard.module.css';
 
-const StatCard = ({ title, value }) => (
-  <div className={styles.statCard}>
-    <h3>{value}</h3>
-    <p>{title}</p>
-  </div>
-);
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'engagement', label: 'Engagement' },
+  { id: 'activation', label: 'Activation' },
+  { id: 'record-quality', label: 'Record quality' },
+  { id: 'platform-health', label: 'Platform health' }
+];
 
-const ActivityItem = ({ activity }) => {
-  const getActivityText = () => {
-    switch (activity.type) {
-      case 'user_created':
-        return `New ${activity.role} registered: ${activity.user}`;
-      case 'consultation_created':
-        return `New consultation created by ${activity.provider} for ${activity.patient}`;
-      default:
-        return 'Unknown activity';
-    }
+const PRESETS = [
+  { days: 7, label: '7 days' },
+  { days: 30, label: '30 days' },
+  { days: 90, label: '90 days' }
+];
+const DEFAULT_PRESET_DAYS = 30;
+
+// YYYY-MM-DD in the viewer's local calendar, as the date inputs use
+const toInputDate = (date) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+};
+
+// The last `days` calendar days, today included
+const presetRange = (days) => {
+  const end = new Date();
+  const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - (days - 1));
+  return { startDate: toInputDate(start), endDate: toInputDate(end) };
+};
+
+const TabBar = ({ activeTab, onSelect }) => {
+  const tabRefs = useRef({});
+
+  // Arrow keys move between tabs (WAI-ARIA tabs pattern)
+  const handleKeyDown = (event) => {
+    const index = TABS.findIndex((t) => t.id === activeTab);
+    const moves = { ArrowRight: 1, ArrowLeft: -1, Home: -index, End: TABS.length - 1 - index };
+    if (!(event.key in moves)) return;
+    event.preventDefault();
+    const next = TABS[(index + moves[event.key] + TABS.length) % TABS.length];
+    onSelect(next.id);
+    tabRefs.current[next.id]?.focus();
   };
 
   return (
-    <div className={styles.activityItem}>
-      <span className={styles.activityTime}>
-        {formatDateTime(activity.timestamp)}
-      </span>
-      <span className={styles.activityText}>{getActivityText()}</span>
+    <div className={styles.tabBar} role="tablist" aria-label="Analytics sections" onKeyDown={handleKeyDown}>
+      {TABS.map((tab) => {
+        const selected = tab.id === activeTab;
+        return (
+          <button
+            key={tab.id}
+            ref={(el) => { tabRefs.current[tab.id] = el; }}
+            id={`tab-${tab.id}`}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            aria-controls={`panel-${tab.id}`}
+            tabIndex={selected ? 0 : -1}
+            className={`${styles.tab} ${selected ? styles.tabActive : ''}`}
+            onClick={() => onSelect(tab.id)}
+          >
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 };
 
 const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = TABS.some((t) => t.id === requestedTab) ? requestedTab : TABS[0].id;
+
   const [analytics, setAnalytics] = useState(null);
+  const [engagement, setEngagement] = useState(null);
+  const [engagementError, setEngagementError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [dateRange, setDateRange] = useState({
-    startDate: '',
-    endDate: ''
-  });
+  const [preset, setPreset] = useState(DEFAULT_PRESET_DAYS);
+  const [dateRange, setDateRange] = useState(() => presetRange(DEFAULT_PRESET_DAYS));
 
   const fetchAnalytics = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await adminService.getDashboardAnalytics(
-        dateRange.startDate || null,
-        dateRange.endDate || null
-      );
-      setAnalytics(data);
+    setLoading(true);
+    const { startDate, endDate } = dateRange;
+    const [overview, details] = await Promise.allSettled([
+      adminService.getDashboardAnalytics(startDate, endDate),
+      adminService.getEngagementAnalytics(startDate, endDate)
+    ]);
+
+    if (overview.status === 'fulfilled') {
+      setAnalytics(overview.value);
       setError(null);
-    } catch (err) {
+    } else {
       setError('Failed to load analytics data');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error(overview.reason);
     }
-  }, [dateRange.startDate, dateRange.endDate]);
+
+    if (details.status === 'fulfilled') {
+      setEngagement(details.value);
+      setEngagementError(null);
+    } else {
+      const message = details.reason?.response?.data?.message;
+      setEngagementError(message || 'These metrics could not be loaded. Try refreshing.');
+      console.error(details.reason);
+    }
+    setLoading(false);
+  }, [dateRange]);
 
   useEffect(() => {
-    // Debug authentication token
-    const token = localStorage.getItem('onus_auth_token');
-    console.log('Dashboard - Auth token in localStorage:', token ? 'Token exists' : 'No token found');
-    if (token) {
-      console.log('Auth token value:', token.substring(0, 20) + '...');
-      console.log('Auth header that will be sent:', `Bearer ${token.substring(0, 20)}...`);
-    }
-    
     fetchAnalytics();
-  }, [dateRange.startDate, dateRange.endDate, fetchAnalytics]);
+  }, [fetchAnalytics]);
+
+  const handleTabSelect = (tabId) => {
+    setSearchParams(tabId === TABS[0].id ? {} : { tab: tabId }, { replace: true });
+  };
+
+  const handlePreset = (days) => {
+    setPreset(days);
+    setDateRange(presetRange(days));
+  };
 
   const handleDateChange = (e) => {
     const { name, value } = e.target;
-    setDateRange((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleRefresh = () => {
-    fetchAnalytics();
+    // A cleared input would silently fall back to a different default period
+    // on each endpoint, so keep the last complete range instead
+    if (!value) return;
+    setPreset(null);
+    setDateRange((prev) => ({ ...prev, [name]: value }));
   };
 
   if (loading && !analytics) {
@@ -90,93 +148,93 @@ const Dashboard = () => {
     return <div className={styles.errorContainer}>{error}</div>;
   }
 
+  const renderPanel = () => {
+    if (activeTab === 'overview') {
+      return <OverviewPanel analytics={analytics} engagement={engagement} />;
+    }
+    if (engagementError) {
+      return <p className={styles.sectionError} role="alert">{engagementError}</p>;
+    }
+    if (!engagement) return null;
+    switch (activeTab) {
+      case 'engagement':
+        return <EngagementPanel data={engagement} />;
+      case 'activation':
+        return <ActivationPanel data={engagement} />;
+      case 'record-quality':
+        return <RecordQualityPanel data={engagement} />;
+      case 'platform-health':
+        return <PlatformHealthPanel data={engagement} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={styles.dashboardContainer}>
       <div className={styles.dashboardHeader}>
         <h1>Analytics</h1>
-        <div className={styles.dateRangeContainer}>
+        <div className={styles.toolbar}>
+          <div className={styles.presets} role="group" aria-label="Date range">
+            {PRESETS.map(({ days, label }) => (
+              <button
+                key={days}
+                type="button"
+                className={`${styles.presetButton} ${preset === days ? styles.presetActive : ''}`}
+                aria-pressed={preset === days}
+                onClick={() => handlePreset(days)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <div className={styles.datePickerWrapper}>
             <input
               type="date"
               name="startDate"
+              aria-label="Start date"
               value={dateRange.startDate}
+              max={dateRange.endDate}
               onChange={handleDateChange}
               className={styles.datePicker}
             />
-            <span className={styles.dateRangeSeparator}>-</span>
+            <span className={styles.dateRangeSeparator}>–</span>
             <input
               type="date"
               name="endDate"
+              aria-label="End date"
               value={dateRange.endDate}
+              min={dateRange.startDate}
               onChange={handleDateChange}
               className={styles.datePicker}
             />
           </div>
-          <button className={styles.refreshButton} onClick={handleRefresh}>
-            Refresh
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={fetchAnalytics}
+            disabled={loading}
+            aria-label="Refresh"
+            title="Refresh"
+          >
+            <FiRefreshCw aria-hidden="true" className={loading ? styles.spinning : ''} />
           </button>
         </div>
       </div>
 
-      {analytics && (
-        <>
-          {/* General Analytics */}
-          <section className={styles.statsSection}>
-            <div className={styles.statsGrid}>
-              <StatCard title="Total Users" value={analytics.totalUsers} />
-              <StatCard title="Total Patients" value={analytics.totalPatients} />
-              <StatCard title="Total Health Providers" value={analytics.totalProviders} />
-              <StatCard title="Total Consultations" value={analytics.totalConsultations} />
-            </div>
-          </section>
+      <TabBar activeTab={activeTab} onSelect={handleTabSelect} />
 
-          {/* Demographics */}
-          <section className={styles.statsSection}>
-            <div className={styles.statsGrid}>
-              <StatCard 
-                title="Patient Gender Distribution" 
-                value={`${analytics.genderDistribution.male || 0} Male / ${analytics.genderDistribution.female || 0} Female`} 
-              />
-              <StatCard title="Average Patient Age" value={analytics.averagePatientAge || '-'} />
-            </div>
-          </section>
-
-          {/* Activity Metrics */}
-          <section className={styles.statsSection}>
-            <div className={styles.statsGrid}>
-              <StatCard title="New Users" value={analytics.newUsers || 0} />
-              <StatCard title="New Patients" value={analytics.newPatients || 0} />
-              <StatCard title="New Health Providers" value={analytics.newProviders || 0} />
-              <StatCard title="Active Users" value={analytics.activeUsers || 0} />
-            </div>
-          </section>
-
-          <section className={styles.statsSection}>
-            <div className={styles.statsGrid}>
-              <StatCard title="Active Patients" value={analytics.activePatients || 0} />
-              <StatCard title="Active Health Providers" value={analytics.activeProviders || 0} />
-              <StatCard title="New Consultations" value={analytics.newConsultations || 0} />
-              <StatCard title="Deleted profiles" value={analytics.deletedProfiles || 0} />
-            </div>
-          </section>
-
-          {/* Activity Log */}
-          <section className={styles.activityLogSection}>
-            <h2>Recent Activity</h2>
-            <div className={styles.activityLog}>
-              {analytics.activityLog && analytics.activityLog.length > 0 ? (
-                analytics.activityLog.map((activity, index) => (
-                  <ActivityItem key={index} activity={activity} />
-                ))
-              ) : (
-                <p className={styles.noActivities}>No recent activities</p>
-              )}
-            </div>
-          </section>
-        </>
-      )}
+      <div
+        id={`panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`tab-${activeTab}`}
+        aria-busy={loading}
+        className={loading ? styles.refreshing : undefined}
+      >
+        {renderPanel()}
+      </div>
     </div>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

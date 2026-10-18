@@ -7,6 +7,8 @@ const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 const { validatePassword } = require('../utils/passwordPolicy');
 const auditService = require('../services/audit.service');
+const adminAnalyticsService = require('../services/adminAnalytics.service');
+const AuditEvent = require('../models/AuditEvent');
 
 // Audit helper for administrative actions on user accounts
 const auditAdmin = (req, subtype, targetUser, extraContext = {}) => {
@@ -23,6 +25,15 @@ const auditAdmin = (req, subtype, targetUser, extraContext = {}) => {
     context: extraContext
   });
 };
+
+// Users are hard-deleted, so the record is gone — count the audit trail's
+// deletion events instead (complete only from when the audit trail began)
+const countDeletedProfiles = (dateFilter) =>
+  AuditEvent.countDocuments({
+    type: 'admin',
+    subtype: 'user-deleted',
+    ...(dateFilter ? { recorded: dateFilter } : {})
+  });
 
 /**
  * Get all users with optional filtering
@@ -383,7 +394,7 @@ const getAnalytics = async (req, res, next) => {
           { $match: { role: 'patient' } },
           { $group: { _id: '$patientProfile.gender', count: { $sum: 1 } } }
         ]),
-        User.countDocuments({ ...userQuery, deleted: true })
+        countDeletedProfiles(Object.keys(dateFilter).length ? dateFilter : null)
       ]);
       
       // Calculate average age for patients
@@ -477,12 +488,12 @@ const getAnalytics = async (req, res, next) => {
 const getDashboardAnalytics = async (req, res, next) => {
   try {
     const { startDate, endDate } = req.query;
-    
-    // Create date filters
+
+    // Create date filters (a date-only end date includes that whole day)
     const dateFilter = {};
     if (startDate) dateFilter.$gte = new Date(startDate);
-    if (endDate) dateFilter.$lte = new Date(endDate);
-    
+    if (endDate) dateFilter.$lt = adminAnalyticsService.resolvePeriod({ endDate }).end;
+
     // Query database for all metrics needed on dashboard
     const [
       totalUsers,
@@ -514,7 +525,7 @@ const getDashboardAnalytics = async (req, res, next) => {
       User.countDocuments(startDate || endDate ? { role: 'patient', lastLogin: dateFilter } : { role: 'patient' }),
       User.countDocuments(startDate || endDate ? { role: 'provider', lastLogin: dateFilter } : { role: 'provider' }),
       Consultation.countDocuments(startDate || endDate ? { createdAt: dateFilter } : {}),
-      User.countDocuments(startDate || endDate ? { deleted: true, createdAt: dateFilter } : { deleted: true })
+      countDeletedProfiles(startDate || endDate ? dateFilter : null)
     ]);
     
     // Calculate average age for patients
@@ -605,6 +616,23 @@ const getDashboardAnalytics = async (req, res, next) => {
       // Activity log
       activityLog
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get engagement analytics: retention, activation, depth of use, record
+ * quality, composition and platform health for the selected period
+ */
+const getEngagementAnalytics = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const period = adminAnalyticsService.resolvePeriod({ startDate, endDate });
+    if (period.start >= period.end) {
+      return next(new ApiError(httpStatus.status.BAD_REQUEST, 'Start date must be before end date'));
+    }
+    res.json(await adminAnalyticsService.getEngagementAnalytics({ startDate, endDate }));
   } catch (error) {
     next(error);
   }
@@ -955,7 +983,6 @@ const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
  */
 const getAuditLogs = async (req, res, next) => {
   try {
-    const AuditEvent = require('../models/AuditEvent');
     const {
       patientId,
       actorId,
@@ -1058,6 +1085,7 @@ module.exports = {
   updateProviderVerification,
   getAnalytics,
   getDashboardAnalytics,
+  getEngagementAnalytics,
   getProviderVerificationRequests,
   processProviderVerification,
   completeProviderVerification,
