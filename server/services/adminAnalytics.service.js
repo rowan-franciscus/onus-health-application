@@ -150,9 +150,9 @@ const activeProvidersByMonth = async (now) => {
   for (let i = TREND_MONTHS - 1; i >= 0; i--) {
     const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
     const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i + 1, 1));
-    months.push({ month: start.toISOString().slice(0, 7), end });
+    months.push({ month: start.toISOString().slice(0, 7), start, end });
   }
-  const trendStart = new Date(`${months[0].month}-01T00:00:00Z`);
+  const trendStart = months[0].start;
 
   const [activeRows, approvedProviders] = await Promise.all([
     Consultation.aggregate([
@@ -364,14 +364,14 @@ const followUps = async (period) => {
     status: { $ne: 'draft' },
     createdAt: rangeOf(period)
   });
-  const withFollowUp = rootIds.length
-    ? (
-      await Consultation.distinct('parentConsultation', {
-        parentConsultation: { $in: rootIds },
-        status: { $ne: 'draft' }
-      })
-    ).length
-    : 0;
+  let withFollowUp = 0;
+  if (rootIds.length > 0) {
+    const followedUpIds = await Consultation.distinct('parentConsultation', {
+      parentConsultation: { $in: rootIds },
+      status: { $ne: 'draft' }
+    });
+    withFollowUp = followedUpIds.length;
+  }
 
   return { cases: rootIds.length, withFollowUp, rate: ratio(withFollowUp, rootIds.length) };
 };
@@ -394,6 +394,7 @@ const writtenSections = async (period) => {
     { $group: group }
   ]);
   const total = row ? row.total : 0;
+  const allFour = row ? row.allFour : 0;
 
   return {
     consultations: total,
@@ -401,8 +402,8 @@ const writtenSections = async (period) => {
       const count = row ? row[key] : 0;
       return { key, label, count, share: ratio(count, total) };
     }),
-    allFour: row ? row.allFour : 0,
-    allFourShare: ratio(row ? row.allFour : 0, total)
+    allFour,
+    allFourShare: ratio(allFour, total)
   };
 };
 

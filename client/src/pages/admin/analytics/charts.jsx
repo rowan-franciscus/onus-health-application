@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import styles from './Engagement.module.css';
+import styles from './AnalyticsPanels.module.css';
 
 // ---- formatting ----
 
@@ -78,6 +78,24 @@ export const TooltipBody = ({ value, label, detail }) => (
 
 const MARGIN = { top: 12, right: 12, bottom: 28, left: 36 };
 
+// Horizontal gridlines with count labels; the zero line doubles as the baseline
+const ValueAxis = ({ ticks, y, width }) =>
+  ticks.map((t) => (
+    <g key={t}>
+      <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)} className={t === 0 ? styles.axis : styles.grid} />
+      <text x={MARGIN.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className={styles.tick}>
+        {formatCount(t)}
+      </text>
+    </g>
+  ));
+
+// Pin the first and last day labels inside the plot edges
+const dayLabelAnchor = (i, last) => {
+  if (i === 0) return 'start';
+  if (i === last) return 'end';
+  return 'middle';
+};
+
 /**
  * Column chart for counts over ordered categories. An optional `context`
  * value per column is drawn behind it in grey (e.g. the population the
@@ -100,14 +118,7 @@ export const ColumnChart = ({ data, ariaLabel, renderTooltip, height = 200 }) =>
     <div className={styles.chart} ref={ref}>
       {width > 0 && (
         <svg width={width} height={height} role="img" aria-label={ariaLabel}>
-          {ticks.map((t) => (
-            <g key={t}>
-              <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)} className={t === 0 ? styles.axis : styles.grid} />
-              <text x={MARGIN.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className={styles.tick}>
-                {formatCount(t)}
-              </text>
-            </g>
-          ))}
+          <ValueAxis ticks={ticks} y={y} width={width} />
           {data.map((d, i) => {
             const x = MARGIN.left + band * i + (band - barWidth) / 2;
             return (
@@ -190,20 +201,13 @@ export const LineChart = ({ data, ariaLabel, renderTooltip, gapLabel, height = 2
     setActive(Math.min(last, Math.max(firstTracked, next)));
   };
 
-  const xLabels = [...new Set([firstTracked > 0 ? firstTracked : 0, Math.round(last / 2), last])];
+  const xLabels = [...new Set([Math.max(0, firstTracked), Math.round(last / 2), last])];
 
   return (
     <div className={styles.chart} ref={ref}>
       {width > 0 && (
         <svg width={width} height={height} role="img" aria-label={ariaLabel}>
-          {ticks.map((t) => (
-            <g key={t}>
-              <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y(t)} y2={y(t)} className={t === 0 ? styles.axis : styles.grid} />
-              <text x={MARGIN.left - 8} y={y(t)} dy="0.32em" textAnchor="end" className={styles.tick}>
-                {formatCount(t)}
-              </text>
-            </g>
-          ))}
+          <ValueAxis ticks={ticks} y={y} width={width} />
           {firstTracked > 0 && (
             <g>
               <line x1={x(firstTracked)} x2={x(firstTracked)} y1={MARGIN.top} y2={y(0)} className={styles.axis} />
@@ -224,7 +228,7 @@ export const LineChart = ({ data, ariaLabel, renderTooltip, gapLabel, height = 2
               key={i}
               x={x(i)}
               y={height - 8}
-              textAnchor={i === 0 ? 'start' : i === last ? 'end' : 'middle'}
+              textAnchor={dayLabelAnchor(i, last)}
               className={styles.tick}
             >
               {formatDay(data[i].day)}

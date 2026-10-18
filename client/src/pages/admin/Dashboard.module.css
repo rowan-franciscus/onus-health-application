@@ -1,13 +1,18 @@
 .dashboardContainer {
   padding: 24px;
   width: 100%;
+  max-width: 1280px;
 }
+
+/* ---- header & toolbar ---- */
 
 .dashboardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .dashboardHeader h1 {
@@ -17,12 +22,11 @@
   margin: 0;
 }
 
-.dateRangeContainer {
+.toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 16px;
+  gap: 8px;
 }
 
 .presets {
@@ -30,15 +34,15 @@
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 4px;
-  gap: 4px;
+  padding: 3px;
+  gap: 2px;
 }
 
 .presetButton {
   background: none;
   border: none;
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-family: inherit;
   font-size: 14px;
   color: #666;
@@ -50,55 +54,11 @@
   background-color: #f4f3ef;
 }
 
-.presetButton:focus-visible,
-.refreshButton:focus-visible {
-  outline: 2px solid #6236ff;
-  outline-offset: 2px;
-}
-
 .presetActive,
 .presetActive:hover {
   background-color: #efebff;
   color: #4920c0;
   font-weight: 600;
-}
-
-/* Hold the previous render while new data loads, rather than flashing */
-.refreshing {
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .refreshing {
-    transition: none;
-  }
-}
-
-.sectionHeader {
-  margin-bottom: 16px;
-}
-
-.sectionHeader h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 4px;
-}
-
-.sectionHeader p {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-}
-
-.sectionError {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  margin: 0 0 32px;
-  color: #b02a2a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .datePickerWrapper {
@@ -107,115 +67,133 @@
   background-color: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 4px 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 0 10px;
+  height: 38px;
 }
 
 .datePicker {
   border: none;
   outline: none;
-  padding: 8px 0;
-  font-family: 'DM Sans', sans-serif;
+  padding: 6px 0;
+  font-family: inherit;
+  font-size: 14px;
   color: #333;
+  background: none;
+}
+
+.datePicker:focus-visible {
+  outline: 2px solid #6236ff;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .dateRangeSeparator {
   margin: 0 8px;
-  color: #666;
+  color: #898781;
 }
 
 .refreshButton {
-  background-color: #6236ff;
-  color: white;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #e0e0e0;
   border-radius: 8px;
-  padding: 12px 24px;
-  font-weight: 500;
+  font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
 }
 
-.refreshButton:hover {
-  background-color: #5020e0;
+.refreshButton:hover:not(:disabled) {
+  background-color: #f4f3ef;
 }
 
-.statsSection {
-  margin-bottom: 32px;
+.refreshButton:disabled {
+  cursor: default;
 }
 
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+.presetButton:focus-visible,
+.refreshButton:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid #6236ff;
+  outline-offset: 2px;
 }
 
-.statCard {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  text-align: center;
+.spinning {
+  animation: spin 0.8s linear infinite;
 }
 
-.statCard h3 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 8px 0;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.statCard p {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
-}
+/* ---- tabs ---- */
 
-.activityLogSection {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.activityLogSection h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 16px 0;
-}
-
-.activityLog {
+.tabBar {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.activityItem {
-  display: flex;
-  flex-direction: column;
   gap: 4px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.activityItem:last-child {
-  padding-bottom: 0;
-  border-bottom: none;
+.tabBar::-webkit-scrollbar {
+  display: none;
 }
 
-.activityTime {
-  font-size: 14px;
-  color: #888;
+.tab {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 10px 14px 12px;
+  font-family: inherit;
+  font-size: 15px;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-.activityText {
-  font-size: 16px;
+.tab:hover {
   color: #333;
 }
 
-.noActivities {
-  color: #888;
-  font-style: italic;
+.tabActive,
+.tabActive:hover {
+  color: #4920c0;
+  font-weight: 600;
+}
+
+.tabActive::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 2px;
+  background-color: #6236ff;
+  border-radius: 2px 2px 0 0;
+}
+
+/* ---- panel ---- */
+
+/* Hold the previous render while new data loads, rather than flashing */
+.refreshing {
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.sectionError {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 0;
+  color: #b02a2a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .loadingContainer,
@@ -231,52 +209,32 @@
   color: #e53935;
 }
 
-/* Media queries for responsiveness */
-@media (max-width: 1024px) {
-  .statsGrid {
-    grid-template-columns: repeat(2, 1fr);
+@media (prefers-reduced-motion: reduce) {
+  .refreshing {
+    transition: none;
+  }
+
+  .spinning {
+    animation: none;
   }
 }
 
 @media (max-width: 768px) {
-  .dashboardHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  
-  .dateRangeContainer {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
+  .dashboardContainer {
+    padding: 16px;
   }
 
-  .presets {
+  .toolbar {
     width: 100%;
-    overflow-x: auto;
   }
-  
+
   .datePickerWrapper {
-    width: 100%;
-    justify-content: space-between;
+    flex: 1;
+    min-width: 0;
   }
-  
+
   .datePicker {
     flex: 1;
     min-width: 0;
-    max-width: 45%;
-    font-size: 14px;
   }
-  
-  .dateRangeSeparator {
-    flex-shrink: 0;
-  }
-  
-  .refreshButton {
-    width: 100%;
-  }
-  
-  .statsGrid {
-    grid-template-columns: 1fr;
-  }
-} 
+}
