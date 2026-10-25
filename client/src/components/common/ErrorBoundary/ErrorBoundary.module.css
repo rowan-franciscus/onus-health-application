@@ -1,0 +1,14 @@
+.fallback {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.title {
+  margin: 0 0 8px;
+  color: #333;
+}
+
+.text {
+  margin: 0 0 16px;
+  color: #666;
+}

@@ -24,6 +24,11 @@ const COPY = {
   WITHDRAWN: {
     title: 'The patient withdrew consent',
     text: 'You can no longer view or add to this record.'
+  },
+  // A connection from before consent existed that hasn't been backfilled yet
+  NONE: {
+    title: 'Consent isn\'t recorded for this patient',
+    text: 'You can\'t view or add clinical information until the patient\'s consent is active.'
   }
 };
 
@@ -43,7 +48,7 @@ const ConsentPendingPanel = ({ patientId, consent, details, onChanged }) => {
   const [saving, setSaving] = useState(false);
 
   const status = consent.status;
-  const copy = COPY[status] || COPY.PENDING_CONSENT;
+  const copy = COPY[status || 'NONE'] || COPY.PENDING_CONSENT;
   const awaiting = isAwaitingConsent(status);
 
   const resend = async () => {

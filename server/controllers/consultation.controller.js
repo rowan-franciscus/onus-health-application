@@ -17,6 +17,7 @@ const MedicationRecord = require('../models/MedicationRecord');
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
 const stripIdentityFields = require('../utils/stripIdentityFields');
+const hasVitalsData = require('../utils/hasVitalsData');
 
 /**
  * Get all consultations with filtering
@@ -427,7 +428,7 @@ exports.createConsultation = async (req, res) => {
     console.log('=== MEDICAL RECORDS CREATION ===');
     // Now create the individual medical records if data is provided
     // Save Vitals if provided and has data
-    if (vitals && Object.values(vitals).some(val => val && (typeof val === 'object' ? val.value : val))) {
+    if (hasVitalsData(vitals)) {
       console.log('Creating vitals record:', vitals);
       try {
         const vitalsRecord = new VitalsRecord({
@@ -668,7 +669,7 @@ exports.updateConsultation = async (req, res) => {
     const patientId = consultation.patient;
     
     // Handle Vitals
-    if (vitals && Object.values(vitals).some(val => val && (typeof val === 'object' ? val.value : val))) {
+    if (hasVitalsData(vitals)) {
       try {
         console.log('Processing vitals update...');
         if (consultation.vitals) {
@@ -1149,17 +1150,6 @@ exports.addFollowUp = async (req, res) => {
     await followUp.save({ session });
 
     const patientId = root.patient;
-
-    const hasVitalsData = (v) => {
-      if (!v) return false;
-      return Object.values(v).some(val => {
-        if (!val) return false;
-        if (typeof val === 'object') {
-          return Object.values(val).some(nested => nested !== null && nested !== undefined && nested !== '');
-        }
-        return true;
-      });
-    };
 
     // Create vitals if provided
     if (hasVitalsData(vitals)) {

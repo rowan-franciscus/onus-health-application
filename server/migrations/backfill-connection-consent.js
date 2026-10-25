@@ -9,6 +9,9 @@
  *          cannot add to (or read) these records until the patient consents.
  *
  * Only connections without consent.status are touched, so it is safe to re-run.
+ * The rules live in services/consent.service.js (classifyLegacyConnections /
+ * applyLegacyBackfill), and the server applies them on every startup, so
+ * --apply is only needed to backfill without restarting the server.
  *
  * Steps (run in order, after migrations/consent-email-partial-index.js):
  *   1. node server/migrations/backfill-connection-consent.js
@@ -29,23 +32,6 @@ const User = require('../models/User');
 const Connection = require('../models/Connection');
 
 const args = new Set(process.argv.slice(2));
-
-async function classify() {
-  const unset = await Connection.find({ 'consent.status': { $exists: false } })
-    .select('_id patient provider')
-    .populate('patient', 'isOnusUser email firstName lastName phone patientProfile')
-    .lean();
-
-  const active = [];
-  const pending = [];
-  const orphaned = [];
-  for (const c of unset) {
-    if (!c.patient) orphaned.push(c);
-    else if (c.patient.isOnusUser === false) pending.push(c);
-    else active.push(c);
-  }
-  return { active, pending, orphaned };
-}
 
 async function notifyProviders(pending) {
   const emailService = require('../services/email.service');
@@ -70,42 +56,6 @@ async function notifyProviders(pending) {
     );
     console.log(`Queued heads-up to provider ${providerId} (${count} patient(s))`);
   }
-}
-
-async function apply({ active, pending }) {
-  const activeResult = await Connection.updateMany(
-    { _id: { $in: active.map((c) => c._id) }, 'consent.status': { $exists: false } },
-    { $set: { onboardingSource: 'patient_initiated', 'consent.status': 'ACTIVE' } }
-  );
-  // Unclaimed placeholders still hold only what the provider entered, so
-  // snapshot it as the pre-consent view (see utils/registrationDetails)
-  let pendingCount = 0;
-  for (const c of pending) {
-    const p = c.patient;
-    const result = await Connection.updateOne(
-      { _id: c._id, 'consent.status': { $exists: false } },
-      {
-        $set: {
-          onboardingSource: 'provider_initiated',
-          'consent.status': 'PENDING_CONSENT',
-          registration: {
-            firstName: p.firstName,
-            lastName: p.lastName,
-            email: p.email,
-            phone: p.phone,
-            dateOfBirth: p.patientProfile?.dateOfBirth,
-            gender: p.patientProfile?.gender,
-            insurance: {
-              provider: p.patientProfile?.insurance?.provider,
-              plan: p.patientProfile?.insurance?.plan
-            }
-          }
-        }
-      }
-    );
-    pendingCount += result.modifiedCount;
-  }
-  console.log(`Set ACTIVE on ${activeResult.modifiedCount}, PENDING_CONSENT on ${pendingCount}.`);
 }
 
 async function sendInvites() {
@@ -138,7 +88,8 @@ async function run() {
     return;
   }
 
-  const groups = await classify();
+  const consentService = require('../services/consent.service');
+  const groups = await consentService.classifyLegacyConnections();
   const withEmail = groups.pending.filter((c) => c.patient.email).length;
   console.log(`Connections without consent state: ${groups.active.length + groups.pending.length + groups.orphaned.length}`);
   console.log(`  -> ACTIVE (patient has an account):          ${groups.active.length}`);
@@ -148,7 +99,11 @@ async function run() {
   if (args.has('--notify-providers')) {
     await notifyProviders(groups.pending);
   } else if (args.has('--apply')) {
-    await apply(groups);
+    const auditService = require('../services/audit.service');
+    await auditService.init();
+    const applied = await consentService.applyLegacyBackfill(groups);
+    await auditService.flush();
+    console.log(`Set ACTIVE on ${applied.active}, PENDING_CONSENT on ${applied.pending}.`);
   } else {
     console.log('Dry run — nothing written. Use --notify-providers, --apply, then --send-invites.');
   }

@@ -15,6 +15,7 @@ const EmailQueue = require('../models/EmailQueue');
 const AuditEvent = require('../models/AuditEvent');
 const Practice = require('../models/Practice');
 const auditService = require('../services/audit.service');
+const consentService = require('../services/consent.service');
 const { verifyChain } = require('../utils/auditChain');
 const { CURRENT_VERSION } = require('../config/consentText');
 const { setupTestDB, teardownTestDB, clearDatabase } = require('./setup');
@@ -345,6 +346,80 @@ describe('Server-side enforcement of patient consent', () => {
       .send({ patient: patient._id, general: { specialistName: 'Dr', specialty: 'GP' } });
     expect(res.status).toBe(403);
     expect(await Connection.countDocuments()).toBe(0);
+  });
+});
+
+describe('Legacy connection backfill', () => {
+  // A connection created before patient consent existed (bypasses validation)
+  const insertLegacy = async (patientId, provider) => {
+    const { insertedId } = await Connection.collection.insertOne({
+      patient: patientId,
+      provider: provider._id,
+      initiatedBy: provider._id,
+      accessLevel: 'limited',
+      fullAccessStatus: 'none',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    return insertedId;
+  };
+
+  it('restores a provider\'s access to a connected patient with an account', async () => {
+    const provider = await makeProvider();
+    const patient = await makeUser();
+    const id = await insertLegacy(patient._id, provider);
+    const consult = () => request(app)
+      .post('/api/consultations')
+      .set(authHeader(provider))
+      .send({ patient: patient._id, general: { specialistName: 'Dr', specialty: 'GP' } });
+
+    const blocked = await consult();
+    expect(blocked.status).toBe(403);
+    expect(blocked.body).toMatchObject({ code: 'CONSENT_REQUIRED', consentStatus: null });
+
+    expect(await consentService.backfillLegacyConnections()).toEqual({ active: 1, pending: 0, orphaned: 0 });
+    const conn = await Connection.findById(id).lean();
+    expect(conn.consent.status).toBe('ACTIVE');
+    expect(conn.onboardingSource).toBe('patient_initiated');
+
+    // Past the consent guard (creation itself needs a replica set for its
+    // transaction; see consultationVitals.test.js)
+    const res = await consult();
+    expect(res.status).not.toBe(403);
+    expect(res.body.code).toBeUndefined();
+  });
+
+  it('puts an unclaimed placeholder into PENDING_CONSENT without emailing anyone', async () => {
+    const provider = await makeProvider();
+    const patient = await makePlaceholder({ email: 'legacy@example.com', firstName: 'Nomsa' });
+    const id = await insertLegacy(patient._id, provider);
+
+    expect(await consentService.backfillLegacyConnections()).toEqual({ active: 0, pending: 1, orphaned: 0 });
+    const conn = await Connection.findById(id).lean();
+    expect(conn.consent.status).toBe('PENDING_CONSENT');
+    expect(conn.onboardingSource).toBe('provider_initiated');
+    expect(conn.registration).toMatchObject({ firstName: 'Nomsa', email: 'legacy@example.com', gender: 'female' });
+    expect(await EmailQueue.countDocuments()).toBe(0);
+
+    // The provider can now send the consent link themselves
+    const profile = await request(app).get(`/api/provider/patients/${patient._id}`).set(authHeader(provider));
+    expect(profile.body.consent).toMatchObject({ status: 'PENDING_CONSENT', canResend: true });
+  });
+
+  it('audits each change, skips orphans and is safe to re-run', async () => {
+    const provider = await makeProvider();
+    const patient = await makeUser();
+    await insertLegacy(patient._id, provider);
+    const orphanId = await insertLegacy(oid(), provider);
+
+    expect(await consentService.backfillLegacyConnections()).toEqual({ active: 1, pending: 0, orphaned: 1 });
+    expect(await consentService.backfillLegacyConnections()).toEqual({ active: 0, pending: 0, orphaned: 1 });
+    expect((await Connection.findById(orphanId).lean()).consent).toBeUndefined();
+
+    await flushAudit();
+    const events = await AuditEvent.find({ subtype: 'consent-backfilled' }).lean();
+    expect(events).toHaveLength(1);
+    expect(events[0].context.after.consentStatus).toBe('ACTIVE');
   });
 });
 

@@ -11,6 +11,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ConsultationService from '../../services/consultation.service';
 import ApiService from '../../services/api.service';
 import FileService from '../../services/file.service';
+import { consentRequiredMessage } from '../../services/consent.service';
 
 const AddFollowUp = () => {
   const { rootId } = useParams();
@@ -55,10 +56,6 @@ const AddFollowUp = () => {
       bloodGlucoseType: '',
       bloodOxygenSaturation: '',
       spo2Context: '',
-      bmi: '',
-      bodyFatPercentage: '',
-      weight: '',
-      height: '',
     },
     medication: { reason: '', startDate: '', endDate: '' },
     labResults: [],
@@ -135,10 +132,6 @@ const AddFollowUp = () => {
             value: formData.vitals.bloodOxygenSaturation || '',
             ...(formData.vitals.spo2Context ? { measurementContext: formData.vitals.spo2Context } : {}),
           },
-          bmi: { value: formData.vitals.bmi || '' },
-          bodyFatPercentage: { value: formData.vitals.bodyFatPercentage || '' },
-          weight: { value: formData.vitals.weight || '' },
-          height: { value: formData.vitals.height || '' },
         }
       : {};
 
@@ -220,7 +213,7 @@ const AddFollowUp = () => {
         navigate(`/provider/consultations/${rootId}`);
       }
     } catch (error) {
-      const msg = error?.response?.data?.message;
+      const msg = consentRequiredMessage(error) || error?.response?.data?.message;
       if (msg) {
         toast.error(msg);
       } else {

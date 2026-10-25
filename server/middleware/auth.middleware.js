@@ -589,7 +589,7 @@ const requireActiveConsent = (resolvePatientId, { allowMissingConnection = false
       return res.status(403).json({
         success: false,
         code: 'CONSENT_REQUIRED',
-        consentStatus: connections[0].consent && connections[0].consent.status,
+        consentStatus: (connections[0].consent && connections[0].consent.status) || null,
         message: 'The patient has not given consent, so this action is not available'
       });
     } catch (error) {

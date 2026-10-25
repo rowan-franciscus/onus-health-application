@@ -45,23 +45,6 @@ export const validationSchema = Yup.object().shape({
       .transform((value) => (isNaN(value) ? undefined : value))
       .min(0, 'Blood oxygen saturation must be a positive number')
       .max(100, 'Blood oxygen saturation must be less than or equal to 100')
-      .nullable(),
-    bmi: Yup.number()
-      .transform((value) => (isNaN(value) ? undefined : value))
-      .min(0, 'BMI must be a positive number')
-      .nullable(),
-    bodyFatPercentage: Yup.number()
-      .transform((value) => (isNaN(value) ? undefined : value))
-      .min(0, 'Body fat percentage must be a positive number')
-      .max(100, 'Body fat percentage must be less than or equal to 100')
-      .nullable(),
-    weight: Yup.number()
-      .transform((value) => (isNaN(value) ? undefined : value))
-      .min(0, 'Weight must be a positive number')
-      .nullable(),
-    height: Yup.number()
-      .transform((value) => (isNaN(value) ? undefined : value))
-      .min(0, 'Height must be a positive number')
       .nullable()
   }),
   
