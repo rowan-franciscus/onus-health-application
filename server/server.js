@@ -230,18 +230,22 @@ const startServer = async () => {
       logger.error('Audit service initialization failed (will retry lazily):', error);
     }
 
-    // Patient-consent migrations must run before this code serves traffic:
-    // connections without a consent state deny every provider
+    // Connections without a consent state (created before patient consent
+    // existed) deny every provider, so backfill them before serving traffic
     try {
-      const Connection = require('./models/Connection');
-      if (await Connection.exists({ 'consent.status': { $exists: false } })) {
-        logger.error(
-          'CONSENT_MIGRATION_PENDING: some connections have no consent state, so providers cannot access ' +
-          'those patients. Run migrations/consent-email-partial-index.js and migrations/backfill-connection-consent.js --apply.'
+      const consentService = require('./services/consent.service');
+      const backfilled = await consentService.backfillLegacyConnections();
+      if (backfilled.active || backfilled.pending) {
+        logger.info(
+          `Consent backfill: ${backfilled.active} connection(s) set ACTIVE, ` +
+          `${backfilled.pending} set PENDING_CONSENT`
         );
       }
+      if (backfilled.orphaned) {
+        logger.warn(`Consent backfill: skipped ${backfilled.orphaned} connection(s) whose patient no longer exists`);
+      }
     } catch (error) {
-      logger.warn('Could not check consent migration state:', error.message);
+      logger.error('CONSENT_BACKFILL_FAILED: providers cannot access patients on legacy connections:', error);
     }
 
     // Automatically check and fix test authentication in development mode

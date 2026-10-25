@@ -21,6 +21,7 @@ import ConsultationService from "../../services/consultation.service";
 import ApiService from "../../services/api.service";
 import FileService from "../../services/file.service";
 import Modal from "../../components/common/Modal";
+import { consentRequiredMessage } from "../../services/consent.service";
 
 const AddConsultation = () => {
   const { patientId: paramPatientId, id: consultationId } = useParams();
@@ -102,11 +103,6 @@ const AddConsultation = () => {
           spo2Context:
             consultationData.vitals?.bloodOxygenSaturation?.measurementContext ||
             "",
-          bmi: consultationData.vitals?.bmi?.value || "",
-          bodyFatPercentage:
-            consultationData.vitals?.bodyFatPercentage?.value || "",
-          weight: consultationData.vitals?.weight?.value || "",
-          height: consultationData.vitals?.height?.value || "",
         },
         medication: {
           reason: firstMed.reasonForPrescription || "",
@@ -166,10 +162,6 @@ const AddConsultation = () => {
           bloodGlucoseType: "",
           bloodOxygenSaturation: "",
           spo2Context: "",
-          bmi: "",
-          bodyFatPercentage: "",
-          weight: "",
-          height: "",
         },
         medication: { reason: "", startDate: "", endDate: "" },
         labResults: [],
@@ -416,12 +408,6 @@ const AddConsultation = () => {
                 ? { measurementContext: formData.vitals.spo2Context }
                 : {}),
             },
-            bmi: { value: formData.vitals.bmi || "" },
-            bodyFatPercentage: {
-              value: formData.vitals.bodyFatPercentage || "",
-            },
-            weight: { value: formData.vitals.weight || "" },
-            height: { value: formData.vitals.height || "" },
           }
         : {};
 
@@ -565,7 +551,9 @@ const AddConsultation = () => {
       }
     } catch (error) {
       console.error("Error saving draft:", error);
-      toast.error("Failed to save consultation draft");
+      toast.error(
+        consentRequiredMessage(error) || "Failed to save consultation draft",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -652,12 +640,6 @@ const AddConsultation = () => {
                 ? { measurementContext: formData.vitals.spo2Context }
                 : {}),
             },
-            bmi: { value: formData.vitals.bmi || "" },
-            bodyFatPercentage: {
-              value: formData.vitals.bodyFatPercentage || "",
-            },
-            weight: { value: formData.vitals.weight || "" },
-            height: { value: formData.vitals.height || "" },
           }
         : {};
 
@@ -805,12 +787,18 @@ const AddConsultation = () => {
       console.error("Error details:", error.response?.data);
 
       // Provide more specific error messages
-      if (error.response?.status === 404) {
+      const consentMessage = consentRequiredMessage(error);
+      if (consentMessage) {
+        toast.error(consentMessage);
+      } else if (error.response?.status === 404) {
         toast.error(
           "Patient not found. Please ensure the patient exists in the system.",
         );
       } else if (error.response?.status === 403) {
-        toast.error("You do not have permission to update this consultation.");
+        toast.error(
+          error.response?.data?.message ||
+            "You don't have permission to save this consultation.",
+        );
       } else if (error.response?.status === 400) {
         const message =
           error.response?.data?.message || "Invalid consultation data";

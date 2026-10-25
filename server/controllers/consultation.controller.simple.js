@@ -10,6 +10,7 @@ const MedicationRecord = require('../models/MedicationRecord');
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
 const stripIdentityFields = require('../utils/stripIdentityFields');
+const hasVitalsData = require('../utils/hasVitalsData');
 // Immunization, Hospital, and Surgery records are standalone (not part of consultations).
 
 /**
@@ -95,7 +96,7 @@ exports.updateConsultationSimple = async (req, res) => {
     const patientId = consultation.patient;
     
     // Handle Vitals
-    if (vitals && Object.values(vitals).some(val => val && (typeof val === 'object' ? val.value : val))) {
+    if (hasVitalsData(vitals)) {
       try {
         console.log('Processing vitals update...');
         if (consultation.vitals) {

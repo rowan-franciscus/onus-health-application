@@ -19,6 +19,12 @@ import { ordinal } from '../../utils/ordinal';
 import Badge from '../../components/common/Badge/Badge';
 import PhysicalRecordsTab from './PhysicalRecordsTab';
 import ConsentPendingPanel from '../../components/consent/ConsentPendingPanel';
+import ErrorBoundary from '../../components/common/ErrorBoundary';
+import { isConsentActive } from '../../services/consent.service';
+
+// Calls render() as a child component, so an ErrorBoundary around it catches
+// errors thrown while building the section (the parent's own render can't be)
+const Section = ({ render }) => render();
 
 const ProviderViewPatient = () => {
   const { id } = useParams();
@@ -36,12 +42,14 @@ const ProviderViewPatient = () => {
     biometrics: []
   });
   const [isLoading, setIsLoading] = useState(true);
+  // Message for a failed patient request (shown instead of the record)
+  const [loadError, setLoadError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [accessRequestStatus, setAccessRequestStatus] = useState(null);
   // Patient consent (provider-initiated onboarding); anything but ACTIVE locks the record
   const [consent, setConsent] = useState(null);
   const [registrationDetails, setRegistrationDetails] = useState(null);
-  const consentLocked = Boolean(consent && consent.status && consent.status !== 'ACTIVE');
+  const consentLocked = Boolean(consent && !isConsentActive(consent.status));
   const user = useSelector(state => state.auth.user);
   const verificationStatus = user?.isVerified;
 
@@ -67,6 +75,7 @@ const ProviderViewPatient = () => {
   const fetchAllPatientData = async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
       
       // Fetch patient basic information
       const patientResponse = await PatientService.getPatientById(id);
@@ -76,7 +85,7 @@ const ProviderViewPatient = () => {
         const connectionInfo = patientResponse.connectionInfo;
         setConsent(patientResponse.consent || null);
 
-        if (patientResponse.consent && patientResponse.consent.status !== 'ACTIVE') {
+        if (patientResponse.consent && !isConsentActive(patientResponse.consent.status)) {
           // Only the details entered at registration are available; clinical
           // data requests would be refused, so don't make them
           setRegistrationDetails(patientData);
@@ -170,7 +179,7 @@ const ProviderViewPatient = () => {
       setIsLoading(false);
     } catch (error) {
       console.error('Error fetching patient data:', error);
-      toast.error('Failed to load patient information');
+      setLoadError(error?.response?.data?.message || 'Check your connection and try again.');
       setPatient(null);
       setIsLoading(false);
     }
@@ -468,9 +477,9 @@ const ProviderViewPatient = () => {
             id: medication._id || `${consultation._id}-med-${Math.random()}`,
             date: consultationDate,
             provider: provider,
+            // The prescribed drugs are the consultation's Management "Medications" text
+            medications: consultation.management?.trim() || null,
             name: formatFieldValue(medication.name) || 'Unknown Medication',
-            dosage: formatFieldValue(medication.dosage),
-            frequency: formatFieldValue(medication.frequency),
             reason: formatFieldValue(medication.reasonForPrescription),
             startDate: medication.startDate ? formatDate(medication.startDate) : 'N/A',
             endDate: medication.endDate ? formatDate(medication.endDate) : 'N/A'
@@ -995,18 +1004,10 @@ const ProviderViewPatient = () => {
               {records.map(record => (
                 <Card key={record.id} className={styles.recordCard}>
                   <div className={styles.recordHeader}>
-                    <h4>{record.name}</h4>
+                    <h4 className={styles.medicationList}>{record.medications || record.name}</h4>
                     <span className={styles.recordDate}>{record.date}</span>
                   </div>
                   <div className={styles.medicationDetails}>
-                    <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Dosage:</span>
-                      <span className={styles.detailValue}>{record.dosage}</span>
-                    </div>
-                    <div className={styles.detailRow}>
-                      <span className={styles.detailLabel}>Frequency:</span>
-                      <span className={styles.detailValue}>{record.frequency}</span>
-                    </div>
                     <div className={styles.detailRow}>
                       <span className={styles.detailLabel}>Reason:</span>
                       <span className={styles.detailValue}>{record.reason}</span>
@@ -1273,16 +1274,33 @@ const ProviderViewPatient = () => {
     
     switch (activeTab) {
       case 'overview': {
-        const sortedVitals = [...medicalRecords.vitals]
-          .filter(v => v.dateRaw)
-          .sort((a, b) => new Date(b.dateRaw) - new Date(a.dateRaw));
+        // Readings come from vitals (consultations, patient self-entry) and the
+        // standalone Biometrics workflow; each card shows the latest of either
+        const readings = [
+          ...medicalRecords.vitals.map(v => ({
+            weight: v.weightRaw,
+            height: v.heightRaw,
+            bodyFat: v.bodyFatRaw,
+            bmi: v.bmiRaw,
+            date: v.dateRaw
+          })),
+          ...(medicalRecords.biometrics || []).filter(Boolean).map(b => ({
+            weight: b.weight,
+            height: b.height,
+            bodyFat: b.bodyFatPercentage,
+            bmi: b.bmi,
+            date: b.date || b.createdAt
+          }))
+        ]
+          .filter(r => r.date)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
         const pickLatest = (key) => {
-          const hit = sortedVitals.find(v => v[key] != null && v[key] !== '');
-          return hit ? { value: hit[key], date: hit.dateRaw } : null;
+          const hit = readings.find(r => r[key] != null && r[key] !== '');
+          return hit ? { value: hit[key], date: hit.date } : null;
         };
-        const latestWeight = pickLatest('weightRaw');
-        const latestHeight = pickLatest('heightRaw');
-        const latestBodyFat = pickLatest('bodyFatRaw');
+        const latestWeight = pickLatest('weight');
+        const latestHeight = pickLatest('height');
+        const latestBodyFat = pickLatest('bodyFat');
         const classifyBmi = (v) =>
           v < 18.5 ? 'Underweight' :
           v < 25   ? 'Normal weight' :
@@ -1295,15 +1313,11 @@ const ProviderViewPatient = () => {
             ? latestWeight.date : latestHeight.date;
           bmi = { value, classification: classifyBmi(value), date };
         }
-        const latestBio = (medicalRecords.biometrics || [])
-          .filter(b => b && b.bmi != null && (b.date || b.createdAt))
-          .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))[0];
-        if (latestBio) {
-          const bioDate = latestBio.date || latestBio.createdAt;
-          if (!bmi || new Date(bioDate) > new Date(bmi.date)) {
-            const value = +Number(latestBio.bmi).toFixed(1);
-            bmi = { value, classification: classifyBmi(value), date: bioDate };
-          }
+        // A recorded BMI newer than the weight/height above takes precedence
+        const latestStoredBmi = pickLatest('bmi');
+        if (latestStoredBmi && (!bmi || new Date(latestStoredBmi.date) > new Date(bmi.date))) {
+          const value = +Number(latestStoredBmi.value).toFixed(1);
+          bmi = { value, classification: classifyBmi(value), date: latestStoredBmi.date };
         }
         return (
           <div className={styles.overviewTab}>
@@ -1521,14 +1535,27 @@ const ProviderViewPatient = () => {
         </div>
       </div>
       
-      {consentLocked ? (
+      {loadError ? (
         <div className={styles.contentContainer}>
-          <ConsentPendingPanel
-            patientId={id}
-            consent={consent}
-            details={registrationDetails}
-            onChanged={fetchAllPatientData}
-          />
+          <Card className={styles.loadError}>
+            <h3>We couldn&apos;t load this patient</h3>
+            <p>{loadError}</p>
+            <div className={styles.loadErrorActions}>
+              <Button variant="primary" onClick={fetchAllPatientData}>Retry</Button>
+              <Button variant="secondary" onClick={() => navigate('/provider/patients')}>Back to patients</Button>
+            </div>
+          </Card>
+        </div>
+      ) : consentLocked ? (
+        <div className={styles.contentContainer}>
+          <ErrorBoundary key={id}>
+            <ConsentPendingPanel
+              patientId={id}
+              consent={consent}
+              details={registrationDetails}
+              onChanged={fetchAllPatientData}
+            />
+          </ErrorBoundary>
         </div>
       ) : (
         <>
@@ -1541,7 +1568,9 @@ const ProviderViewPatient = () => {
           </div>
           
           <div className={styles.contentContainer}>
-            {renderTabContent()}
+            <ErrorBoundary key={`${id}-${activeTab}`}>
+              <Section render={renderTabContent} />
+            </ErrorBoundary>
           </div>
         </>
       )}

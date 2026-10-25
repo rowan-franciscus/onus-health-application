@@ -9,6 +9,7 @@
  *   PENDING_CONSENT --decline-> DECLINED
  *   PENDING_CONSENT --14 days-> EXPIRED --resend--> PENDING_CONSENT
  *   EXPIRED --accept/decline (signed-in patient, no link needed)--> ACTIVE / DECLINED
+ *   (none, pre-consent connection) --startup backfill--> ACTIVE / PENDING_CONSENT
  *
  * Tokens: 32 random bytes, emailed raw, stored only as SHA-256. Transitions
  * are a single conditional findOneAndUpdate so a link can be used once even
@@ -586,6 +587,91 @@ const recordDeferral = async (connection, { reason, note }, req) => {
   return { ok: true };
 };
 
+// ---- Legacy backfill ----
+
+/**
+ * Connections created before patient consent existed have no consent state,
+ * which denies every provider. Sort them by patient:
+ *   - real account (isOnusUser !== false) -> ACTIVE, 'patient_initiated'. The
+ *     patient controls their account and can withdraw consent there.
+ *   - unclaimed provider-created placeholder -> PENDING_CONSENT,
+ *     'provider_initiated'. The provider can resend the consent link.
+ *   - patient no longer exists -> left alone.
+ */
+const classifyLegacyConnections = async () => {
+  const unset = await Connection.find({ 'consent.status': { $exists: false } })
+    .select('_id patient provider')
+    .populate('patient', 'isOnusUser email firstName lastName phone patientProfile')
+    .lean();
+
+  const active = [];
+  const pending = [];
+  const orphaned = [];
+  for (const c of unset) {
+    if (!c.patient) orphaned.push(c);
+    else if (c.patient.isOnusUser === false) pending.push(c);
+    else active.push(c);
+  }
+  return { active, pending, orphaned };
+};
+
+// Unclaimed placeholders still hold only what the provider entered, so
+// snapshot it as the pre-consent view (see utils/registrationDetails)
+const placeholderRegistration = (p) => ({
+  firstName: p.firstName,
+  lastName: p.lastName,
+  email: p.email,
+  phone: p.phone,
+  dateOfBirth: p.patientProfile?.dateOfBirth,
+  gender: p.patientProfile?.gender,
+  insurance: {
+    provider: p.patientProfile?.insurance?.provider,
+    plan: p.patientProfile?.insurance?.plan
+  }
+});
+
+/**
+ * Writes the consent states for classifyLegacyConnections() groups. Each write
+ * only matches a connection that still has no consent state, so re-running
+ * (or two servers starting at once) changes nothing twice. Sends no email.
+ */
+const applyLegacyBackfill = async ({ active, pending }) => {
+  const backfill = async (c, status, set) => {
+    const result = await Connection.updateOne(
+      { _id: c._id, 'consent.status': { $exists: false } },
+      { $set: { ...set, 'consent.status': status } }
+    );
+    if (result.modifiedCount === 0) return 0;
+    logConsentEvent(null, {
+      subtype: 'consent-backfilled',
+      connection: c,
+      after: status,
+      agent: { userId: null, role: 'system' }
+    });
+    return 1;
+  };
+
+  let activeCount = 0;
+  for (const c of active) {
+    activeCount += await backfill(c, 'ACTIVE', { onboardingSource: 'patient_initiated' });
+  }
+  let pendingCount = 0;
+  for (const c of pending) {
+    pendingCount += await backfill(c, 'PENDING_CONSENT', {
+      onboardingSource: 'provider_initiated',
+      registration: placeholderRegistration(c.patient)
+    });
+  }
+  return { active: activeCount, pending: pendingCount };
+};
+
+/** Classify and apply in one step; run at server startup. */
+const backfillLegacyConnections = async () => {
+  const groups = await classifyLegacyConnections();
+  const applied = await applyLegacyBackfill(groups);
+  return { ...applied, orphaned: groups.orphaned.length };
+};
+
 module.exports = {
   CONSENT_TOKEN_TTL_MS,
   CLAIM_TOKEN_TTL_MS,
@@ -607,5 +693,8 @@ module.exports = {
   respondAsPatient,
   withdraw,
   recordDeferral,
+  classifyLegacyConnections,
+  applyLegacyBackfill,
+  backfillLegacyConnections,
   logConsentEvent
 };
