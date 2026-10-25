@@ -485,6 +485,18 @@ const ProviderViewPatient = () => {
             endDate: medication.endDate ? formatDate(medication.endDate) : 'N/A'
           });
         });
+      } else if (consultation.management?.trim()) {
+        // The form only creates a medication record when a reason or date is
+        // given, so the Medications text alone still gets a card
+        records.medications.push({
+          id: `${consultation._id}-management`,
+          date: consultationDate,
+          provider: provider,
+          medications: consultation.management.trim(),
+          reason: 'N/A',
+          startDate: 'N/A',
+          endDate: 'N/A'
+        });
       }
 
       // Immunization records are now standalone — sourced via fetchStandaloneSectionRecords.

@@ -97,6 +97,26 @@ describe('Consultation vitals', () => {
     expect(vitals.bloodPressure).toMatchObject({ systolic: 128, diastolic: 84 });
   });
 
+  it('creates no vitals record when only metadata is chosen', async () => {
+    const res = await createConsultation({
+      ...blankVitals(),
+      bloodGlucose: { value: '', measurementType: 'fasting' },
+      bloodOxygenSaturation: { value: '', measurementContext: 'room-air' }
+    });
+    expect(res.status).toBe(201);
+    expect(await VitalsRecord.countDocuments()).toBe(0);
+  });
+
+  it('saves a reading together with its metadata', async () => {
+    const res = await createConsultation({
+      ...blankVitals(),
+      bloodGlucose: { value: '5.4', measurementType: 'fasting' }
+    });
+    expect(res.status).toBe(201);
+    const vitals = await VitalsRecord.findOne({ consultation: res.body._id }).lean();
+    expect(vitals.bloodGlucose).toMatchObject({ value: 5.4, measurementType: 'fasting' });
+  });
+
   it('creates no vitals record when every field is blank', async () => {
     const res = await createConsultation(blankVitals());
     expect(res.status).toBe(201);
