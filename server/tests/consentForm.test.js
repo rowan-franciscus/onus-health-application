@@ -211,6 +211,42 @@ describe('Add New Patient with a signed consent form', () => {
     expect(await EmailQueue.countDocuments()).toBe(0);
   });
 
+  it('does not use the form on another provider\'s existing record: the patient must consent by email', async () => {
+    const other = await makeProvider();
+    const placeholder = await makeUser({
+      email: 'shared@example.com', isOnusUser: false, password: undefined, isEmailVerified: false,
+      patientProfile: { dateOfBirth: new Date(DOB), gender: 'female' }
+    });
+    await new Connection({
+      patient: placeholder._id, provider: other._id, initiatedBy: other._id,
+      onboardingSource: 'provider_initiated', consent: { status: 'ACTIVE' }
+    }).save();
+    await PhysicalRecord.create({
+      patient: placeholder._id, provider: other._id,
+      file: { filename: 'other-scan.pdf', originalName: 'scan.pdf', mimetype: 'application/pdf', size: 1, path: '/nowhere' }
+    });
+
+    const provider = await makeProvider();
+    const res = await addPatient(provider, { email: 'shared@example.com' }, FILES.jpeg);
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      outcome: 'linked_existing_record',
+      consentStatus: 'PENDING_CONSENT',
+      consentEmailSent: true,
+      consentFormIgnored: true
+    });
+    const mine = await Connection.findOne({ patient: placeholder._id, provider: provider._id });
+    expect(mine.consent.status).toBe('PENDING_CONSENT');
+    expect(mine.consent.method).toBeUndefined();
+    expect(await PhysicalRecord.countDocuments({ documentType: 'consent_form' })).toBe(0);
+    expect(await EmailQueue.countDocuments({ to: 'shared@example.com', template: 'consentRequest' })).toBe(1);
+
+    // So the other provider's documents stay out of reach
+    const records = await request(app).get(`/api/patients/${placeholder._id}/physical-records`).set(authHeader(provider));
+    expect(records.status).toBe(403);
+  });
+
   it('does not use the form when the email + DOB match a real account', async () => {
     const provider = await makeProvider();
     const existing = await makeUser({ email: 'real@example.com', patientProfile: { dateOfBirth: new Date(DOB) } });
@@ -361,8 +397,28 @@ describe('A patient consented by uploaded form', () => {
       .delete(`/api/files/physical-records/${record.file.filename}`)
       .set(authHeader(admin));
     expect(byFile.status).toBe(403);
+    // Encoded separators and dot segments must not route around the guard
+    for (const url of [
+      `/api/files/physical-records%2F./${record.file.filename}`,
+      `/api/files/physical-records/.%2F${record.file.filename}`
+    ]) {
+      const res = await request(app).delete(url).set(authHeader(admin));
+      expect({ url, status: res.status }).toEqual({ url, status: 400 });
+    }
     expect(await PhysicalRecord.exists({ _id: record._id })).toBeTruthy();
     expect(fs.existsSync(record.file.path)).toBe(true);
+  });
+
+  it('refuses file paths that try to leave the upload folder', async () => {
+    const admin = await makeUser({ role: 'admin' });
+    for (const url of [
+      '/api/files/physical-records/..%2F..%2Fpackage.json',
+      '/api/files/..%2F..%2Fpackage.json/x',
+      '/api/files/physical-records/..%2F..%2Fpackage.json/info'
+    ]) {
+      const res = await request(app).get(url).set(authHeader(admin));
+      expect({ url, status: res.status }).toEqual({ url, status: 400 });
+    }
   });
 
   it('skips consultation emails to the patient without failing', async () => {

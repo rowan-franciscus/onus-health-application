@@ -123,7 +123,8 @@ exports.getMedicalRecordsByType = async (req, res, next) => {
     // Add search functionality
     if (search) {
       // This is a simplified example - implement field-specific search as needed
-      const searchRegex = new RegExp(search, "i");
+      // Escaped: `search` is a literal term, never a user-supplied pattern
+      const searchRegex = new RegExp(String(search).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
       // For each model, search specific fields
       if (type === "vitals") {

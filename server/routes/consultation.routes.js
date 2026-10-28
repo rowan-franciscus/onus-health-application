@@ -15,7 +15,7 @@ const {
 } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validation.middleware');
 const { auditRead } = require('../middleware/audit.middleware');
-const { uploadConsultationFile } = require('../middleware/upload.middleware');
+const { uploadConsultationFile, sanitizeMultipartBody } = require('../middleware/upload.middleware');
 
 // Import consultation controller
 const consultationController = require('../controllers/consultation.controller');
@@ -191,6 +191,7 @@ router.post('/:id/attachments', authenticateJWT, isProvider,
   validateRequest, 
   consentForConsultation('id'),
   uploadConsultationFile.single('file'), 
+  sanitizeMultipartBody,
   (req, res) => {
     consultationController.addAttachment(req, res);
   }

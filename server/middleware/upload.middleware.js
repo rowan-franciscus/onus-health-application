@@ -4,6 +4,7 @@
  */
 
 const multer = require('multer');
+const mongoSanitize = require('express-mongo-sanitize');
 const path = require('path');
 const fs = require('fs');
 const { ApiError } = require('./error.middleware');
@@ -188,10 +189,17 @@ const uploadConsentForm = multer({
   limits: { fileSize: CONSENT_FORM_MAX_SIZE + 1, files: 1 }
 });
 
+// multer builds req.body after the app-level mongoSanitize has run, and
+// expands field names like `email[$ne]` into nested objects: sanitize again
+const sanitizeMultipartBody = (req, res, next) => {
+  if (req.body && typeof req.body === 'object') mongoSanitize.sanitize(req.body);
+  next();
+};
+
 // Optional single consent form; JSON (non-multipart) requests pass straight through
 const consentFormUpload = (req, res, next) => {
   req.consentFormUpload = true;
-  uploadConsentForm.single(CONSENT_FORM_FIELD)(req, res, next);
+  uploadConsentForm.single(CONSENT_FORM_FIELD)(req, res, (err) => (err ? next(err) : sanitizeMultipartBody(req, res, next)));
 };
 
 // Handle multer errors
@@ -211,9 +219,11 @@ module.exports = {
   uploadConsultationFile,
   uploadPhysicalRecordFile,
   consentFormUpload,
+  sanitizeMultipartBody,
   consentFormError,
   sniffConsentFormType,
   CONSENT_FORM_TYPES,
+  consultationUploadDir,
   physicalRecordsUploadDir,
   handleUploadErrors
 }; 

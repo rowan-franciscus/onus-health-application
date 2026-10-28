@@ -6,9 +6,12 @@
  * payload could also set `patient` (or move a record to another provider or
  * consultation), a caller could write clinical data for a patient who never
  * consented. Server code sets these fields itself.
+ *
+ * `attachments` is server-managed too: it is only written by the upload
+ * endpoints, and each entry's stored path is what the delete endpoint unlinks.
  */
 
-const IDENTITY_FIELDS = ['_id', 'patient', 'provider', 'consultation', 'parentConsultation', 'recordType'];
+const IDENTITY_FIELDS = ['_id', 'patient', 'provider', 'consultation', 'parentConsultation', 'recordType', 'attachments'];
 
 const stripIdentityFields = (payload) => {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {

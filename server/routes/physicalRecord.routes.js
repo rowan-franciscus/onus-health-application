@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticateJWT, isProvider, isAdminOrProvider, isProviderOrPracticeAdmin, requireActiveConsent, patientFromParam } = require('../middleware/auth.middleware');
-const { uploadPhysicalRecordFile, handleUploadErrors } = require('../middleware/upload.middleware');
+const { uploadPhysicalRecordFile, sanitizeMultipartBody, handleUploadErrors } = require('../middleware/upload.middleware');
 const physicalRecordController = require('../controllers/physicalRecord.controller');
 const { auditRead } = require('../middleware/audit.middleware');
 
@@ -15,6 +15,7 @@ router.post(
   consentForPatient,
   uploadPhysicalRecordFile.single('file'),
   handleUploadErrors,
+  sanitizeMultipartBody,
   physicalRecordController.createPhysicalRecord
 );
 

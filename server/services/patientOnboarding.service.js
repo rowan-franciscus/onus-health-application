@@ -17,7 +17,8 @@
  * a signed paper consent form the provider attaches. With a form the record
  * goes straight to ACTIVE (see consentService.grantWithConsentForm) and no
  * consent request is sent; a patient with an email only gets a claim link.
- * One of the two is required.
+ * One of the two is required. A form never consents an existing record (a
+ * real account or a reused placeholder): those follow the email path.
  */
 
 const fs = require('fs');
@@ -197,7 +198,10 @@ const onboardProviderInitiatedPatient = async ({ provider, req, data, consentFor
     throw err;
   }
 
-  if (consentForm) {
+  // A form only consents a record this onboarding created. A reused
+  // placeholder may hold other providers' documents, so the patient confirms
+  // by email (they have one: the match was on it) as with a real account
+  if (consentForm && created) {
     return completeWithConsentForm({ provider, req, actorId, patient, created, connection, email, consentForm, emailOnly });
   }
 
@@ -221,6 +225,10 @@ const onboardProviderInitiatedPatient = async ({ provider, req, data, consentFor
   if (created && emailOnly.length > 0) {
     body.warning = 'EMAIL_IN_USE_DIFFERENT_DOB';
     body.warningMessage = 'Another patient record uses this email address with a different date of birth. A separate record was created — check this is not the same person.';
+  }
+  if (consentForm) {
+    body.consentFormIgnored = true;
+    body.message += ' The attached consent form was not used because this patient already has a record on Onus Health.';
   }
 
   return { status: 201, body, patient };

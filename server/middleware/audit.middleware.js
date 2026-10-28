@@ -69,7 +69,8 @@ const failedAccessAudit = (req, res, next) => {
       if (res.statusCode !== 401 && res.statusCode !== 403) {
         return;
       }
-      if (!req.originalUrl || !req.originalUrl.startsWith('/api')) {
+      // Routing is case-insensitive, so /API/... reaches the same handlers
+      if (!req.originalUrl || !req.originalUrl.toLowerCase().startsWith('/api')) {
         return;
       }
       if (store && store.audit.handled) {
