@@ -176,7 +176,7 @@ const ProviderDashboard = () => {
                     <h3>{patient.name}</h3>
                     <p>Age: {patient.age}</p>
                     <p>Last Visit: {patient.lastRecord}</p>
-                    <p>Email: {patient.email}</p>
+                    <p>Email: {patient.email || '—'}</p>
                   </div>
                   <div className={styles.patientActions}>
                     <Link 

@@ -449,12 +449,17 @@ describe('Add New Patient', () => {
     expect(await EmailQueue.countDocuments({ to: 'nomsa@example.com' })).toBe(1);
   });
 
-  it('records a patient without an email as pending, with no link sent', async () => {
+  // Without an email there is no way to consent, so a signed consent form is
+  // required instead (see consentForm.test.js); neither is refused
+  it('refuses a patient with neither an email nor a consent form, creating nothing', async () => {
     const provider = await makeProvider();
+    const usersBefore = await User.countDocuments();
     const res = await addPatient(provider, {});
-    expect(res.status).toBe(201);
-    expect(res.body.consentEmailSent).toBe(false);
-    expect((await Connection.findOne()).consent.status).toBe('PENDING_CONSENT');
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/email address or attach their signed consent form/);
+    expect(await User.countDocuments()).toBe(usersBefore);
+    expect(await Connection.countDocuments()).toBe(0);
+    expect(await EmailQueue.countDocuments()).toBe(0);
   });
 
   it('turns an email + DOB match on a real account into an access request', async () => {

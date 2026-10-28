@@ -541,6 +541,15 @@ describe('Audit trail', () => {
       // No duplicate audit rows for the same response
       expect(events).toHaveLength(1);
     });
+
+    it('also logs a denial when the path is spelled in another case', async () => {
+      // Express routes case-insensitively, so /API/... reaches the same handler
+      await request(app).get('/API/admin/users').expect(401);
+      await flushAudit();
+
+      const denied = await AuditEvent.find({ subtype: 'access-denied' }).lean();
+      expect(denied).toHaveLength(1);
+    });
   });
 
   describe('resilience', () => {

@@ -4,6 +4,7 @@
  */
 
 const multer = require('multer');
+const mongoSanitize = require('express-mongo-sanitize');
 const path = require('path');
 const fs = require('fs');
 const { ApiError } = require('./error.middleware');
@@ -126,11 +127,87 @@ const uploadPhysicalRecordFile = multer({
   }
 });
 
+// Signed paper consent forms (Add Patient). Kept in memory so nothing is
+// written to disk until the content is checked and the patient is created.
+const CONSENT_FORM_MAX_SIZE = 10 * 1024 * 1024;
+const CONSENT_FORM_FIELD = 'consentForm';
+const CONSENT_FORM_TYPES = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/heic': '.heic',
+  'image/heif': '.heif',
+  'application/pdf': '.pdf'
+};
+const CONSENT_FORM_TYPE_MESSAGE = 'The consent form must be a JPEG, PNG, HEIC image or a PDF.';
+const HEIC_BRANDS = ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis'];
+const HEIF_BRANDS = ['heif', 'mif1', 'msf1'];
+// HEIC and HEIF share a container; browsers report either for the same photo
+const isHeifType = (type) => type === 'image/heic' || type === 'image/heif';
+
+const fileTooLargeMessage = (maxBytes) => `File too large. Maximum size is ${maxBytes / (1024 * 1024)}MB.`;
+
+/**
+ * Type from the file's leading bytes, or null. The declared mimetype comes
+ * from the client, so it is only trusted when the content agrees.
+ */
+const sniffConsentFormType = (buffer) => {
+  if (!buffer || buffer.length < 12) return null;
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'image/jpeg';
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))) return 'image/png';
+  if (buffer.subarray(0, 5).toString('latin1') === '%PDF-') return 'application/pdf';
+  if (buffer.subarray(4, 8).toString('latin1') === 'ftyp') {
+    const brand = buffer.subarray(8, 12).toString('latin1');
+    if (HEIC_BRANDS.includes(brand)) return 'image/heic';
+    if (HEIF_BRANDS.includes(brand)) return 'image/heif';
+  }
+  return null;
+};
+
+/** Error message for an unacceptable consent form, or null when it is fine. */
+const consentFormError = (file) => {
+  if (!file) return null;
+  if (!file.buffer || file.size === 0) return 'The consent form file is empty.';
+  if (file.size > CONSENT_FORM_MAX_SIZE) return fileTooLargeMessage(CONSENT_FORM_MAX_SIZE);
+  const sniffed = sniffConsentFormType(file.buffer);
+  if (!sniffed) return CONSENT_FORM_TYPE_MESSAGE;
+  const declared = file.mimetype;
+  if (declared !== sniffed && !(isHeifType(declared) && isHeifType(sniffed))) return CONSENT_FORM_TYPE_MESSAGE;
+  return null;
+};
+
+const uploadConsentForm = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    if (CONSENT_FORM_TYPES[file.mimetype]) {
+      cb(null, true);
+    } else {
+      cb(new ApiError(400, CONSENT_FORM_TYPE_MESSAGE), false);
+    }
+  },
+  // busboy flags a file that reaches the limit exactly, so allow one byte
+  // more here; consentFormError() enforces the real maximum
+  limits: { fileSize: CONSENT_FORM_MAX_SIZE + 1, files: 1 }
+});
+
+// multer builds req.body after the app-level mongoSanitize has run, and
+// expands field names like `email[$ne]` into nested objects: sanitize again
+const sanitizeMultipartBody = (req, res, next) => {
+  if (req.body && typeof req.body === 'object') mongoSanitize.sanitize(req.body);
+  next();
+};
+
+// Optional single consent form; JSON (non-multipart) requests pass straight through
+const consentFormUpload = (req, res, next) => {
+  req.consentFormUpload = true;
+  uploadConsentForm.single(CONSENT_FORM_FIELD)(req, res, (err) => (err ? next(err) : sanitizeMultipartBody(req, res, next)));
+};
+
 // Handle multer errors
 const handleUploadErrors = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return next(new ApiError(400, `File too large. Maximum size is ${config.maxFileSize / (1024 * 1024)}MB.`));
+      const limit = req.consentFormUpload ? CONSENT_FORM_MAX_SIZE : config.maxFileSize;
+      return next(new ApiError(400, fileTooLargeMessage(limit)));
     }
     return next(new ApiError(400, err.message));
   }
@@ -141,5 +218,12 @@ module.exports = {
   upload,
   uploadConsultationFile,
   uploadPhysicalRecordFile,
+  consentFormUpload,
+  sanitizeMultipartBody,
+  consentFormError,
+  sniffConsentFormType,
+  CONSENT_FORM_TYPES,
+  consultationUploadDir,
+  physicalRecordsUploadDir,
   handleUploadErrors
 }; 

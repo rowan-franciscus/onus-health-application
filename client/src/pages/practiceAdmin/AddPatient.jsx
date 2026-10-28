@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Button from '../../components/common/Button';
+import ConsentFormUpload, {
+  buildPatientPayload,
+  consentFormFieldError,
+  consentFormFileError,
+  EMAIL_OR_FORM_REQUIRED
+} from '../../components/consent/ConsentFormUpload';
 import PracticeAdminService from '../../services/practiceAdmin.service';
 import styles from '../provider/AddPatient.module.css';
 
@@ -19,6 +25,7 @@ const PracticeAdminAddPatient = () => {
     medicalAidProvider: '',
     plan: ''
   });
+  const [consentForm, setConsentForm] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -40,7 +47,15 @@ const PracticeAdminAddPatient = () => {
   const onChange = (e) => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    // Entering an email also satisfies the email-or-form requirement
+    if (errors[name] || (name === 'email' && errors.consentForm === EMAIL_OR_FORM_REQUIRED)) {
+      setErrors(prev => ({ ...prev, [name]: '', ...(name === 'email' ? { consentForm: '' } : {}) }));
+    }
+  };
+
+  const onConsentFormChange = (file) => {
+    setConsentForm(file);
+    setErrors(prev => ({ ...prev, consentForm: consentFormFileError(file) || '' }));
   };
 
   const validate = () => {
@@ -53,6 +68,8 @@ const PracticeAdminAddPatient = () => {
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       e.email = 'Invalid email';
     }
+    const consentFormError = consentFormFieldError(form.email, consentForm);
+    if (consentFormError) e.consentForm = consentFormError;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -62,7 +79,7 @@ const PracticeAdminAddPatient = () => {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      const response = await PracticeAdminService.registerPatient({
+      const response = await PracticeAdminService.registerPatient(buildPatientPayload({
         providerId: form.providerId,
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
@@ -72,7 +89,7 @@ const PracticeAdminAddPatient = () => {
         email: form.email.trim() || undefined,
         medicalAidProvider: form.medicalAidProvider.trim() || undefined,
         plan: form.plan.trim() || undefined
-      });
+      }, consentForm));
       if (response.outcome === 'access_request_sent') {
         // Email + DOB matched an existing Onus account: no new record was created
         toast.info(response.message, { autoClose: 10000 });
@@ -180,6 +197,13 @@ const PracticeAdminAddPatient = () => {
             <input name="plan" value={form.plan} onChange={onChange} className={styles.formInput} disabled={submitting} />
           </div>
         </div>
+
+        <ConsentFormUpload
+          file={consentForm}
+          onChange={onConsentFormChange}
+          error={errors.consentForm}
+          disabled={submitting}
+        />
 
         <div className={styles.formActions}>
           <Button type="button" variant="secondary" onClick={() => navigate('/practice-admin/patients')} disabled={submitting}>

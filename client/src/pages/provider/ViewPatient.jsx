@@ -21,6 +21,7 @@ import PhysicalRecordsTab from './PhysicalRecordsTab';
 import ConsentPendingPanel from '../../components/consent/ConsentPendingPanel';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { isConsentActive } from '../../services/consent.service';
+import config from '../../config';
 
 // Calls render() as a child component, so an ErrorBoundary around it catches
 // errors thrown while building the section (the parent's own render can't be)
@@ -582,6 +583,23 @@ const ProviderViewPatient = () => {
     }
   };
 
+  // Consent given on a signed paper form: let the provider open the form.
+  // Opened in a new tab, so the token goes in the query (as on the records tab)
+  const openConsentForm = () => {
+    const token = localStorage.getItem(config.tokenKey);
+    const path = consent.form.viewUrl.replace(/^\/api/, '');
+    window.open(`${config.apiUrl}${path}${token ? `&token=${token}` : ''}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const consentFormOnFile = consent?.method === 'uploaded_form' && consent.form ? (
+    <>
+      Signed form on file &middot;{' '}
+      <button type="button" className={styles.consentFormLink} onClick={openConsentForm}>
+        View form
+      </button>
+    </>
+  ) : null;
+
   // Render patient demographic information
   const renderPatientInfo = () => {
     if (!patient) return null;
@@ -607,8 +625,14 @@ const ProviderViewPatient = () => {
           </div>
           <div className={styles.detailItem}>
             <span className={styles.detailLabel}>Email</span>
-            <span className={styles.detailValue}>{patient.email}</span>
+            <span className={styles.detailValue}>{patient.email || '—'}</span>
           </div>
+          {consentFormOnFile && (
+            <div className={styles.detailItem}>
+              <span className={styles.detailLabel}>Consent</span>
+              <span className={styles.detailValue}>{consentFormOnFile}</span>
+            </div>
+          )}
           <div className={styles.detailItem}>
             <span className={styles.detailLabel}>Phone</span>
             <span className={styles.detailValue}>{patient.phone}</span>
@@ -1342,7 +1366,8 @@ const ProviderViewPatient = () => {
                   <div className={styles.basicInfo}>
                     <h4>Basic Information</h4>
                     <p><strong>Name:</strong> {patient.name}</p>
-                    <p><strong>Email:</strong> {patient.email}</p>
+                    <p><strong>Email:</strong> {patient.email || '—'}</p>
+                    {consentFormOnFile && <p><strong>Consent:</strong> {consentFormOnFile}</p>}
                   </div>
                   
                   {patient.accessLevel === 'pending' ? (

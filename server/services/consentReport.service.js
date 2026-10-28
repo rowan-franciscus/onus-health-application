@@ -4,8 +4,9 @@
  * Built for the clinician pilots: how often can a patient NOT consent in the
  * room (deferral rate and reasons), how long consent takes, how often links
  * expire, and how many consenting patients go on to claim their profile.
- * Computed from Connection.consent fields; pilot volumes are small, so the
- * figures are calculated in memory.
+ * Consent given on an uploaded paper form is counted as granted but kept out
+ * of the email-link rates (no link was sent). Computed from Connection.consent
+ * fields; pilot volumes are small, so the figures are calculated in memory.
  */
 
 const Connection = require('../models/Connection');
@@ -53,7 +54,7 @@ const getConsentReport = async ({ from, to, practiceId } = {}) => {
   }
 
   const connections = await Connection.find(match)
-    .select('consent createdAt patient')
+    .select('consent createdAt patient registration.email')
     .populate('patient', 'claimedAt isOnusUser')
     .lean();
 
@@ -62,6 +63,8 @@ const getConsentReport = async ({ from, to, practiceId } = {}) => {
   let invited = 0;
   let everExpired = 0;
   let granted = 0;
+  let grantedByForm = 0;
+  let formWithEmail = 0;
   let grantedAndClaimed = 0;
   let withDeferral = 0;
   const durations = [];
@@ -77,6 +80,10 @@ const getConsentReport = async ({ from, to, practiceId } = {}) => {
     // WITHDRAWN implies consent was granted first
     if (consent.status === 'ACTIVE' || consent.status === 'WITHDRAWN') {
       granted += 1;
+      if (consentService.consentMethodOf(c) === 'uploaded_form') {
+        grantedByForm += 1;
+        if (c.registration?.email) formWithEmail += 1;
+      }
       if (c.patient && (c.patient.claimedAt || c.patient.isOnusUser)) grantedAndClaimed += 1;
       if (consent.firstInviteSentAt && consent.respondedAt) {
         durations.push(new Date(consent.respondedAt) - new Date(consent.firstInviteSentAt));
@@ -114,14 +121,17 @@ const getConsentReport = async ({ from, to, practiceId } = {}) => {
     totals: {
       onboardings: total,
       invitesSent: invited,
-      noEmailAtOnboarding: total - invited,
+      // A form-consented patient with an email gets no invite, but had one
+      noEmailAtOnboarding: total - invited - formWithEmail,
       granted,
+      grantedByForm,
       byStatus
     },
     rates: {
       // Headline pilot metric: share of onboardings where the patient couldn't consent in the room
       couldNotConsentNow: ratio(withDeferral, total),
-      consent: ratio(granted, invited),
+      // Email-link consents only: uploaded forms were never invited
+      consent: ratio(granted - grantedByForm, invited),
       expiry: ratio(everExpired, invited),
       claim: ratio(grantedAndClaimed, granted)
     },

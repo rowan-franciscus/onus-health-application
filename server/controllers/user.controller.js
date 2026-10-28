@@ -61,7 +61,9 @@ exports.updateCurrentUser = async (req, res) => {
     // SECURITY: whitelist editable fields to prevent mass assignment of privileged
     // fields (role, isVerified, isEmailVerified, isProfileCompleted, *Profile
     // subdocuments, etc.). Never spread req.body directly into a $set.
-    const allowedTopLevelFields = ['firstName', 'lastName', 'title', 'phone', 'profileImage'];
+    // profileImage is set only by the upload endpoint: it names the file the
+    // delete/replace endpoints unlink, so a user must not point it elsewhere
+    const allowedTopLevelFields = ['firstName', 'lastName', 'title', 'phone'];
     const updates = {};
     allowedTopLevelFields.forEach(key => {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
@@ -166,7 +168,9 @@ exports.updateUserProfile = async (req, res) => {
     // SECURITY: whitelist the top-level fields a user may edit about themselves.
     // Anything else (role, isVerified, isProfileCompleted, isOnusUser, adminProfile,
     // practiceAdminProfile, registeredBy, etc.) is ignored to prevent mass assignment.
-    const allowedTopLevelFields = ['firstName', 'lastName', 'title', 'phone', 'profileImage'];
+    // profileImage is set only by the upload endpoint: it names the file the
+    // delete/replace endpoints unlink, so a user must not point it elsewhere
+    const allowedTopLevelFields = ['firstName', 'lastName', 'title', 'phone'];
     allowedTopLevelFields.forEach(key => {
       if (Object.prototype.hasOwnProperty.call(updateData, key)) {
         currentUser[key] = updateData[key];

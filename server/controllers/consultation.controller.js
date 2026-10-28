@@ -17,6 +17,7 @@ const MedicationRecord = require('../models/MedicationRecord');
 const LabResultRecord = require('../models/LabResultRecord');
 const RadiologyReport = require('../models/RadiologyReport');
 const stripIdentityFields = require('../utils/stripIdentityFields');
+const { consultationUploadDir } = require('../middleware/upload.middleware');
 const hasVitalsData = require('../utils/hasVitalsData');
 
 /**
@@ -1000,15 +1001,16 @@ exports.deleteAttachment = async (req, res) => {
       return res.status(404).json({ message: 'Attachment not found' });
     }
     
-    // Delete file from disk
+    // Delete file from disk. Resolved from the upload folder, never the stored
+    // path, so a tampered attachment entry can't name another file
     try {
-      fs.unlinkSync(attachment.path);
+      fs.unlinkSync(path.join(consultationUploadDir, path.basename(String(attachment.filename))));
     } catch (err) {
       console.error('Error deleting file from disk:', err);
     }
     
-    // Remove attachment from consultation
-    attachment.remove();
+    // Remove attachment from consultation (subdocument remove() is gone in Mongoose 8)
+    attachment.deleteOne();
     consultation.lastUpdated = Date.now();
     await consultation.save();
     

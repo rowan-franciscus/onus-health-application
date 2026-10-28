@@ -117,6 +117,11 @@ exports.deletePhysicalRecord = async (req, res) => {
       return res.status(404).json({ message: 'Record not found' });
     }
 
+    // A signed consent form is the evidence for the patient's consent
+    if (record.documentType === 'consent_form') {
+      return res.status(403).json({ message: 'A signed consent form cannot be deleted' });
+    }
+
     if (userRole !== 'admin' && record.provider.toString() !== userId) {
       return res.status(403).json({ message: 'Only the uploading provider can delete this record' });
     }

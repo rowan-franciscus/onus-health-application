@@ -289,7 +289,9 @@ const PhysicalRecordsTab = ({ patientId }) => {
               <div className={styles.cardBody}>
                 <p className={styles.cardFileName}>{record.file.originalName}</p>
                 <div className={styles.cardMeta}>
-                  <span className={styles.docTypePill}>Scanned Record</span>
+                  <span className={styles.docTypePill}>
+                    {record.documentType === 'consent_form' ? 'Signed Consent Form' : 'Scanned Record'}
+                  </span>
                   <span className={styles.cardSize}>{formatFileSize(record.file.size)}</span>
                 </div>
                 {record.description && (

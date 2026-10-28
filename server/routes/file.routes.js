@@ -19,6 +19,24 @@ const getBaseUploadDir = () => {
   return path.join(__dirname, '../uploads');
 };
 
+// Folders served by the /:type/:filename routes (see checkFilePermission)
+const FILE_TYPES = ['licenses', 'consultations', 'profile-images', 'physical-records'];
+
+// Express decodes params, so %2F and %2E%2E arrive as '/' and '..'. Only a
+// known folder and a bare file name may reach path.join and the permission
+// checks; anything else could resolve to another file or leave the folder.
+const isBareFilename = (name) =>
+  typeof name === 'string' && name.length > 0 && !name.startsWith('.') && !/[\\/\0]/.test(name);
+
+// Exact file name, not a substring: practiceLicense is a client-supplied string
+const isOwnLicense = (userData, filename) =>
+  path.basename(String(userData?.providerProfile?.practiceLicense || '')) === filename;
+
+const invalidFilePath = (res) => res.status(400).json({ message: 'Invalid file path' });
+
+router.param('type', (req, res, next, type) => (FILE_TYPES.includes(type) ? next() : invalidFilePath(res)));
+router.param('filename', (req, res, next, filename) => (isBareFilename(filename) ? next() : invalidFilePath(res)));
+
 // Security: Sanitize query params for logging to avoid exposing tokens
 const sanitizeQueryForLogging = (query) => {
   const sanitized = { ...query };
@@ -329,7 +347,7 @@ async function checkFilePermission(user, fileType, filename) {
         if (user.role === 'provider') {
           // Check if this license belongs to the user
           const userData = await User.findById(user.id);
-          return userData?.providerProfile?.practiceLicense?.includes(filename);
+          return isOwnLicense(userData, filename);
         }
         return false;
         
@@ -377,6 +395,12 @@ async function checkFilePermission(user, fileType, filename) {
  */
 async function checkDeletePermission(user, fileType, filename) {
   try {
+    // Signed consent forms are consent evidence: nobody deletes them
+    if (fileType === 'physical-records' &&
+        await PhysicalRecord.exists({ 'file.filename': filename, documentType: 'consent_form' })) {
+      return false;
+    }
+
     // Admins can delete any file
     if (user.role === 'admin') {
       return true;
@@ -387,7 +411,7 @@ async function checkDeletePermission(user, fileType, filename) {
         // Only the provider who owns the license can delete it
         if (user.role === 'provider') {
           const userData = await User.findById(user.id);
-          return userData?.providerProfile?.practiceLicense?.includes(filename);
+          return isOwnLicense(userData, filename);
         }
         return false;
         

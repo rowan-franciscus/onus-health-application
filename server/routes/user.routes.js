@@ -144,6 +144,7 @@ const profilePictureUpload = multer({
 router.post('/profile-picture', 
   authenticateJWT, 
   profilePictureUpload.single('profilePicture'),
+  upload.sanitizeMultipartBody,
   userController.uploadProfilePicture
 );
 
@@ -194,7 +195,8 @@ router.post(
     }
     
     logger.debug('Processed provider onboarding data:', req.body);
-    next();
+    // After the JSON.parse above, which can produce operator keys too
+    upload.sanitizeMultipartBody(req, res, next);
   },
   userController.completeProviderOnboarding
 );

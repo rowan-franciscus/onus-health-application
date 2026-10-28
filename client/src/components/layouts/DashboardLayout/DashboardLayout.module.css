@@ -38,6 +38,10 @@
 
 .mainContent {
   flex: 1;
+  /* Flex items default to min-width: auto, which let wide page content
+     (e.g. a long tab row) stretch this column past the viewport, where the
+     header and page edges were clipped */
+  min-width: 0;
   padding-left: 250px;
   display: flex;
   flex-direction: column;

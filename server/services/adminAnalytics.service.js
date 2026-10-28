@@ -84,7 +84,7 @@ const INVITE_FLOWS = [
   {
     key: 'patientInvite',
     label: 'Patient invitations',
-    templates: ['consentRequest', 'claimProfileLink'],
+    templates: ['consentRequest', 'claimProfileLink', 'consentFormClaimInvite'],
     // Consent requests also go to existing accounts; only placeholders can sign up
     recipients: PLACEHOLDER_ORIGIN,
     completed: { claimedAt: { $ne: null } }
