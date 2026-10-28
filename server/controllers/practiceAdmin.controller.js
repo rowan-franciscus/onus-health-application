@@ -111,7 +111,7 @@ exports.registerPatient = async (req, res) => {
     }
 
     const provider = await User.findById(providerId);
-    const result = await onboardProviderInitiatedPatient({ provider, req, data: req.body });
+    const result = await onboardProviderInitiatedPatient({ provider, req, data: req.body, consentForm: req.file });
     const { patient } = result;
     res.status(result.status).json({
       ...result.body,

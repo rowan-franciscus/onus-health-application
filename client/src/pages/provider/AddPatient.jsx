@@ -7,6 +7,12 @@ import styles from './AddPatient.module.css';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Tabs from '../../components/common/Tabs/Tabs';
+import ConsentFormUpload, {
+  buildPatientPayload,
+  consentFormFieldError,
+  consentFormFileError,
+  EMAIL_OR_FORM_REQUIRED,
+} from '../../components/consent/ConsentFormUpload';
 import ConnectionService from '../../services/connection.service';
 import PatientService from '../../services/patient.service';
 
@@ -207,6 +213,7 @@ const RegisterNewPatientTab = () => {
     medicalAidProvider: '',
     plan: '',
   });
+  const [consentForm, setConsentForm] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -215,7 +222,15 @@ const RegisterNewPatientTab = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+    // Entering an email also satisfies the email-or-form requirement
+    if (errors[name] || (name === 'email' && errors.consentForm === EMAIL_OR_FORM_REQUIRED)) {
+      setErrors((prev) => ({ ...prev, [name]: '', ...(name === 'email' ? { consentForm: '' } : {}) }));
+    }
+  };
+
+  const handleConsentFormChange = (file) => {
+    setConsentForm(file);
+    setErrors((prev) => ({ ...prev, consentForm: consentFormFileError(file) || '' }));
   };
 
   const validate = () => {
@@ -227,6 +242,8 @@ const RegisterNewPatientTab = () => {
     if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
+    const consentFormError = consentFormFieldError(formData.email, consentForm);
+    if (consentFormError) newErrors.consentForm = consentFormError;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -238,7 +255,7 @@ const RegisterNewPatientTab = () => {
     setIsSubmitting(true);
 
     try {
-      const payload = {
+      const payload = buildPatientPayload({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         gender: formData.gender,
@@ -247,7 +264,7 @@ const RegisterNewPatientTab = () => {
         email: formData.email.trim() || undefined,
         medicalAidProvider: formData.medicalAidProvider.trim() || undefined,
         plan: formData.plan.trim() || undefined,
-      };
+      }, consentForm);
 
       const response = await PatientService.registerNewPatient(payload);
 
@@ -263,8 +280,9 @@ const RegisterNewPatientTab = () => {
         if (response.warning === 'EMAIL_IN_USE_DIFFERENT_DOB') {
           toast.warning(response.warningMessage, { autoClose: false });
         }
-        // The record is pending consent: open it so the provider can see its
-        // status or record why the patient couldn't consent now
+        // Open the record: consented straight away from an attached form, or
+        // pending so the provider can see its status or record why the
+        // patient couldn't consent now
         navigate(`/provider/patients/${response.patient._id}`);
       } else {
         throw new Error(response?.message || 'Failed to register patient');
@@ -281,7 +299,7 @@ const RegisterNewPatientTab = () => {
     <>
       <div className={styles.infoBanner}>
         <span className={styles.infoBannerIcon}>ⓘ</span>
-        Register a patient who doesn't have an Onus account. We'll email them a consent request — you can add clinical information once they consent.
+        Register a patient who doesn't have an Onus account. We'll email them a consent request — you can add clinical information once they consent. If they have no email, attach their signed paper consent form instead.
       </div>
 
       <form onSubmit={handleSubmit} className={styles.registerForm}>
@@ -412,6 +430,13 @@ const RegisterNewPatientTab = () => {
             />
           </div>
         </div>
+
+        <ConsentFormUpload
+          file={consentForm}
+          onChange={handleConsentFormChange}
+          error={errors.consentForm}
+          disabled={isSubmitting}
+        />
 
         <div className={styles.formActions}>
           <Button

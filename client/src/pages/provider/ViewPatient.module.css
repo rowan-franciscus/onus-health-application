@@ -258,6 +258,16 @@
   font-weight: 500;
 }
 
+.consentFormLink {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #6039cc;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Medical history section */
 .medicalHistoryGrid {
   display: grid;

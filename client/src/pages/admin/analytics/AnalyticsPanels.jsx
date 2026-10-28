@@ -362,6 +362,7 @@ const TEMPLATE_NAMES = {
   verification: 'Email verification',
   consentRequest: 'Consent request',
   claimProfileLink: 'Claim your record',
+  consentFormClaimInvite: 'Claim invite (consent form on file)',
   practiceAdminInvite: 'Practice admin invite',
   passwordReset: 'Password reset',
   passwordResetSuccess: 'Password changed',

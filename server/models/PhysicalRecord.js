@@ -14,9 +14,11 @@ const PhysicalRecordSchema = new Schema({
     ref: 'User',
     required: true
   },
+  // consent_form: a signed paper consent uploaded on Add Patient. It is the
+  // evidence for Connection.consent, so it can never be deleted.
   documentType: {
     type: String,
-    enum: ['scanned_record'],
+    enum: ['scanned_record', 'consent_form'],
     default: 'scanned_record'
   },
   description: {

@@ -377,6 +377,12 @@ async function checkFilePermission(user, fileType, filename) {
  */
 async function checkDeletePermission(user, fileType, filename) {
   try {
+    // Signed consent forms are consent evidence: nobody deletes them
+    if (fileType === 'physical-records' &&
+        await PhysicalRecord.exists({ 'file.filename': filename, documentType: 'consent_form' })) {
+      return false;
+    }
+
     // Admins can delete any file
     if (user.role === 'admin') {
       return true;

@@ -304,6 +304,12 @@ const sendTemplateEmail = async (
   templateData,
   options = {},
 ) => {
+  // Patients may have no email (e.g. consent given on a paper form): skip
+  // quietly instead of failing to queue
+  if (!to) {
+    logger.info(`Skipped ${templateName} email: recipient has no email address`);
+    return false;
+  }
   try {
     // Render the template
     const html = await renderTemplate(templateName, templateData);

@@ -106,6 +106,15 @@ const ConnectionSchema = new Schema({
     withdrawnAt: { type: Date },
     // First time the link lapsed (kept across resends, for the expiry rate)
     expiredAt: { type: Date },
+    // How consent was obtained. Missing means 'email' (the link, or the
+    // patient's account): only the uploaded-form path sets it.
+    method: { type: String, enum: ['email', 'uploaded_form'] },
+    // The signed paper form behind an 'uploaded_form' consent
+    form: {
+      record: { type: Schema.Types.ObjectId, ref: 'PhysicalRecord' },
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      uploadedAt: { type: Date }
+    },
     // "Patient couldn't consent now" records (instrumentation)
     deferrals: [{
       _id: false,

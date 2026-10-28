@@ -3,6 +3,7 @@ const router = express.Router();
 const ctrl = require('../controllers/practiceAdmin.controller');
 const { authenticateJWT, isPracticeAdmin } = require('../middleware/auth.middleware');
 const { auditRead } = require('../middleware/audit.middleware');
+const { consentFormUpload, handleUploadErrors } = require('../middleware/upload.middleware');
 
 // All practice-admin endpoints require an active practice_admin user.
 router.use(authenticateJWT, isPracticeAdmin);
@@ -10,7 +11,8 @@ router.use(authenticateJWT, isPracticeAdmin);
 router.get('/practice', ctrl.getPractice);
 
 router.get('/patients', auditRead('Patient'), ctrl.getPatients);
-router.post('/patients', ctrl.registerPatient);
+// JSON, or multipart with an optional signed consent form ('consentForm')
+router.post('/patients', consentFormUpload, handleUploadErrors, ctrl.registerPatient);
 router.get('/patients/:patientId', auditRead('Patient'), ctrl.getPatientById);
 router.get('/patients/:patientId/operational-overview', auditRead('Patient'), ctrl.getOperationalOverview);
 

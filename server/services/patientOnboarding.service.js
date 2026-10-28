@@ -12,12 +12,28 @@
  *   - no match -> new record
  * Records created or reused here start in PENDING_CONSENT for this provider;
  * the access-request case follows the existing path-1 rules instead.
+ *
+ * Consent comes from the emailed link, or, for patients without email, from
+ * a signed paper consent form the provider attaches. With a form the record
+ * goes straight to ACTIVE (see consentService.grantWithConsentForm) and no
+ * consent request is sent; a patient with an email only gets a claim link.
+ * One of the two is required.
  */
 
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const User = require('../models/User');
 const Connection = require('../models/Connection');
+const PhysicalRecord = require('../models/PhysicalRecord');
 const consentService = require('./consent.service');
 const connectionService = require('./connection.service');
+const {
+  CONSENT_FORM_TYPES,
+  consentFormError,
+  sniffConsentFormType,
+  physicalRecordsUploadDir
+} = require('../middleware/upload.middleware');
 const logger = require('../utils/logger');
 
 const VALID_GENDERS = ['male', 'female', 'other', 'prefer not to say'];
@@ -25,7 +41,29 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const fail = (status, message, extra = {}) => ({ status, body: { success: false, message, ...extra } });
 
-const validate = ({ firstName, lastName, gender, dateOfBirth, email }) => {
+const EMAIL_OR_FORM_REQUIRED = "Enter the patient's email address or attach their signed consent form.";
+
+/**
+ * Write the checked in-memory upload to disk; returns the stored file details.
+ * It goes with the physical-records uploads, so the authenticated
+ * /api/files/physical-records route serves (and permission-checks) the form.
+ */
+const storeConsentForm = async (file) => {
+  const mimetype = sniffConsentFormType(file.buffer);
+  const filename = `consentForm-${Date.now()}-${crypto.randomBytes(8).toString('hex')}${CONSENT_FORM_TYPES[mimetype]}`;
+  await fs.promises.mkdir(physicalRecordsUploadDir, { recursive: true });
+  const filePath = path.join(physicalRecordsUploadDir, filename);
+  await fs.promises.writeFile(filePath, file.buffer, { flag: 'wx' });
+  return {
+    filename,
+    originalName: String(file.originalname || filename).slice(0, 255),
+    mimetype,
+    size: file.size,
+    path: filePath
+  };
+};
+
+const validate = ({ firstName, lastName, gender, dateOfBirth, email }, consentForm) => {
   if (!firstName || !String(firstName).trim()) return 'First name is required';
   if (!lastName || !String(lastName).trim()) return 'Last name is required';
   if (!gender) return 'Gender is required';
@@ -33,7 +71,8 @@ const validate = ({ firstName, lastName, gender, dateOfBirth, email }) => {
   if (!dateOfBirth) return 'Date of birth is required';
   if (!consentService.toDateKey(dateOfBirth)) return 'Invalid date of birth';
   if (email && !EMAIL_REGEX.test(String(email).trim().toLowerCase())) return 'Invalid email address';
-  return null;
+  if (!(email && String(email).trim()) && !consentForm) return EMAIL_OR_FORM_REQUIRED;
+  return consentFormError(consentForm);
 };
 
 /** Patients sharing this email, split by whether the DOB also matches. */
@@ -77,10 +116,12 @@ const registrationSnapshot = (data, email) => ({
  * @param {Object} params.req - Express request (acting user, audit context)
  * @param {Object} params.data - Form fields: firstName, lastName, gender,
  *   dateOfBirth, phone, email, medicalAidProvider, plan
+ * @param {Object} [params.consentForm] - Signed consent form (multer memory
+ *   file); required when there is no email
  * @returns {Promise<{status: number, body: Object, patient?: Object}>}
  */
-const onboardProviderInitiatedPatient = async ({ provider, req, data }) => {
-  const error = validate(data);
+const onboardProviderInitiatedPatient = async ({ provider, req, data, consentForm }) => {
+  const error = validate(data, consentForm);
   if (error) return fail(400, error);
 
   const email = data.email ? String(data.email).trim().toLowerCase() : null;
@@ -107,15 +148,17 @@ const onboardProviderInitiatedPatient = async ({ provider, req, data }) => {
       fullAccessRequested: true
     });
     logger.info(`Add New Patient matched account ${exactAccount._id}; access request sent by provider ${provider._id}`);
-    return {
-      status: 200,
-      patient: exactAccount,
-      body: {
-        success: true,
-        outcome: 'access_request_sent',
-        message: 'This patient already has an Onus Health account, so we sent them an access request instead of creating a new record.'
-      }
+    const body = {
+      success: true,
+      outcome: 'access_request_sent',
+      message: 'This patient already has an Onus Health account, so we sent them an access request instead of creating a new record.'
     };
+    if (consentForm) {
+      // Account holders give consent themselves; the paper form is not stored
+      body.consentFormIgnored = true;
+      body.message += ' The attached consent form was not used: they will approve access from their account.';
+    }
+    return { status: 200, patient: exactAccount, body };
   }
 
   let patient = exactPlaceholder;
@@ -154,6 +197,10 @@ const onboardProviderInitiatedPatient = async ({ provider, req, data }) => {
     throw err;
   }
 
+  if (consentForm) {
+    return completeWithConsentForm({ provider, req, actorId, patient, created, connection, email, consentForm, emailOnly });
+  }
+
   let consentEmailSent = false;
   if (email) {
     ({ emailed: consentEmailSent } = await consentService.sendConsentInvite(connection._id, { req }));
@@ -176,6 +223,59 @@ const onboardProviderInitiatedPatient = async ({ provider, req, data }) => {
     body.warningMessage = 'Another patient record uses this email address with a different date of birth. A separate record was created — check this is not the same person.';
   }
 
+  return { status: 201, body, patient };
+};
+
+/**
+ * Store the signed form as the patient's document, record consent from it
+ * and, if the patient has an email, send a claim link (no consent request).
+ * Anything that fails undoes this onboarding so no half-consented record or
+ * orphaned file is left behind.
+ */
+const completeWithConsentForm = async ({ provider, req, actorId, patient, created, connection, email, consentForm, emailOnly }) => {
+  let stored;
+  let record;
+  try {
+    stored = await storeConsentForm(consentForm);
+    record = await PhysicalRecord.create({
+      patient: patient._id,
+      provider: provider._id,
+      documentType: 'consent_form',
+      description: 'Signed patient consent form',
+      file: stored
+    });
+    const granted = await consentService.grantWithConsentForm(connection._id, { recordId: record._id, uploadedBy: actorId }, req);
+    if (!granted.ok) throw new Error(`Consent form could not be recorded (${granted.code})`);
+  } catch (err) {
+    if (record) await PhysicalRecord.deleteOne({ _id: record._id });
+    if (stored) await fs.promises.unlink(stored.path).catch(() => {});
+    await Connection.deleteOne({ _id: connection._id });
+    if (created) await User.deleteOne({ _id: patient._id });
+    throw err;
+  }
+
+  let claimEmailSent = false;
+  if (email) {
+    ({ emailed: claimEmailSent } = await consentService.sendClaimInvite(connection._id, { req }));
+  }
+
+  logger.info(`Provider-initiated patient ${patient._id} (${created ? 'new' : 'existing placeholder'}) consented by uploaded form for provider ${provider._id}`);
+
+  const body = {
+    success: true,
+    outcome: created ? 'created' : 'linked_existing_record',
+    message: 'Patient added and marked as consented from their signed consent form.',
+    consentStatus: 'ACTIVE',
+    consentMethod: 'uploaded_form',
+    consentEmailSent: false,
+    claimEmailSent,
+    connectionId: connection._id,
+    consentFormRecordId: record._id
+  };
+  if (created && emailOnly.length > 0) {
+    body.warning = 'EMAIL_IN_USE_DIFFERENT_DOB';
+    body.warningMessage = 'Another patient record uses this email address with a different date of birth. A separate record was created — check this is not the same person.';
+  }
   return { status: 201, body, patient };
 };
 

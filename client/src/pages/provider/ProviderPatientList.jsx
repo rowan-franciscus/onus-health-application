@@ -239,7 +239,7 @@ const ProviderPatientList = ({
                       <ConsentStatusBadge status={patient.consentStatus} />
                     )}
                   </div>
-                  <div className={styles.colEmail}>{patient.email}</div>
+                  <div className={styles.colEmail}>{patient.email || '—'}</div>
                   <div className={styles.colActions}>
                     <div className={styles.actionButtons}>
                       {renderActions ? renderActions(patient, { refresh: fetchPatientsAndConnections }) : null}

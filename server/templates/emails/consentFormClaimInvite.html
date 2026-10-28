@@ -1,0 +1,18 @@
+<h1>Your health record on Onus Health</h1>
+
+<p>Hi {{patientFirstName}},</p>
+
+<p><strong>{{providerName}}</strong>{{#if practiceName}} at <strong>{{practiceName}}</strong>{{/if}} has started a health record for you on Onus Health. Your signed consent form is on file, so there is nothing you need to do.</p>
+
+<p>If you'd like to see your record and control who can access it, you can create a free account:</p>
+
+<div style="text-align: center; margin: 32px 0;">
+  <a href="{{claimUrl}}" class="btn">Claim your profile</a>
+</div>
+
+<p class="backup-link" style="text-align: center; margin: 20px 0;">
+  If the button doesn't work, copy this link into your browser:<br>
+  <a href="{{claimUrl}}">{{claimUrl}}</a>
+</p>
+
+<p style="font-size: 13px; color: #666666;">If you don't know {{providerName}} or didn't sign a consent form, please contact their practice.</p>

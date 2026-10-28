@@ -8,7 +8,6 @@ const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
-const path = require('path');
 const dotenv = require('dotenv');
 
 // Load environment variables
@@ -179,12 +178,8 @@ app.use(sessionTimeout);
 // Audit every 401/403 on /api/* as a failed-authorization event
 app.use(failedAccessAudit);
 
-// Static files with CORS headers
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-}, express.static(path.join(__dirname, 'uploads')));
+// Uploaded files are never served statically: they hold patient documents and
+// go through the authenticated, permission-checked /api/files routes
 
 // Health check endpoint (before auth middleware)
 app.get('/health', (req, res) => {

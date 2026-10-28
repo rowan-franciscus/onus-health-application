@@ -4,12 +4,14 @@ const { onboardProviderInitiatedPatient } = require('../services/patientOnboardi
 /**
  * Register a new (non-Onus) patient on behalf of a provider ("Add New Patient").
  * New and reused placeholder records start in PENDING_CONSENT and the patient
- * is emailed a consent request; see services/patientOnboarding.service.js for
- * duplicate matching (an existing account gets an access request instead).
+ * is emailed a consent request, or, with an attached signed consent form
+ * (multipart field 'consentForm'), are consented straight away; see
+ * services/patientOnboarding.service.js for duplicate matching (an existing
+ * account gets an access request instead).
  */
 exports.registerNewPatient = async (req, res) => {
   try {
-    const result = await onboardProviderInitiatedPatient({ provider: req.user, req, data: req.body });
+    const result = await onboardProviderInitiatedPatient({ provider: req.user, req, data: req.body, consentForm: req.file });
     const { patient } = result;
     return res.status(result.status).json({
       ...result.body,

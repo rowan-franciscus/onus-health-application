@@ -6,6 +6,7 @@
 const User = require('../models/User');
 const Consultation = require('../models/Consultation');
 const Connection = require('../models/Connection');
+const PhysicalRecord = require('../models/PhysicalRecord');
 const logger = require('../utils/logger');
 const auditService = require('../services/audit.service');
 const mongoose = require('mongoose');
@@ -309,13 +310,32 @@ exports.getPatientById = async (req, res) => {
         withdrawnAt: connection.consent?.withdrawnAt,
         resendCount: connection.consent?.resendCount || 0,
         deferralCount: connection.consent?.deferrals?.length || 0,
-        canResend: consentService.AWAITING_STATUSES.includes(consentStatus) && Boolean(patientData?.email)
+        canResend: consentService.AWAITING_STATUSES.includes(consentStatus) && Boolean(patientData?.email),
+        method: consentService.consentMethodOf(connection),
+        form: await consentFormSummary(connection)
       }
     });
   } catch (error) {
     logger.error('Error getting patient by ID:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch patient' });
   }
+};
+
+/** The signed paper consent form behind an 'uploaded_form' consent, or null. */
+const consentFormSummary = async (connection) => {
+  const recordId = connection.consent?.form?.record;
+  if (!recordId) return null;
+  const record = await PhysicalRecord.findById(recordId).select('file.filename file.originalName file.mimetype');
+  if (!record) return null;
+  return {
+    recordId: record._id,
+    uploadedAt: connection.consent.form.uploadedAt,
+    uploadedBy: connection.consent.form.uploadedBy,
+    originalName: record.file.originalName,
+    mimetype: record.file.mimetype,
+    viewUrl: `/api/files/physical-records/${record.file.filename}?inline=true`,
+    downloadUrl: `/api/files/physical-records/${record.file.filename}`
+  };
 };
 
 const CONSENT_ERROR_MESSAGES = {

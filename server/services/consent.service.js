@@ -10,6 +10,7 @@
  *   PENDING_CONSENT --14 days-> EXPIRED --resend--> PENDING_CONSENT
  *   EXPIRED --accept/decline (signed-in patient, no link needed)--> ACTIVE / DECLINED
  *   (none, pre-consent connection) --startup backfill--> ACTIVE / PENDING_CONSENT
+ *   PENDING_CONSENT --signed paper form uploaded by provider--> ACTIVE
  *
  * Tokens: 32 random bytes, emailed raw, stored only as SHA-256. Transitions
  * are a single conditional findOneAndUpdate so a link can be used once even
@@ -84,7 +85,7 @@ const claimUrl = (raw) => `${config.frontendUrl}/claim/${raw}`;
  * context.after, which is part of the hash-chained canonical form.
  */
 const logConsentEvent = (req, {
-  subtype, connection, before, after, agent, outcome = '0', outcomeDesc, textVersion
+  subtype, connection, before, after, agent, outcome = '0', outcomeDesc, textVersion, extra
 }) => {
   const event = {
     type: 'consent',
@@ -104,7 +105,8 @@ const logConsentEvent = (req, {
       after: {
         consentStatus: after,
         providerId: String(idOf(connection.provider)),
-        consentTextVersion: textVersion || undefined
+        consentTextVersion: textVersion || undefined,
+        ...extra
       }
     }
   };
@@ -132,6 +134,9 @@ const practiceNameFor = async (provider) => {
 
 const providerDisplayName = (provider) =>
   [provider?.title, provider?.firstName, provider?.lastName].filter(Boolean).join(' ');
+
+/** 'email' | 'uploaded_form'. Consents recorded before the field existed came by email. */
+const consentMethodOf = (connection) => connection?.consent?.method || 'email';
 
 // ---- Claim tokens ----
 
@@ -279,6 +284,53 @@ const sendConsentInvite = async (connectionId, { req, isResend = false } = {}) =
     after: 'PENDING_CONSENT',
     textVersion: CURRENT_VERSION
   });
+  return { emailed: true };
+};
+
+/**
+ * Email only a claim link (no consent link) to a patient whose consent is
+ * already on file from a signed paper form. Returns { emailed }.
+ */
+const sendClaimInvite = async (connectionId, { req } = {}) => {
+  const connection = await Connection.findById(connectionId)
+    .populate('patient', 'firstName lastName email isOnusUser')
+    .populate('provider', 'firstName lastName title providerProfile');
+  if (!connection) throw new Error('Connection not found');
+
+  const patient = connection.patient;
+  if (!patient?.email) return { emailed: false };
+
+  const rawClaim = await issueClaimToken(patient._id);
+  if (!rawClaim) return { emailed: false };
+
+  const providerName = providerDisplayName(connection.provider);
+  // sendTemplateEmail resolves false (rather than throwing) on render/queue errors
+  const queued = await emailService.sendTemplateEmail(
+    patient.email,
+    'consentFormClaimInvite',
+    {
+      title: 'Your health record on Onus Health',
+      patientFirstName: patient.firstName,
+      providerName,
+      practiceName: await practiceNameFor(connection.provider),
+      claimUrl: claimUrl(rawClaim)
+    },
+    {
+      subject: `${providerName} has added you to Onus Health`,
+      userId: patient._id,
+      queue: true
+    }
+  );
+  if (!queued) return { emailed: false };
+
+  const event = {
+    type: 'auth',
+    subtype: 'record-claim-link-sent',
+    action: 'E',
+    entity: { resourceType: 'User', resourceId: patient._id, patientId: patient._id }
+  };
+  if (req) auditService.logFromRequest(req, event);
+  else auditService.log({ ...event, agent: { userId: null, role: 'system' } });
   return { emailed: true };
 };
 
@@ -521,6 +573,44 @@ const respondAsPatient = async (connectionId, patientId, { decision, textVersion
 };
 
 /**
+ * Provider (or Practice Admin) records consent from a signed paper form the
+ * patient completed. Same ACTIVE state and 'consent-granted' event as the
+ * emailed link; the event also carries the method and the stored form.
+ * No consent text version is recorded: the paper form's wording isn't known.
+ */
+const grantWithConsentForm = async (connectionId, { recordId, uploadedBy }, req) => {
+  const now = new Date();
+  const updated = await Connection.findOneAndUpdate(
+    { _id: connectionId, 'consent.status': 'PENDING_CONSENT' },
+    {
+      $set: {
+        'consent.status': 'ACTIVE',
+        'consent.respondedAt': now,
+        'consent.method': 'uploaded_form',
+        'consent.form': { record: recordId, uploadedBy, uploadedAt: now }
+      },
+      $unset: { 'consent.tokenHash': 1, 'consent.tokenExpires': 1 }
+    },
+    { new: true }
+  );
+  if (!updated) return { ok: false, code: 'NOT_PENDING' };
+
+  logConsentEvent(req, {
+    subtype: 'consent-granted',
+    connection: updated,
+    before: 'PENDING_CONSENT',
+    after: 'ACTIVE',
+    extra: {
+      consentMethod: 'uploaded_form',
+      consentFormRecordId: String(recordId),
+      uploadedBy: String(uploadedBy),
+      uploadedAt: now.toISOString()
+    }
+  });
+  return { ok: true, status: 'ACTIVE', connection: updated };
+};
+
+/**
  * Patient withdraws a previously given consent. The Connection is kept (never
  * deleted) so the consent history survives; access is revoked by the status.
  */
@@ -682,7 +772,10 @@ module.exports = {
   toDateKey,
   sameDob,
   providerDisplayName,
+  consentMethodOf,
   sendConsentInvite,
+  sendClaimInvite,
+  grantWithConsentForm,
   issueClaimToken,
   findPatientByClaimToken,
   recordClaimDobMismatch,
